@@ -76,6 +76,11 @@ namespace Map.View
             }
 
             var camera = Camera.main;
+            if (camera == null)
+            {
+                camera = FindFirstObjectByType<Camera>();
+            }
+
             if (camera == null || !camera.orthographic)
             {
                 return Mathf.Max(extraColumns, m_DefaultGhostColumns);

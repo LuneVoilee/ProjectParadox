@@ -10,12 +10,19 @@ namespace GamePlay.KCamera
         [SerializeField] private Transform m_Target;
         [SerializeField] private Camera m_Camera;
 
+        [Header("Wrap")]
+        [SerializeField] private bool m_WrapX = true;
+        [SerializeField] private bool m_WrapY;
+
         [Header("Clamp")]
-        [SerializeField] private bool m_ClampToMap = true;
+        [SerializeField] private bool m_ClampY = true;
         [SerializeField] private HexMapRenderer m_MapRenderer;
-        private bool m_HasMapBounds;
-        private Bounds m_MapBoundsWorld;
-        private BoundsInt m_MapCellBounds;
+        private bool m_HasMapMetrics;
+        private Vector3 m_MapOriginWorld;
+        private float m_MapWidthWorld;
+        private float m_MapHeightWorld;
+        private int m_MapWidth;
+        private int m_MapHeight;
 
         private void Awake()
         {
@@ -48,9 +55,9 @@ namespace GamePlay.KCamera
         {
             MoveCamera();
 
-            if (m_ClampToMap)
+            if (m_WrapX || m_WrapY || m_ClampY)
             {
-                ClampToMap();
+                ApplyBounds();
             }
         }
 
@@ -67,71 +74,134 @@ namespace GamePlay.KCamera
             m_Target.position += delta;
         }
 
-        private void ClampToMap()
+        private void ApplyBounds()
         {
-            if (m_Camera == null || !m_Camera.orthographic)
-            {
-                return;
-            }
-
-            if (!TryRefreshMapBounds())
+            if (!TryRefreshMapMetrics())
             {
                 return;
             }
 
             var position = m_Target.position;
-            var halfHeight = m_Camera.orthographicSize;
-            var halfWidth = halfHeight * m_Camera.aspect;
 
-            var min = m_MapBoundsWorld.min;
-            var max = m_MapBoundsWorld.max;
-
-            var minX = min.x + halfWidth;
-            var maxX = max.x - halfWidth;
-            if (minX > maxX)
+            var halfHeight = 0f;
+            var halfWidth = 0f;
+            if (m_Camera != null && m_Camera.orthographic)
             {
-                position.x = (min.x + max.x) * 0.5f;
-            }
-            else
-            {
-                position.x = Mathf.Clamp(position.x, minX, maxX);
+                halfHeight = m_Camera.orthographicSize;
+                halfWidth = halfHeight * m_Camera.aspect;
             }
 
-            var minY = min.y + halfHeight;
-            var maxY = max.y - halfHeight;
-            if (minY > maxY)
+            if (m_WrapX && m_MapWidthWorld > Mathf.Epsilon)
             {
-                position.y = (min.y + max.y) * 0.5f;
+                var left = m_MapOriginWorld.x;
+                var right = left + m_MapWidthWorld;
+                var wrapLeft = left - halfWidth;
+                var wrapRight = right + halfWidth;
+
+                if (wrapLeft <= wrapRight)
+                {
+                    if (position.x < wrapLeft)
+                    {
+                        position.x += m_MapWidthWorld;
+                    }
+                    else if (position.x > wrapRight)
+                    {
+                        position.x -= m_MapWidthWorld;
+                    }
+                }
+                else
+                {
+                    if (position.x < left)
+                    {
+                        position.x += m_MapWidthWorld;
+                    }
+                    else if (position.x >= right)
+                    {
+                        position.x -= m_MapWidthWorld;
+                    }
+                }
             }
-            else
+
+            if (m_WrapY && m_MapHeightWorld > Mathf.Epsilon)
             {
-                position.y = Mathf.Clamp(position.y, minY, maxY);
+                var bottom = m_MapOriginWorld.y;
+                var top = bottom + m_MapHeightWorld;
+                var wrapBottom = bottom - halfHeight;
+                var wrapTop = top + halfHeight;
+
+                if (wrapBottom <= wrapTop)
+                {
+                    if (position.y < wrapBottom)
+                    {
+                        position.y += m_MapHeightWorld;
+                    }
+                    else if (position.y > wrapTop)
+                    {
+                        position.y -= m_MapHeightWorld;
+                    }
+                }
+                else
+                {
+                    if (position.y < bottom)
+                    {
+                        position.y += m_MapHeightWorld;
+                    }
+                    else if (position.y >= top)
+                    {
+                        position.y -= m_MapHeightWorld;
+                    }
+                }
+            }
+            else if (m_ClampY && m_MapHeightWorld > Mathf.Epsilon)
+            {
+                var minY = m_MapOriginWorld.y + halfHeight;
+                var maxY = m_MapOriginWorld.y + m_MapHeightWorld - halfHeight;
+                if (minY > maxY)
+                {
+                    position.y = m_MapOriginWorld.y + m_MapHeightWorld * 0.5f;
+                }
+                else
+                {
+                    position.y = Mathf.Clamp(position.y, minY, maxY);
+                }
             }
 
             m_Target.position = position;
         }
 
-        private bool TryRefreshMapBounds()
+        private bool TryRefreshMapMetrics()
         {
             if (m_MapRenderer == null || m_MapRenderer.Tilemap == null)
             {
                 return false;
             }
 
-            var tilemap = m_MapRenderer.Tilemap;
-            var cellBounds = tilemap.cellBounds;
-            if (m_HasMapBounds && cellBounds.Equals(m_MapCellBounds))
+            var width = m_MapRenderer.MapWidth;
+            var height = m_MapRenderer.MapHeight;
+            if (width <= 0 || height <= 0)
+            {
+                return false;
+            }
+
+            if (m_HasMapMetrics && width == m_MapWidth && height == m_MapHeight)
             {
                 return true;
             }
 
-            m_MapCellBounds = cellBounds;
-            var localBounds = tilemap.localBounds;
-            var min = tilemap.transform.TransformPoint(localBounds.min);
-            var max = tilemap.transform.TransformPoint(localBounds.max);
-            m_MapBoundsWorld = new Bounds();
-            m_MapBoundsWorld.SetMinMax(min, max);
-            m_HasMapBounds = true;
+            var tilemap = m_MapRenderer.Tilemap;
+            var originCell = new Vector3Int(0, 0, 0);
+            var widthCell = new Vector3Int(width, 0, 0);
+            var heightCell = new Vector3Int(0, height, 0);
+
+            m_MapOriginWorld = tilemap.CellToWorld(originCell);
+            var widthWorld = tilemap.CellToWorld(widthCell);
+            var heightWorld = tilemap.CellToWorld(heightCell);
+
+            m_MapWidth = width;
+            m_MapHeight = height;
+            m_MapWidthWorld = Mathf.Abs(widthWorld.x - m_MapOriginWorld.x);
+            m_MapHeightWorld = Mathf.Abs(heightWorld.y - m_MapOriginWorld.y);
+            m_HasMapMetrics = true;
             return true;
         }
     }
