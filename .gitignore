@@ -1,0 +1,9 @@
+﻿.idea
+UserSettings
+Library
+Temp
+Logs
+obj
+Packages/com.singularitygroup.hotreload
+*.csproj
+AGENTS.md
