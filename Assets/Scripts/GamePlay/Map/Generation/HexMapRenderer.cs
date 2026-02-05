@@ -13,6 +13,7 @@ namespace Map.View
 
         private const int m_DefaultGhostColumns = 6;
         private const int m_GhostPadding = 1;
+        private GridData m_LastData;
 
         public int MapWidth { get; private set; }
         public int MapHeight { get; private set; }
@@ -25,6 +26,7 @@ namespace Map.View
                 return;
             }
 
+            m_LastData = data;
             var width = data.Width;
             var height = data.Height;
             var extraColumns = ResolveGhostColumns();
@@ -50,6 +52,16 @@ namespace Map.View
             m_Tilemap.ClearAllTiles();
             m_Tilemap.SetTiles(positions, tiles);
             m_Tilemap.RefreshAllTiles();
+        }
+
+        public void RefreshGhostColumns()
+        {
+            if (m_LastData == null)
+            {
+                return;
+            }
+
+            Render(m_LastData);
         }
 
         private TileBase GetTileForCell(CellData cell)
