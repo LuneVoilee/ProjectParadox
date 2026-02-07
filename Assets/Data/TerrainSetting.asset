@@ -14,10 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::World.View.TerrainPalette
   entries:
   - TerrainType: 0
-    Tile: {fileID: 11400000, guid: 7e7023038b98aa044bb3e270f61dd108, type: 2}
+    Tile: {fileID: 11400000, guid: 65d1c708949cbd240ac02a89299f0896, type: 2}
   - TerrainType: 1
-    Tile: {fileID: 11400000, guid: 3cb9eec849842264e9ec8677e232a462, type: 2}
+    Tile: {fileID: 11400000, guid: 0bbfe05e7b5bea64fb597529e7e186d6, type: 2}
   - TerrainType: 2
-    Tile: {fileID: 11400000, guid: 35c9e627855e42642a06f8ecc378820c, type: 2}
+    Tile: {fileID: 11400000, guid: 6dcfc409b78891f40a38c132d7a428c0, type: 2}
   - TerrainType: 3
-    Tile: {fileID: 11400000, guid: 3a4014d45762c35488c618d4961890c1, type: 2}
+    Tile: {fileID: 11400000, guid: f73d5be24e98c374eba8f2eb1b28b179, type: 2}

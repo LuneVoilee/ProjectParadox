@@ -272,7 +272,13 @@ MonoBehaviour:
   m_MoveSpeed: 10
   m_Target: {fileID: 519420032}
   m_Camera: {fileID: 519420031}
-  m_ClampToMap: 1
+  m_EnableZoom: 1
+  m_ZoomSpeed: 5
+  m_MinZoom: 4
+  m_MaxZoom: 20
+  m_WrapX: 1
+  m_WrapY: 0
+  m_ClampY: 1
   m_MapRenderer: {fileID: 559353512}
 --- !u!1 &559353510
 GameObject:
@@ -413,28 +419,28 @@ Tilemap:
     m_Data:
       e00: 1.7632483e-38
       e01: 0
-      e02: 715703
+      e02: -6.6780134e+31
       e03: 1.7632438e-38
-      e10: 7.02e-43
+      e10: 5.98e-43
       e11: 0
-      e12: 2.86e-43
-      e13: 7.02e-43
-      e20: 0.000006463917
+      e12: 1.5e-44
+      e13: 5.98e-43
+      e20: -0.0000000147785215
       e21: 0
-      e22: 1.0911732e-19
-      e23: -0.000000001172066
+      e22: 4.6982684e-10
+      e23: -0.0000000046756305
       e30: 4.591e-41
       e31: 0
-      e32: 7.06e-43
-      e33: 7.02e-43
+      e32: 6.03e-43
+      e33: 5.98e-43
   m_TileColorArray:
   - m_RefCount: 0
-    m_Data: {r: 715799, g: 715799, b: 715799, a: 715799}
+    m_Data: {r: -6.678756e+31, g: -6.678756e+31, b: -6.678756e+31, a: -6.678756e+31}
   m_TileObjectToInstantiateArray: []
   m_AnimationFrameRate: 1
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_Origin: {x: 0, y: 0, z: 0}
-  m_Size: {x: 4, y: 2, z: 1}
+  m_Origin: {x: -6, y: -3, z: 0}
+  m_Size: {x: 16, y: 5, z: 1}
   m_TileAnchor: {x: 0, y: 0, z: 0}
   m_TileOrientation: 0
   m_TileOrientationMatrix:

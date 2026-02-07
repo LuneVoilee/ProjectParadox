@@ -1,0 +1,118 @@
+using UnityEngine;
+using UnityEngine.Tilemaps;
+using Map.Components;
+using Map.Settings;
+
+namespace Map.View
+{
+    public class HexMapRenderer : MonoBehaviour
+    {
+        [SerializeField] private Tilemap m_Tilemap;
+        [SerializeField] private TerrainSettings mTerrainSettings;
+        [SerializeField] private int m_GhostColumns = 6;
+        [SerializeField] private bool m_AutoGhostColumns = true;
+
+        private const int m_DefaultGhostColumns = 6;
+        private const int m_GhostPadding = 1;
+        private CGrid m_LastData;
+        private int m_LastGhostColumns;
+
+        public int MapWidth { get; private set; }
+        public int MapHeight { get; private set; }
+        public Tilemap Tilemap => m_Tilemap;
+        public int GhostColumns => m_LastGhostColumns;
+
+        public void Render(CGrid data)
+        {
+            if (data == null || m_Tilemap == null)
+            {
+                return;
+            }
+
+            m_LastData = data;
+            var width = data.Width;
+            var height = data.Height;
+            var extraColumns = ResolveGhostColumns();
+            var total = (width + extraColumns * 2) * height;
+            MapWidth = width;
+            MapHeight = height;
+            m_LastGhostColumns = extraColumns;
+
+            var positions = new Vector3Int[total];
+            var tiles = new TileBase[total];
+
+            var i = 0;
+            for (var row = 0; row < height; row++)
+            {
+                for (var col = -extraColumns; col < width + extraColumns; col++)
+                {
+                    var cell = extraColumns > 0 ? data.GetCellWrappedX(col, row) : data.GetCell(col, row);
+                    positions[i] = new Vector3Int(col, row, 0);
+                    tiles[i] = GetTileForCell(cell);
+                    i++;
+                }
+            }
+
+            m_Tilemap.ClearAllTiles();
+            m_Tilemap.SetTiles(positions, tiles);
+            m_Tilemap.RefreshAllTiles();
+        }
+
+        public void RefreshGhostColumns()
+        {
+            if (m_LastData == null)
+            {
+                return;
+            }
+
+            Render(m_LastData);
+        }
+
+        private TileBase GetTileForCell(CCell cell)
+        {
+            if (cell == null || mTerrainSettings == null)
+            {
+                return null;
+            }
+
+            return mTerrainSettings.GetTile(cell.TerrainType);
+        }
+
+        private int ResolveGhostColumns()
+        {
+            var extraColumns = Mathf.Max(0, m_GhostColumns);
+            if (!m_AutoGhostColumns)
+            {
+                return extraColumns;
+            }
+
+            if (m_Tilemap == null)
+            {
+                return Mathf.Max(extraColumns, m_DefaultGhostColumns);
+            }
+
+            var camera = Camera.main;
+            if (camera == null)
+            {
+                camera = FindFirstObjectByType<Camera>();
+            }
+
+            if (camera == null || !camera.orthographic)
+            {
+                return Mathf.Max(extraColumns, m_DefaultGhostColumns);
+            }
+
+            var origin = m_Tilemap.CellToWorld(Vector3Int.zero);
+            var next = m_Tilemap.CellToWorld(new Vector3Int(1, 0, 0));
+            var columnWidth = Mathf.Abs(next.x - origin.x);
+            if (columnWidth <= Mathf.Epsilon)
+            {
+                return Mathf.Max(extraColumns, m_DefaultGhostColumns);
+            }
+
+            var viewWidth = camera.orthographicSize * 2f * camera.aspect;
+            var needed = Mathf.CeilToInt(viewWidth / columnWidth) + m_GhostPadding;
+            return Mathf.Max(extraColumns, needed);
+        }
+    }
+}

@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Map.Generation
+namespace Map.Settings
 {
     [CreateAssetMenu(menuName = "World/Biome Settings", fileName = "BiomeSettings")]
     public class BiomeSettings : ScriptableObject
