@@ -11,22 +11,22 @@ namespace Faction
     {
         [Header("Factions")]
         [SerializeField, Range(1, 255)] private int m_FactionCount = 6;
-        [SerializeField] private Vector2Int m_TerritorySizeRange = new Vector2Int(30, 120);
+        [SerializeField] private Vector2Int m_TerritorySizeRange = new (30, 120);
         [SerializeField] private int m_Seed = 12345;
         [SerializeField] private bool m_GenerateOnMapReady = true;
         [SerializeField, Range(1, 2000)] private int m_StartSearchAttempts = 200;
 
         private static readonly HexCoordinates[] s_Directions =
         {
-            new HexCoordinates(1, -1, 0),
-            new HexCoordinates(1, 0, -1),
-            new HexCoordinates(0, 1, -1),
-            new HexCoordinates(-1, 1, 0),
-            new HexCoordinates(-1, 0, 1),
-            new HexCoordinates(0, -1, 1)
+            new (1, -1, 0),
+            new (1, 0, -1),
+            new (0, 1, -1),
+            new (-1, 1, 0),
+            new (-1, 0, 1),
+            new (0, -1, 1)
         };
 
-        private readonly List<CFaction> m_Factions = new List<CFaction>();
+        private readonly List<CFaction> m_Factions = new ();
         private MapManager m_MapManager;
         private bool m_HasGenerated;
 
@@ -61,7 +61,7 @@ namespace Faction
             }
         }
 
-        private void HandleMapGenerated(CGrid data)
+        private void HandleMapGenerated(GridData data)
         {
             if (!m_GenerateOnMapReady || m_HasGenerated)
             {
@@ -85,7 +85,7 @@ namespace Faction
             }
         }
 
-        private void Generate(CGrid data)
+        private void Generate(GridData data)
         {
             if (data == null)
             {
@@ -116,7 +116,7 @@ namespace Faction
             territoryOwnership.ApplyChanges();
         }
 
-        private void GrowTerritory(CFaction faction, CGrid data, int targetSize, System.Random random)
+        private void GrowTerritory(CFaction faction, GridData data, int targetSize, System.Random random)
         {
             if (!TryFindStartCell(data, random, out var start))
             {
@@ -155,7 +155,7 @@ namespace Faction
             }
         }
 
-        private bool TryFindStartCell(CGrid data, System.Random random, out HexCoordinates start)
+        private bool TryFindStartCell(GridData data, System.Random random, out HexCoordinates start)
         {
             int attempts = Mathf.Max(1, m_StartSearchAttempts);
             for (int i = 0; i < attempts; i++)

@@ -6,12 +6,12 @@ namespace Faction
 {
     public class CTerritoryOwnership
     {
-        private readonly CGrid m_Data;
+        private readonly GridData m_Data;
         private readonly TerritoryBorderRenderer m_Renderer;
 
-        public CGrid Data => m_Data;
+        public GridData Data => m_Data;
 
-        public CTerritoryOwnership(CGrid data, TerritoryBorderRenderer renderer)
+        public CTerritoryOwnership(GridData data, TerritoryBorderRenderer renderer)
         {
             m_Data = data;
             m_Renderer = renderer;

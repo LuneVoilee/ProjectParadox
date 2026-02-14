@@ -33,9 +33,9 @@ namespace Map.Manager
         [Header("Debug")]
         [SerializeField] private bool m_GenerateOnStart = true;
 
-        public CGrid CurrentData { get; private set; }
+        public GridData CurrentData { get; private set; }
         public TerritoryBorderRenderer TerritoryBorderRenderer => m_TerritoryBorderRenderer;
-        public event Action<CGrid> MapGenerated;
+        public event Action<GridData> MapGenerated;
 
         private void Start()
         {

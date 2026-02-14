@@ -1,6 +1,6 @@
-namespace Map.Systems
+namespace Map.Common
 {
-    public struct NoiseSettings
+    public struct NoiseParam
     {
         public float Scale;
         public float OffsetX;

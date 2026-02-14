@@ -1,15 +1,15 @@
 using UnityEngine;
 
-namespace Map.Systems
+namespace Map.Common
 {
     public static class SeamlessNoise
     {
-        public static float Sample(int col, int row, int width, int height, float scale, NoiseSettings settings)
+        public static float Sample(int col, int row, int width, int height, float scale, NoiseParam param)
         {
-            var nx = (col + settings.OffsetX) * scale;
-            var ny = (row + settings.OffsetY) * scale;
-            var seamlessX = settings.SeamlessX && width > 1;
-            var seamlessY = settings.SeamlessY && height > 1;
+            var nx = (col + param.OffsetX) * scale;
+            var ny = (row + param.OffsetY) * scale;
+            var seamlessX = param.SeamlessX && width > 1;
+            var seamlessY = param.SeamlessY && height > 1;
 
             if (!seamlessX && !seamlessY)
             {

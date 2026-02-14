@@ -327,7 +327,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::World.View.HexMapRenderer
   m_Tilemap: {fileID: 559353514}
-  m_TerrainPalette: {fileID: 11400000, guid: d4d6f7cbf6ead4a4aac1033d210449e4, type: 2}
+  mTerrainSettings: {fileID: 11400000, guid: d4d6f7cbf6ead4a4aac1033d210449e4, type: 2}
   m_GhostColumns: 6
   m_AutoGhostColumns: 1
 --- !u!483693784 &559353513
@@ -553,36 +553,14 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 738224518}
-  - component: {fileID: 738224517}
+  - component: {fileID: 738224519}
   m_Layer: 0
-  m_Name: MapGenerator
+  m_Name: Map
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &738224517
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 738224516}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1846d5ccc923edf4eae7c8639132fd7c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::World.Generation.MapGenerator
-  Width: 100
-  Height: 100
-  Seed: 868
-  HeightScale: 0.08
-  MoistureScale: 0.12
-  SeamlessX: 1
-  SeamlessY: 0
-  BiomeSettings: {fileID: 11400000, guid: f0f70e66b71220d4380a14bccabb9385, type: 2}
-  Renderer: {fileID: 559353512}
-  GenerateOnStart: 1
 --- !u!4 &738224518
 Transform:
   m_ObjectHideFlags: 0
@@ -598,6 +576,29 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &738224519
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 738224516}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1f3761ad0e73e754886cf8e939c3da73, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Map.Manager.MapManager
+  m_Width: 100
+  m_Height: 100
+  m_Seed: 0
+  m_HeightScale: 0.08
+  m_MoistureScale: 0.12
+  m_SeamlessX: 1
+  m_SeamlessY: 0
+  m_BiomeSettings: {fileID: 11400000, guid: f0f70e66b71220d4380a14bccabb9385, type: 2}
+  m_HexMapRenderer: {fileID: 559353512}
+  m_TerritoryBorderRenderer: {fileID: 1940525074}
+  m_GenerateOnStart: 1
 --- !u!1 &750017492
 GameObject:
   m_ObjectHideFlags: 0
@@ -641,8 +642,171 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 559353511}
+  - {fileID: 1940525075}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &761214081
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 761214083}
+  - component: {fileID: 761214082}
+  m_Layer: 0
+  m_Name: Faction
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &761214082
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 761214081}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 31bcc6beda706e84a9710e6720cd609f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Faction.FactionManager
+  m_FactionCount: 6
+  m_TerritorySizeRange: {x: 30, y: 120}
+  m_Seed: 12345
+  m_GenerateOnMapReady: 1
+  m_StartSearchAttempts: 200
+--- !u!4 &761214083
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 761214081}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -2.40364, y: 0.75304, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1940525073
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1940525075}
+  - component: {fileID: 1940525077}
+  - component: {fileID: 1940525076}
+  - component: {fileID: 1940525074}
+  m_Layer: 0
+  m_Name: Border
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1940525074
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1940525073}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b881a08cfba063b4983159ebf7ddeb1b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Map.View.TerritoryBorderRenderer
+  m_Tilemap: {fileID: 559353514}
+  m_MapRenderer: {fileID: 559353512}
+  m_TerritorySettings: {fileID: 11400000, guid: 01c19bf7c1350d64c85b336167590e48, type: 2}
+  m_Material: {fileID: 2100000, guid: 552104793fc5e524fa9297c8633e4086, type: 2}
+  m_BorderWidth: 0.04
+  m_GlowWidth: 0.12
+  m_GlowStrength: 0.6
+  m_CopySortingFromTilemap: 1
+  m_SortingLayer: Default
+  m_SortingOrder: 1
+--- !u!4 &1940525075
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1940525073}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 750017494}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!23 &1940525076
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1940525073}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 0}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_MaskInteraction: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!33 &1940525077
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1940525073}
+  m_Mesh: {fileID: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -651,3 +815,4 @@ SceneRoots:
   - {fileID: 619394802}
   - {fileID: 750017494}
   - {fileID: 738224518}
+  - {fileID: 761214083}

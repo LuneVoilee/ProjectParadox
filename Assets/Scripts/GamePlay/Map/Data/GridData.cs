@@ -4,17 +4,17 @@ using Map.Common;
 namespace Map.Components
 {
     [Serializable]
-    public class CGrid
+    public class GridData
     {
         public int Width { get; private set; }
         public int Height { get; private set; }
-        public CCell[] Cells { get; private set; }
+        public CellData[] Cells { get; private set; }
 
-        public CGrid(int width, int height)
+        public GridData(int width, int height)
         {
             Width = width;
             Height = height;
-            Cells = new CCell[width * height];
+            Cells = new CellData[width * height];
         }
 
         public bool IsInBounds(int col, int row)
@@ -22,7 +22,7 @@ namespace Map.Components
             return col >= 0 && row >= 0 && col < Width && row < Height;
         }
 
-        public CCell GetCellWrappedX(int col, int row)
+        public CellData GetCellWrappedX(int col, int row)
         {
             if (row < 0 || row >= Height)
             {
@@ -33,13 +33,13 @@ namespace Map.Components
             return Cells[wrappedCol + row * Width];
         }
 
-        public CCell GetCellWrappedX(HexCoordinates coordinates)
+        public CellData GetCellWrappedX(HexCoordinates coordinates)
         {
             var offset = coordinates.ToOffset();
             return GetCellWrappedX(offset.x, offset.y);
         }
 
-        public CCell GetCell(int col, int row)
+        public CellData GetCell(int col, int row)
         {
             if (!IsInBounds(col, row))
             {
@@ -49,12 +49,12 @@ namespace Map.Components
             return Cells[col + row * Width];
         }
 
-        public void SetCell(int col, int row, CCell cell)
+        public void SetCell(int col, int row, CellData cellData)
         {
-            Cells[col + row * Width] = cell;
+            Cells[col + row * Width] = cellData;
         }
 
-        public CCell GetCell(HexCoordinates coordinates)
+        public CellData GetCell(HexCoordinates coordinates)
         {
             var offset = coordinates.ToOffset();
             return GetCell(offset.x, offset.y);

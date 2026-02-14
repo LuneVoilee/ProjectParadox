@@ -10,7 +10,7 @@ namespace Map.Systems
         private const float m_DefaultMountainLevel = 0.8f;
         private const float m_DefaultDesertMoisture = 0.4f;
 
-        public static void Apply(CGrid data, BiomeSettings settings)
+        public static void Apply(GridData data, BiomeSettings settings)
         {
             if (data == null)
             {

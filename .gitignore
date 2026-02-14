@@ -7,3 +7,5 @@ obj
 Packages/com.singularitygroup.hotreload
 *.csproj
 AGENTS.md
+Assets/Scripts/Core/Capability
+Assets/Scripts/Core/Capability.meta

@@ -64,7 +64,7 @@ namespace Map.View
         }
 #endif
 
-        public void Render(CGrid data)
+        public void Render(GridData data)
         {
             if (data == null || m_Tilemap == null)
             {
@@ -192,7 +192,7 @@ namespace Map.View
             m_OwnerTexture = null;
         }
 
-        private void FillOwnerTexture(CGrid data)
+        private void FillOwnerTexture(GridData data)
         {
             if (m_OwnerRaw == null || data == null)
             {

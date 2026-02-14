@@ -1,3 +1,4 @@
+using Map.Common;
 using UnityEngine;
 using Map.Components;
 
@@ -7,14 +8,14 @@ namespace Map.Systems
     {
         private const float m_MinNoiseScale = 0.0001f;
 
-        public static void Apply(CGrid data, NoiseSettings settings)
+        public static void Apply(GridData data, NoiseParam param)
         {
             if (data == null)
             {
                 return;
             }
 
-            var scale = Mathf.Max(m_MinNoiseScale, settings.Scale);
+            var scale = Mathf.Max(m_MinNoiseScale, param.Scale);
             var width = data.Width;
             var height = data.Height;
 
@@ -28,7 +29,7 @@ namespace Map.Systems
                         continue;
                     }
 
-                    var m = SeamlessNoise.Sample(col, row, width, height, scale, settings);
+                    var m = SeamlessNoise.Sample(col, row, width, height, scale, param);
                     cell.Moisture = m;
                 }
             }

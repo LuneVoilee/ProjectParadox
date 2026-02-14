@@ -14,7 +14,7 @@ namespace Map.View
 
         private const int m_DefaultGhostColumns = 6;
         private const int m_GhostPadding = 1;
-        private CGrid m_LastData;
+        private GridData m_LastData;
         private int m_LastGhostColumns;
 
         public int MapWidth { get; private set; }
@@ -22,7 +22,7 @@ namespace Map.View
         public Tilemap Tilemap => m_Tilemap;
         public int GhostColumns => m_LastGhostColumns;
 
-        public void Render(CGrid data)
+        public void Render(GridData data)
         {
             if (data == null || m_Tilemap == null)
             {
@@ -68,14 +68,14 @@ namespace Map.View
             Render(m_LastData);
         }
 
-        private TileBase GetTileForCell(CCell cell)
+        private TileBase GetTileForCell(CellData cellData)
         {
-            if (cell == null || mTerrainSettings == null)
+            if (cellData == null || mTerrainSettings == null)
             {
                 return null;
             }
 
-            return mTerrainSettings.GetTile(cell.TerrainType);
+            return mTerrainSettings.GetTile(cellData.TerrainType);
         }
 
         private int ResolveGhostColumns()

@@ -21,8 +21,11 @@ Shader "Map/TerritoryBorder"
             #pragma vertex vert
             #pragma fragment frag
             #pragma target 3.0
+            
+            // 使用 URP 的 Core.hlsl 替代 UnityCG.cginc
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
-            #include "UnityCG.cginc"
+            //#include "UnityCG.cginc"
 
             sampler2D _OwnerTex;
             sampler2D _PaletteTex;
@@ -48,7 +51,7 @@ Shader "Map/TerritoryBorder"
             v2f vert(appdata v)
             {
                 v2f o;
-                o.pos = UnityObjectToClipPos(v.vertex);
+                o.pos = TransformObjectToHClip(v.vertex);
                 o.uv = v.uv;
                 o.cell = v.uv2;
                 return o;
@@ -72,7 +75,7 @@ Shader "Map/TerritoryBorder"
                 return tex2D(_PaletteTex, float2(u, 0.5)).rgb;
             }
 
-            fixed4 frag(v2f i) : SV_Target
+            float4 frag(v2f i) : SV_Target
             {
                 int owner = SampleOwner(i.cell);
                 if (owner == 0)

@@ -23,7 +23,7 @@ namespace Map.Systems
         private const int m_MaxOffset = 100000;
         private const float m_MinNoiseScale = 0.0001f;
 
-        public static CGrid Generate(Settings settings)
+        public static GridData Generate(Settings settings)
         {
             var width = Mathf.Max(1, settings.Width);
             var height = Mathf.Max(1, settings.Height);
@@ -33,7 +33,7 @@ namespace Map.Systems
                 width += 1;
             }
 
-            var data = new CGrid(width, height);
+            var data = new GridData(width, height);
             InitializeCells(data);
 
             var random = new System.Random(settings.Seed);
@@ -47,7 +47,7 @@ namespace Map.Systems
             return data;
         }
 
-        private static void InitializeCells(CGrid data)
+        private static void InitializeCells(GridData data)
         {
             var width = data.Width;
             var height = data.Height;
@@ -57,16 +57,16 @@ namespace Map.Systems
                 for (var col = 0; col < width; col++)
                 {
                     var coords = HexCoordinates.FromOffset(col, row);
-                    var cell = new CCell(coords);
+                    var cell = new CellData(coords);
                     data.SetCell(col, row, cell);
                 }
             }
         }
 
-        private static NoiseSettings CreateNoiseSettings(System.Random random, float scale, bool seamlessX, bool seamlessY)
+        private static NoiseParam CreateNoiseSettings(System.Random random, float scale, bool seamlessX, bool seamlessY)
         {
             var validScale = Mathf.Max(m_MinNoiseScale, scale);
-            return new NoiseSettings
+            return new NoiseParam
             {
                 Scale = validScale,
                 OffsetX = random.Next(m_MinOffset, m_MaxOffset),

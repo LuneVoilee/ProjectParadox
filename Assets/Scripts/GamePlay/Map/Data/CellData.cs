@@ -4,7 +4,7 @@ using Map.Common;
 namespace Map.Components
 {
     [Serializable]
-    public class CCell
+    public class CellData
     {
         public HexCoordinates Coordinates;
         public TerrainType TerrainType;
@@ -12,7 +12,7 @@ namespace Map.Components
         public float Height;
         public float Moisture;
 
-        public CCell(HexCoordinates coordinates)
+        public CellData(HexCoordinates coordinates)
         {
             Coordinates = coordinates;
         }
