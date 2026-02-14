@@ -14,9 +14,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Map.Settings.TerritorySettings
   m_Entries:
   - Id: 0
-    Color: {r: 1, g: 0.25330883, b: 0.25330883, a: 0}
+    Color: {r: 0, g: 0, b: 0, a: 0}
   - Id: 1
-    Color: {r: 0.254902, g: 0.28926605, b: 1, a: 0}
-  - Id: 1
-    Color: {r: 1, g: 0.690665, b: 0.254902, a: 0}
+    Color: {r: 0.254902, g: 0.28926605, b: 1, a: 1}
+  - Id: 2
+    Color: {r: 1, g: 0.690665, b: 0.254902, a: 1}
+  - Id: 3
+    Color: {r: 0.29411766, g: 0.85490197, b: 0.39215687, a: 1}
+  - Id: 4
+    Color: {r: 0.98039216, g: 0.29411766, b: 0.54901963, a: 1}
+  - Id: 5
+    Color: {r: 0.65882355, g: 0.427451, b: 0.9647059, a: 1}
+  - Id: 6
+    Color: {r: 0.9764706, g: 0.8862745, b: 0.29803923, a: 1}
   m_DefaultColor: {r: 0, g: 0, b: 0, a: 0}

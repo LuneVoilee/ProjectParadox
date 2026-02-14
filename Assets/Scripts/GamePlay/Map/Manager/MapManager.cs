@@ -1,5 +1,5 @@
 using System;
-using Map.Components;
+using Map.Data;
 using Map.Settings;
 using Map.Systems;
 using Map.View;
@@ -47,7 +47,7 @@ namespace Map.Manager
 
         public void GenerateAndRender()
         {
-            var settings = new MapGenerator.Settings
+            var settings = new MapGeneratorSystem.Settings
             {
                 Width = m_Width,
                 Height = m_Height,
@@ -59,7 +59,7 @@ namespace Map.Manager
                 BiomeSettings = m_BiomeSettings
             };
 
-            var data = MapGenerator.Generate(settings);
+            var data = MapGeneratorSystem.Generate(settings);
             CurrentData = data;
 
             if (m_HexMapRenderer != null)

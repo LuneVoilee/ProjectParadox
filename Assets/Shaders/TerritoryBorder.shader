@@ -2,145 +2,157 @@ Shader "Map/TerritoryBorder"
 {
     Properties
     {
-        _OwnerTex ("Owner Texture", 2D) = "black" {}
-        _PaletteTex ("Palette Texture", 2D) = "white" {}
-        _BorderWidth ("Border Width", Float) = 0.04
-        _GlowWidth ("Glow Width", Float) = 0.12
-        _GlowStrength ("Glow Strength", Float) = 0.6
+        _BaseColor ("Base Color", Color) = (1, 1, 1, 1)
     }
+
     SubShader
     {
-        Tags { "Queue"="Transparent" "RenderType"="Transparent" "IgnoreProjector"="True" }
+        Tags
+        {
+            "Queue" = "Transparent"
+            "RenderType" = "Transparent"
+            "IgnoreProjector" = "True"
+            "RenderPipeline" = "UniversalPipeline"
+        }
+
         Blend SrcAlpha OneMinusSrcAlpha
         Cull Off
         ZWrite Off
 
+        HLSLINCLUDE
+        #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+
+        CBUFFER_START(UnityPerMaterial)
+        half4 _BaseColor;
+        CBUFFER_END
+
+        struct Attributes
+        {
+            float4 positionOS : POSITION;
+            half4 color : COLOR;
+        };
+
+        struct Varyings
+        {
+            float4 positionCS : SV_POSITION;
+            half4 color : COLOR;
+        };
+
+        Varyings BorderVert(Attributes input)
+        {
+            Varyings output;
+            output.positionCS = TransformObjectToHClip(input.positionOS.xyz);
+            output.color = input.color;
+            return output;
+        }
+
+        half4 BorderFrag(Varyings input) : SV_Target
+        {
+            return input.color * _BaseColor;
+        }
+        ENDHLSL
+
         Pass
         {
+            Name "Universal2DPass"
+            Tags { "LightMode" = "Universal2D" }
+
             HLSLPROGRAM
-            #pragma vertex vert
-            #pragma fragment frag
             #pragma target 3.0
-            
-            // 使用 URP 的 Core.hlsl 替代 UnityCG.cginc
+            #pragma vertex BorderVert
+            #pragma fragment BorderFrag
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "SRPDefaultUnlitPass"
+            Tags { "LightMode" = "SRPDefaultUnlit" }
+
+            HLSLPROGRAM
+            #pragma target 3.0
+            #pragma vertex BorderVert
+            #pragma fragment BorderFrag
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "ScenePickingPass"
+            Tags { "LightMode" = "Picking" }
+
+            HLSLPROGRAM
+            #pragma target 3.0
+            #pragma editor_sync_compilation
+            #pragma vertex SceneVert
+            #pragma fragment ScenePickingFrag
+
+            #define SCENEPICKINGPASS
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
-            //#include "UnityCG.cginc"
+            float4 _SelectionID;
 
-            sampler2D _OwnerTex;
-            sampler2D _PaletteTex;
-            float4 _MapSize;
-            float _BorderWidth;
-            float _GlowWidth;
-            float _GlowStrength;
-
-            struct appdata
+            struct SceneAttributes
             {
-                float4 vertex : POSITION;
-                float2 uv : TEXCOORD0;
-                float2 uv2 : TEXCOORD1;
+                float4 positionOS : POSITION;
             };
 
-            struct v2f
+            struct SceneVaryings
             {
-                float4 pos : SV_POSITION;
-                float2 uv : TEXCOORD0;
-                float2 cell : TEXCOORD1;
+                float4 positionCS : SV_POSITION;
             };
 
-            v2f vert(appdata v)
+            SceneVaryings SceneVert(SceneAttributes input)
             {
-                v2f o;
-                o.pos = TransformObjectToHClip(v.vertex);
-                o.uv = v.uv;
-                o.cell = v.uv2;
-                return o;
+                SceneVaryings output;
+                output.positionCS = TransformObjectToHClip(input.positionOS.xyz);
+                return output;
             }
 
-            int SampleOwner(float2 cell)
+            half4 ScenePickingFrag(SceneVaryings input) : SV_Target
             {
-                if (cell.x < 0.0 || cell.x >= _MapSize.x || cell.y < 0.0 || cell.y >= _MapSize.y)
-                {
-                    return 0;
-                }
+                return _SelectionID;
+            }
+            ENDHLSL
+        }
 
-                float2 uv = (cell + 0.5) * _MapSize.zw;
-                float value = tex2D(_OwnerTex, uv).r;
-                return (int)floor(value * 255.0 + 0.5);
+        Pass
+        {
+            Name "SceneSelectionPass"
+            Tags { "LightMode" = "SceneSelectionPass" }
+
+            HLSLPROGRAM
+            #pragma target 3.0
+            #pragma editor_sync_compilation
+            #pragma vertex SceneVert
+            #pragma fragment SceneSelectionFrag
+
+            #define SCENESELECTIONPASS
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+
+            int _ObjectId;
+            int _PassValue;
+
+            struct SceneAttributes
+            {
+                float4 positionOS : POSITION;
+            };
+
+            struct SceneVaryings
+            {
+                float4 positionCS : SV_POSITION;
+            };
+
+            SceneVaryings SceneVert(SceneAttributes input)
+            {
+                SceneVaryings output;
+                output.positionCS = TransformObjectToHClip(input.positionOS.xyz);
+                return output;
             }
 
-            float3 SamplePalette(int ownerId)
+            half4 SceneSelectionFrag(SceneVaryings input) : SV_Target
             {
-                float u = (ownerId + 0.5) / 256.0;
-                return tex2D(_PaletteTex, float2(u, 0.5)).rgb;
-            }
-
-            float4 frag(v2f i) : SV_Target
-            {
-                int owner = SampleOwner(i.cell);
-                if (owner == 0)
-                {
-                    return 0;
-                }
-
-                int row = (int)floor(i.cell.y + 0.5);
-                int parity = row & 1;
-
-                int2 east = int2(1, 0);
-                int2 west = int2(-1, 0);
-                int2 ne = parity == 0 ? int2(0, -1) : int2(1, -1);
-                int2 nw = parity == 0 ? int2(-1, -1) : int2(0, -1);
-                int2 se = parity == 0 ? int2(0, 1) : int2(1, 1);
-                int2 sw = parity == 0 ? int2(-1, 1) : int2(0, 1);
-
-                int diffE = SampleOwner(i.cell + east) == owner ? 0 : 1;
-                int diffW = SampleOwner(i.cell + west) == owner ? 0 : 1;
-                int diffNE = SampleOwner(i.cell + ne) == owner ? 0 : 1;
-                int diffNW = SampleOwner(i.cell + nw) == owner ? 0 : 1;
-                int diffSE = SampleOwner(i.cell + se) == owner ? 0 : 1;
-                int diffSW = SampleOwner(i.cell + sw) == owner ? 0 : 1;
-
-                float2 uv = i.uv;
-                float invSqrt2 = 0.70710678;
-
-                float dW = uv.x;
-                float dE = 1.0 - uv.x;
-                float dNW = (uv.x + 0.75 - uv.y) * invSqrt2;
-                float dNE = (1.5 - (uv.x + uv.y)) * invSqrt2;
-                float dSW = (uv.x + uv.y - 0.25) * invSqrt2;
-                float dSE = (uv.y - uv.x + 0.75) * invSqrt2;
-
-                float inside = min(min(min(min(min(dW, dE), dNW), dNE), dSW), dSE);
-                float aa = fwidth(inside) + 1e-5;
-                float insideMask = saturate(inside / aa);
-                if (insideMask <= 0.0)
-                {
-                    return 0;
-                }
-
-                float edgeE = diffE * smoothstep(_BorderWidth, 0.0, dE);
-                float edgeW = diffW * smoothstep(_BorderWidth, 0.0, dW);
-                float edgeNE = diffNE * smoothstep(_BorderWidth, 0.0, dNE);
-                float edgeNW = diffNW * smoothstep(_BorderWidth, 0.0, dNW);
-                float edgeSE = diffSE * smoothstep(_BorderWidth, 0.0, dSE);
-                float edgeSW = diffSW * smoothstep(_BorderWidth, 0.0, dSW);
-
-                float glowE = diffE * smoothstep(_GlowWidth, 0.0, dE);
-                float glowW = diffW * smoothstep(_GlowWidth, 0.0, dW);
-                float glowNE = diffNE * smoothstep(_GlowWidth, 0.0, dNE);
-                float glowNW = diffNW * smoothstep(_GlowWidth, 0.0, dNW);
-                float glowSE = diffSE * smoothstep(_GlowWidth, 0.0, dSE);
-                float glowSW = diffSW * smoothstep(_GlowWidth, 0.0, dSW);
-
-                float border = max(max(max(edgeE, edgeW), max(edgeNE, edgeNW)), max(edgeSE, edgeSW));
-                float glow = max(max(max(glowE, glowW), max(glowNE, glowNW)), max(glowSE, glowSW));
-
-                float3 color = SamplePalette(owner);
-                float intensity = border + glow * _GlowStrength;
-                float alpha = saturate(intensity) * insideMask;
-                float3 rgb = color * intensity;
-
-                return float4(rgb, alpha);
+                return half4(_ObjectId, _PassValue, 1.0, 1.0);
             }
             ENDHLSL
         }

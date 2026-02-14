@@ -1,6 +1,6 @@
 using UnityEngine;
 using UnityEngine.Tilemaps;
-using Map.Components;
+using Map.Data;
 using Map.Settings;
 
 namespace Map.View
@@ -8,7 +8,7 @@ namespace Map.View
     public class HexMapRenderer : MonoBehaviour
     {
         [SerializeField] private Tilemap m_Tilemap;
-        [SerializeField] private TerrainSettings mTerrainSettings;
+        [SerializeField] private TerrainSettings m_TerrainSettings;
         [SerializeField] private int m_GhostColumns = 6;
         [SerializeField] private bool m_AutoGhostColumns = true;
 
@@ -70,12 +70,12 @@ namespace Map.View
 
         private TileBase GetTileForCell(CellData cellData)
         {
-            if (cellData == null || mTerrainSettings == null)
+            if (cellData == null || m_TerrainSettings == null)
             {
                 return null;
             }
 
-            return mTerrainSettings.GetTile(cellData.TerrainType);
+            return m_TerrainSettings.GetTile(cellData.TerrainType);
         }
 
         private int ResolveGhostColumns()

@@ -1,9 +1,11 @@
 using System.Collections.Generic;
 using UnityEngine;
 using Tool;
-using Map.Components;
+using Map.Data;
 using Map.Common;
 using Map.Manager;
+using Faction.Data;
+using Faction.Systems;
 
 namespace Faction
 {
@@ -16,7 +18,7 @@ namespace Faction
         [SerializeField] private bool m_GenerateOnMapReady = true;
         [SerializeField, Range(1, 2000)] private int m_StartSearchAttempts = 200;
 
-        private static readonly HexCoordinates[] s_Directions =
+        private static readonly HexCoordinates[] m_Directions =
         {
             new (1, -1, 0),
             new (1, 0, -1),
@@ -26,7 +28,7 @@ namespace Faction
             new (0, -1, 1)
         };
 
-        private readonly List<CFaction> m_Factions = new ();
+        private readonly List<FactionData> m_Factions = new ();
         private MapManager m_MapManager;
         private bool m_HasGenerated;
 
@@ -96,7 +98,7 @@ namespace Faction
             m_Factions.Clear();
 
             var borderRenderer = m_MapManager != null ? m_MapManager.TerritoryBorderRenderer : null;
-            var territoryOwnership = new CTerritoryOwnership(data, borderRenderer);
+            var territoryOwnership = new TerritoryOwnershipSystem(data, borderRenderer);
             var random = new System.Random(m_Seed);
 
             int minSize = Mathf.Max(1, m_TerritorySizeRange.x);
@@ -106,47 +108,48 @@ namespace Faction
             for (int i = 0; i < factionCount; i++)
             {
                 byte id = (byte)(i + 1);
-                var faction = new CFaction(id, $"Faction {id}", territoryOwnership);
-                m_Factions.Add(faction);
+                var factionData = new FactionData(id, $"Faction {id}");
+                var factionSystem = new FactionSystem(factionData, territoryOwnership);
+                m_Factions.Add(factionData);
 
                 int targetSize = random.Next(minSize, maxSize + 1);
-                GrowTerritory(faction, data, targetSize, random);
+                GrowTerritory(factionSystem, data, targetSize, random);
             }
 
             territoryOwnership.ApplyChanges();
         }
 
-        private void GrowTerritory(CFaction faction, GridData data, int targetSize, System.Random random)
+        private void GrowTerritory(FactionSystem factionSystem, GridData data, int targetSize, System.Random random)
         {
             if (!TryFindStartCell(data, random, out var start))
             {
                 return;
             }
 
-            faction.TryAddTerritory(start);
+            factionSystem.TryAddTerritory(start);
             var frontier = new Queue<HexCoordinates>();
             frontier.Enqueue(start);
 
-            var order = new int[s_Directions.Length];
+            var order = new int[m_Directions.Length];
             for (int i = 0; i < order.Length; i++)
             {
                 order[i] = i;
             }
 
-            while (frontier.Count > 0 && faction.TerritoryCount < targetSize)
+            while (frontier.Count > 0 && factionSystem.Data.TerritoryCount < targetSize)
             {
                 var current = frontier.Dequeue();
                 Shuffle(order, random);
 
                 for (int i = 0; i < order.Length; i++)
                 {
-                    var dir = s_Directions[order[i]];
+                    var dir = m_Directions[order[i]];
                     var next = new HexCoordinates(current.X + dir.X, current.Y + dir.Y, current.Z + dir.Z);
 
-                    if (faction.TryAddTerritory(next))
+                    if (factionSystem.TryAddTerritory(next))
                     {
                         frontier.Enqueue(next);
-                        if (faction.TerritoryCount >= targetSize)
+                        if (factionSystem.Data.TerritoryCount >= targetSize)
                         {
                             break;
                         }

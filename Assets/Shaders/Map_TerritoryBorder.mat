@@ -34,8 +34,19 @@ Material:
     m_Ints: []
     m_Floats:
     - _BorderWidth: 0.04
+    - _DashFill: 0.58
+    - _DashRepeat: 1.7
+    - _DashScrollSpeed: 0.18
+    - _DashSoftness: 0.08
+    - _EdgeSoftness: 0.2
     - _GlowStrength: 0.6
     - _GlowWidth: 0.12
-    m_Colors: []
+    - _PulseAmplitude: 0.35
+    - _PulseBase: 0.7
+    - _PulseSpeed: 2.1
+    m_Colors:
+    - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
+    - _GlowColor: {r: 1, g: 1, b: 1, a: 0.9}
+    - _MainColor: {r: 1, g: 1, b: 1, a: 0.9}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

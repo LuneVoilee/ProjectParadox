@@ -327,7 +327,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::World.View.HexMapRenderer
   m_Tilemap: {fileID: 559353514}
-  mTerrainSettings: {fileID: 11400000, guid: d4d6f7cbf6ead4a4aac1033d210449e4, type: 2}
+  m_TerrainSettings: {fileID: 11400000, guid: d4d6f7cbf6ead4a4aac1033d210449e4, type: 2}
   m_GhostColumns: 6
   m_AutoGhostColumns: 1
 --- !u!483693784 &559353513
@@ -735,6 +735,7 @@ MonoBehaviour:
   m_CopySortingFromTilemap: 1
   m_SortingLayer: Default
   m_SortingOrder: 1
+  m_LogBuildSummary: 1
 --- !u!4 &1940525075
 Transform:
   m_ObjectHideFlags: 0

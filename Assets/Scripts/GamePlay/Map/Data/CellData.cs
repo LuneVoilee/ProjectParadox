@@ -1,7 +1,7 @@
 using System;
 using Map.Common;
 
-namespace Map.Components
+namespace Map.Data
 {
     [Serializable]
     public class CellData

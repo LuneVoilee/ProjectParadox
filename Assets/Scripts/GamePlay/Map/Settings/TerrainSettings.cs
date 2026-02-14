@@ -15,7 +15,7 @@ namespace Map.Settings
             public TileBase Tile;
         }
 
-        [SerializeField] private Entry[] entries;
+        [SerializeField] private Entry[] m_Entries;
 
         [NonSerialized] private TileBase[] m_TilesByType;
 
@@ -60,20 +60,20 @@ namespace Map.Settings
                 m_TilesByType = new TileBase[count];
             }
 
-            if (entries == null)
+            if (m_Entries == null)
             {
                 return;
             }
 
-            for (int i = 0; i < entries.Length; i++)
+            for (int i = 0; i < m_Entries.Length; i++)
             {
-                int index = (int)entries[i].TerrainType;
+                int index = (int)m_Entries[i].TerrainType;
                 if (index < 0 || index >= m_TilesByType.Length)
                 {
                     continue;
                 }
 
-                m_TilesByType[index] = entries[i].Tile;
+                m_TilesByType[index] = m_Entries[i].Tile;
             }
         }
     }

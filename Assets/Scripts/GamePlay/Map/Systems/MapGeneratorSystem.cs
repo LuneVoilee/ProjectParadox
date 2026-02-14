@@ -1,11 +1,11 @@
 using UnityEngine;
-using Map.Components;
+using Map.Data;
 using Map.Common;
 using Map.Settings;
 
 namespace Map.Systems
 {
-    public static class MapGenerator
+    public static class MapGeneratorSystem
     {
         public struct Settings
         {

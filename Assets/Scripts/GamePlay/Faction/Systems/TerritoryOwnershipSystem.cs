@@ -1,17 +1,17 @@
 using Map.Common;
-using Map.Components;
+using Map.Data;
 using Map.View;
 
-namespace Faction
+namespace Faction.Systems
 {
-    public class CTerritoryOwnership
+    public class TerritoryOwnershipSystem
     {
         private readonly GridData m_Data;
         private readonly TerritoryBorderRenderer m_Renderer;
 
         public GridData Data => m_Data;
 
-        public CTerritoryOwnership(GridData data, TerritoryBorderRenderer renderer)
+        public TerritoryOwnershipSystem(GridData data, TerritoryBorderRenderer renderer)
         {
             m_Data = data;
             m_Renderer = renderer;

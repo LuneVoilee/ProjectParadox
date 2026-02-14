@@ -28,6 +28,12 @@ namespace Map.Settings
             return m_Texture;
         }
 
+        public Color32 GetColor(byte id)
+        {
+            EnsureCache();
+            return m_Colors[id];
+        }
+
         private void OnEnable()
         {
             BuildCache();

@@ -1,6 +1,6 @@
 using Map.Common;
 using UnityEngine;
-using Map.Components;
+using Map.Data;
 
 namespace Map.Systems
 {
