@@ -20,7 +20,8 @@ namespace Map.View
 
         [Header("Visual")]
         [SerializeField, Range(0.001f, 0.4f)] private float m_BorderWidth = 0.04f;
-        [SerializeField, Range(0f, 0.8f)] private float m_GlowWidth = 0.12f;
+        [SerializeField, Range(0f, 1f)] private float m_FillStrength = 0.2f;
+        [SerializeField, Range(0f, 0.5f)] private float m_InnerGlowWidth = 0.15f;
         [SerializeField, Range(0f, 2f)] private float m_GlowStrength = 0.6f;
 
         [Header("Sorting")]
@@ -207,11 +208,8 @@ namespace Map.View
             var edgeEnds = new[] { upperRight, lowerRight, bottom, lowerLeft, upperLeft, top };
 
             float borderThickness = Mathf.Max(0.001f, m_BorderWidth) * cellSize.y;
-            float glowThickness = Mathf.Max(0f, m_GlowWidth) * cellSize.y;
-            byte glowAlpha = (byte)Mathf.Clamp(Mathf.RoundToInt(255f * Mathf.Clamp01(m_GlowStrength) * 0.45f), 0, 255);
-
-            int edgeCount = 0;
-            int drawnCellCount = 0;
+            
+            int cellCount = 0;
             var directions = (HexDirection[])Enum.GetValues(typeof(HexDirection));
 
             for (int row = 0; row < m_MapHeight; row++)
@@ -225,9 +223,10 @@ namespace Map.View
                     }
 
                     var center = m_Tilemap.GetCellCenterLocal(new Vector3Int(col, row, 0));
-                    Color32 borderColor = ResolveOwnerColor(owner);
-                    Color32 glowColor = borderColor;
-                    glowColor.a = glowAlpha;
+                    Color32 baseColor = ResolveOwnerColor(owner);
+                    
+                    // A. Draw Base Fill
+                    AddBaseFill(center, edgeStarts, edgeEnds, baseColor);
 
                     bool hasEdge = false;
                     HexCoordinates currentCoords = HexCoordinates.FromOffset(col, row);
@@ -246,27 +245,22 @@ namespace Map.View
                             continue;
                         }
 
-                        // Prevent Z-Fighting: Only draw if current owner ID is greater than neighbor's,
-                        // or if neighbor is empty (ID 0).
-                        if (owner < neighborOwner)
-                        {
-                            continue;
-                        }
-
-                        // Draw Edge
-                        if (glowThickness > borderThickness && glowColor.a > 0)
-                        {
-                            AddEdgeQuad(center, edgeStarts[i], edgeEnds[i], glowThickness, glowColor);
-                        }
-
-                        AddEdgeQuad(center, edgeStarts[i], edgeEnds[i], borderThickness, borderColor);
-                        edgeCount++;
+                        // B. Draw Edge Effects
                         hasEdge = true;
+
+                        // 1. Inner Glow (Inward from edge)
+                        AddInnerGlow(center, edgeStarts[i], edgeEnds[i], baseColor);
+
+                        // 2. Hard Border (Shared edge, draw once)
+                        if (owner > neighborOwner)
+                        {
+                            AddHardBorder(center, edgeStarts[i], edgeEnds[i], borderThickness, baseColor);
+                        }
                     }
 
                     if (hasEdge)
                     {
-                        drawnCellCount++;
+                        cellCount++;
                     }
                 }
             }
@@ -278,7 +272,7 @@ namespace Map.View
 
                 if (m_LogBuildSummary)
                 {
-                    Debug.Log($"[TerritoryBorderRenderer] Rebuild complete: owners={CountOwnedCells()}, edgeSegments=0, cellsWithBorder=0", this);
+                    Debug.Log($"[TerritoryBorderRenderer] Rebuild complete: owners={CountOwnedCells()}, vertices=0", this);
                 }
 
                 return;
@@ -293,8 +287,124 @@ namespace Map.View
 
             if (m_LogBuildSummary)
             {
-                Debug.Log($"[TerritoryBorderRenderer] Rebuild complete: owners={CountOwnedCells()}, edgeSegments={edgeCount}, cellsWithBorder={drawnCellCount}", this);
+                Debug.Log($"[TerritoryBorderRenderer] Rebuild complete: owners={CountOwnedCells()}, vertices={m_Vertices.Count}", this);
             }
+        }
+
+        private void AddBaseFill(Vector3 center, Vector2[] starts, Vector2[] ends, Color32 color)
+        {
+            if (m_FillStrength <= 0.001f)
+            {
+                return;
+            }
+
+            color.a = (byte)Mathf.Clamp(color.a * m_FillStrength, 0, 255);
+            
+            // Draw 6 triangles for the hexagon background
+            // Center is index 0
+            int centerIndex = m_Vertices.Count;
+            m_Vertices.Add(center); // Z=0
+            m_Colors.Add(color);
+
+            // Add 6 corners
+            for (int i = 0; i < 6; i++)
+            {
+                m_Vertices.Add(center + (Vector3)starts[i]);
+                m_Colors.Add(color);
+            }
+
+            // Triangles
+            for (int i = 0; i < 6; i++)
+            {
+                m_Indices.Add(centerIndex);
+                m_Indices.Add(centerIndex + 1 + i);
+                m_Indices.Add(centerIndex + 1 + ((i + 1) % 6));
+            }
+        }
+
+        private void AddInnerGlow(Vector3 center, Vector2 start, Vector2 end, Color32 color)
+        {
+            if (m_InnerGlowWidth <= 0.001f || m_GlowStrength <= 0.001f)
+            {
+                return;
+            }
+
+            Color32 outerColor = color;
+            outerColor.a = (byte)Mathf.Clamp(255 * m_GlowStrength, 0, 255);
+            
+            Color32 innerColor = outerColor;
+            innerColor.a = 0;
+
+            // Offset slightly above fill to avoid Z-fighting
+            Vector3 zOffset = new Vector3(0, 0, -0.001f);
+
+            Vector3 vStart = (Vector3)start;
+            Vector3 vEnd = (Vector3)end;
+            
+            // Lerp towards center (0,0)
+            Vector3 vInnerStart = Vector3.Lerp(vStart, Vector3.zero, m_InnerGlowWidth);
+            Vector3 vInnerEnd = Vector3.Lerp(vEnd, Vector3.zero, m_InnerGlowWidth);
+
+            int baseIndex = m_Vertices.Count;
+            m_Vertices.Add(center + vStart + zOffset);
+            m_Vertices.Add(center + vEnd + zOffset);
+            m_Vertices.Add(center + vInnerEnd + zOffset);
+            m_Vertices.Add(center + vInnerStart + zOffset);
+
+            m_Colors.Add(outerColor);
+            m_Colors.Add(outerColor);
+            m_Colors.Add(innerColor);
+            m_Colors.Add(innerColor);
+
+            m_Indices.Add(baseIndex);
+            m_Indices.Add(baseIndex + 2);
+            m_Indices.Add(baseIndex + 3);
+
+            m_Indices.Add(baseIndex);
+            m_Indices.Add(baseIndex + 1);
+            m_Indices.Add(baseIndex + 2);
+        }
+
+        private void AddHardBorder(Vector3 center, Vector2 start, Vector2 end, float thickness, Color32 color)
+        {
+            if (thickness <= 0f || color.a == 0)
+            {
+                return;
+            }
+            
+            // Offset even more to be on top of glow
+            Vector3 zOffset = new Vector3(0, 0, -0.002f);
+
+            Vector3 a = center + new Vector3(start.x, start.y, 0f) + zOffset;
+            Vector3 b = center + new Vector3(end.x, end.y, 0f) + zOffset;
+
+            Vector3 direction = b - a;
+            float length = direction.magnitude;
+            if (length <= 0.00001f)
+            {
+                return;
+            }
+
+            direction /= length;
+            Vector3 normal = new Vector3(-direction.y, direction.x, 0f) * (thickness * 0.5f);
+
+            int vertexStart = m_Vertices.Count;
+            m_Vertices.Add(a - normal);
+            m_Vertices.Add(a + normal);
+            m_Vertices.Add(b - normal);
+            m_Vertices.Add(b + normal);
+
+            m_Colors.Add(color);
+            m_Colors.Add(color);
+            m_Colors.Add(color);
+            m_Colors.Add(color);
+
+            m_Indices.Add(vertexStart + 0);
+            m_Indices.Add(vertexStart + 1);
+            m_Indices.Add(vertexStart + 2);
+            m_Indices.Add(vertexStart + 2);
+            m_Indices.Add(vertexStart + 1);
+            m_Indices.Add(vertexStart + 3);
         }
 
         private void EnsureMesh()
@@ -415,45 +525,6 @@ namespace Map.View
 
             m_MeshRenderer.sortingLayerName = m_SortingLayer;
             m_MeshRenderer.sortingOrder = m_SortingOrder;
-        }
-
-        private void AddEdgeQuad(Vector3 center, Vector2 start, Vector2 end, float thickness, Color32 color)
-        {
-            if (thickness <= 0f || color.a == 0)
-            {
-                return;
-            }
-
-            Vector3 a = center + new Vector3(start.x, start.y, 0f);
-            Vector3 b = center + new Vector3(end.x, end.y, 0f);
-
-            Vector3 direction = b - a;
-            float length = direction.magnitude;
-            if (length <= 0.00001f)
-            {
-                return;
-            }
-
-            direction /= length;
-            Vector3 normal = new Vector3(-direction.y, direction.x, 0f) * (thickness * 0.5f);
-
-            int vertexStart = m_Vertices.Count;
-            m_Vertices.Add(a - normal);
-            m_Vertices.Add(a + normal);
-            m_Vertices.Add(b - normal);
-            m_Vertices.Add(b + normal);
-
-            m_Colors.Add(color);
-            m_Colors.Add(color);
-            m_Colors.Add(color);
-            m_Colors.Add(color);
-
-            m_Indices.Add(vertexStart + 0);
-            m_Indices.Add(vertexStart + 1);
-            m_Indices.Add(vertexStart + 2);
-            m_Indices.Add(vertexStart + 2);
-            m_Indices.Add(vertexStart + 1);
-            m_Indices.Add(vertexStart + 3);
         }
 
         private byte GetOwnerWrapped(int col, int row)
