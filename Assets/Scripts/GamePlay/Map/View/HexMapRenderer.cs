@@ -68,6 +68,11 @@ namespace Map.View
             Render(m_LastData);
         }
 
+        public void SetColor(Vector3Int pos , Color color)
+        {
+            m_Tilemap.SetColor(pos , color);
+        }
+
         private TileBase GetTileForCell(CellData cellData)
         {
             if (cellData == null || m_TerrainSettings == null)

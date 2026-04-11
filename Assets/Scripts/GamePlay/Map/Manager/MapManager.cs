@@ -1,4 +1,7 @@
+#region
+
 using System;
+using Map.Common;
 using Map.Data;
 using Map.Settings;
 using Map.Systems;
@@ -6,39 +9,37 @@ using Map.View;
 using Tool;
 using UnityEngine;
 
+#endregion
+
 namespace Map.Manager
 {
     public class MapManager : SingletonMono<MapManager>
     {
-        [Header("Map Size")]
-        [SerializeField] private int m_Width = 100;
+        [Header("Map Size")] [SerializeField] private int m_Width = 100;
         [SerializeField] private int m_Height = 100;
 
-        [Header("Noise")]
-        [SerializeField] private int m_Seed;
+        [Header("Noise")] [SerializeField] private int m_Seed;
         [SerializeField] private float m_HeightScale = 0.08f;
         [SerializeField] private float m_MoistureScale = 0.12f;
 
-        [Header("Wrap")]
-        [SerializeField] private bool m_SeamlessX = true;
+        [Header("Wrap")] [SerializeField] private bool m_SeamlessX = true;
         [SerializeField] private bool m_SeamlessY;
 
-        [Header("Biome")]
-        [SerializeField] private BiomeSettings m_BiomeSettings;
+        [Header("Biome")] [SerializeField] private BiomeSettings m_BiomeSettings;
 
-        [Header("Links")]
-        [SerializeField] private HexMapRenderer m_HexMapRenderer;
+        [Header("Links")] [SerializeField] private HexMapRenderer m_HexMapRenderer;
         [SerializeField] private TerritoryBorderRenderer m_TerritoryBorderRenderer;
 
-        [Header("Debug")]
-        [SerializeField] private bool m_GenerateOnStart = true;
+        [Header("Debug")] [SerializeField] private bool m_GenerateOnStart = true;
 
         public GridData CurrentData { get; private set; }
         public TerritoryBorderRenderer TerritoryBorderRenderer => m_TerritoryBorderRenderer;
         public event Action<GridData> MapGenerated;
 
-        private void Start()
+        protected override void Awake()
         {
+            base.Awake();
+
             if (m_GenerateOnStart)
             {
                 GenerateAndRender();
@@ -73,6 +74,13 @@ namespace Map.Manager
             }
 
             MapGenerated?.Invoke(data);
+        }
+
+        public void SetColor(HexCoordinates coord, Color color)
+        {
+            var xy = coord.ToOffset();
+            var pos = new Vector3Int(xy.x, xy.y, 0);
+            m_HexMapRenderer.SetColor(pos, color);
         }
     }
 }

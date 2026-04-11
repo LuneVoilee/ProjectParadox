@@ -654,7 +654,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 761214083}
-  - component: {fileID: 761214082}
+  - component: {fileID: 761214084}
   m_Layer: 0
   m_Name: Faction
   m_TagString: Untagged
@@ -662,23 +662,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &761214082
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 761214081}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 31bcc6beda706e84a9710e6720cd609f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Faction.FactionManager
-  m_FactionCount: 6
-  m_TerritorySizeRange: {x: 30, y: 120}
-  m_Seed: 12345
-  m_GenerateOnMapReady: 1
-  m_StartSearchAttempts: 200
 --- !u!4 &761214083
 Transform:
   m_ObjectHideFlags: 0
@@ -694,6 +677,20 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &761214084
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 761214081}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 72c59063a11f4b40bb00cba6406bf98f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GamePlay.Faction.NationManager
+  Nations:
+  - {fileID: 0}
 --- !u!1 &1940525073
 GameObject:
   m_ObjectHideFlags: 0
@@ -730,7 +727,8 @@ MonoBehaviour:
   m_TerritorySettings: {fileID: 11400000, guid: 01c19bf7c1350d64c85b336167590e48, type: 2}
   m_Material: {fileID: 2100000, guid: 552104793fc5e524fa9297c8633e4086, type: 2}
   m_BorderWidth: 0.04
-  m_GlowWidth: 0.12
+  m_FillStrength: 0.2
+  m_InnerGlowWidth: 0.15
   m_GlowStrength: 0.6
   m_CopySortingFromTilemap: 1
   m_SortingLayer: Default

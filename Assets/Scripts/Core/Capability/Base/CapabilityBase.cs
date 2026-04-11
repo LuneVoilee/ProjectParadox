@@ -1,0 +1,96 @@
+using System;
+using System.Collections.Generic;
+
+namespace Core.Capability
+{
+    public abstract class CapabilityBase : IDisposable
+    {
+        public int Id { get; private set; }
+
+        public List<int> TagList { get; protected set; }
+
+        public CapabilityWorld World { get; private set; }
+
+        public CEntity Owner { get; private set; }
+
+        public bool IsActive { get; internal set; }
+
+        public virtual CapabilityUpdateMode UpdateMode { get; protected set; } = CapabilityUpdateMode.Update;
+
+        public virtual int TickGroupOrder { get; protected set; }
+
+        protected CapabilityCollector m_CapabilityCollector;
+
+        internal bool ComponentChanged;
+
+        internal bool TryComponentChanged
+        {
+            get
+            {
+                bool changed = ComponentChanged;
+                if (m_CapabilityCollector != null)
+                {
+                    ComponentChanged = false;
+                }
+
+                return changed;
+            }
+        }
+
+        public void Init(int id, CapabilityWorld world, CEntity owner)
+        {
+            Id = id;
+            World = world;
+            Owner = owner;
+            ComponentChanged = true;
+            OnInit();
+        }
+
+        protected virtual void OnInit()
+        {
+        }
+
+        protected void Filter(params int[] componentIds)
+        {
+            if (componentIds == null)
+            {
+                throw new ArgumentNullException(nameof(componentIds), $"{GetType().Name} componentIds is null");
+            }
+
+            m_CapabilityCollector = CapabilityCollector.CreateCollector(World, this, componentIds);
+            ComponentChanged = false;
+        }
+
+        public abstract bool ShouldActivate();
+
+        public abstract bool ShouldDeactivate();
+
+        public virtual void OnActivated()
+        {
+            IsActive = true;
+        }
+
+        public virtual void OnDeactivated()
+        {
+            IsActive = false;
+        }
+
+        public virtual void TickActive(float deltaTime, float realElapsedSeconds)
+        {
+        }
+
+        public virtual void Dispose()
+        {
+            if (m_CapabilityCollector != null)
+            {
+                CapabilityCollector.Release(m_CapabilityCollector);
+            }
+
+            m_CapabilityCollector = null;
+            IsActive = false;
+            TagList = null;
+            Owner = null;
+            World = null;
+        }
+    }
+}
