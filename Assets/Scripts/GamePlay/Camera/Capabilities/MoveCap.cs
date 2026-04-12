@@ -2,6 +2,7 @@
 
 using Core;
 using Core.Capability;
+using NewGamePlay;
 using UnityEngine;
 
 #endregion
@@ -12,6 +13,7 @@ namespace GamePlay.Camera
     {
         private static readonly int m_RefId = Component<Ref>.TId;
         private static readonly int m_MoveId = Component<Move>.TId;
+        public override int TickGroupOrder { get; protected set; } = CapabilityOrder.PresentationCameraMove;
 
         protected override void OnInit()
         {
@@ -35,8 +37,8 @@ namespace GamePlay.Camera
                 return;
             }
 
-            if (!Owner.TryGetComponent<Move>(m_MoveId, out var moveComp) ||
-                !Owner.TryGetComponent<Ref>(m_RefId, out var refComp) ||
+            if (!Owner.TryGetMove(out var moveComp) ||
+                !Owner.TryGetRef(out var refComp) ||
                 refComp.Target == null)
             {
                 return;

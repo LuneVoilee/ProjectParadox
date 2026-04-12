@@ -8,3 +8,5 @@ Packages/com.singularitygroup.hotreload
 *.csproj
 AGENTS.md
 Assets/Plugins
+Assets/Scripts/Example
+Assets/Scripts/Example~

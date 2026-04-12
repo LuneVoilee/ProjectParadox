@@ -1,20 +1,20 @@
 #region
 
 using Core.Capability;
-using GamePlay.Map;
+using NewGamePlay;
 using UnityEngine;
-using Grid = GamePlay.Map.Grid;
 
 #endregion
 
 namespace GamePlay.Camera
 {
-    public class BoundsCap : CapabilityBase
+    public partial class BoundsCap : CapabilityBase
     {
         private static readonly int m_RefId = Component<Ref>.TId;
         private static readonly int m_BoundsId = Component<Bounds>.TId;
-        private static readonly int m_DrawMapId = Component<DrawMap>.TId;
-        private static readonly int m_GridId = Component<Grid>.TId;
+
+        public override int TickGroupOrder { get; protected set; } =
+            CapabilityOrder.PresentationCameraBounds;
 
         protected override void OnInit()
         {
@@ -34,8 +34,8 @@ namespace GamePlay.Camera
 
         public override void TickActive(float deltaTime, float realElapsedSeconds)
         {
-            if (!Owner.TryGetComponent<Ref>(m_RefId, out var refComp) ||
-                !Owner.TryGetComponent<Bounds>(m_BoundsId, out var boundsComp))
+            if (!Owner.TryGetRef(out var refComp) ||
+                !Owner.TryGetBounds(out var boundsComp))
             {
                 return;
             }
@@ -144,94 +144,6 @@ namespace GamePlay.Camera
             }
 
             target.position = position;
-        }
-
-        private bool TryResolveMapData(Ref refComp, out DrawMap drawMap, out Grid grid)
-        {
-            drawMap = null;
-            grid = null;
-
-            if (World == null || World.Children == null)
-            {
-                return false;
-            }
-
-            if (refComp.MapEntityId >= 0)
-            {
-                var cachedEntity = World.GetChild(refComp.MapEntityId);
-                if (TryGetMapComponents(cachedEntity, out drawMap, out grid))
-                {
-                    return true;
-                }
-
-                refComp.MapEntityId = -1;
-            }
-
-            foreach (var entity in World.Children)
-            {
-                if (!TryGetMapComponents(entity, out drawMap, out grid))
-                {
-                    continue;
-                }
-
-                refComp.MapEntityId = entity.Id;
-                return true;
-            }
-
-            return false;
-        }
-
-        private static bool TryGetMapComponents(CEntity entity, out DrawMap drawMap, out Grid grid)
-        {
-            drawMap = null;
-            grid = null;
-
-            if (entity == null ||
-                !entity.TryGetComponent(m_DrawMapId, out drawMap) ||
-                !drawMap.Tilemap ||
-                !entity.TryGetComponent(m_GridId, out grid))
-            {
-                return false;
-            }
-
-            return true;
-        }
-
-        private static bool TryRefreshMapMetrics(DrawMap drawMap, Grid grid, Bounds boundsComp)
-        {
-            var tilemap = drawMap.Tilemap;
-            if (tilemap == null)
-            {
-                return false;
-            }
-
-            var width = grid.Width;
-            var height = grid.Height;
-            if (width <= 0 || height <= 0)
-            {
-                return false;
-            }
-
-            if (boundsComp.HasMapMetrics && width == boundsComp.MapWidth &&
-                height == boundsComp.MapHeight)
-            {
-                return true;
-            }
-
-            var originCell = new Vector3Int(0, 0, 0);
-            var widthCell = new Vector3Int(width, 0, 0);
-            var heightCell = new Vector3Int(0, height, 0);
-
-            boundsComp.MapOriginWorld = tilemap.CellToWorld(originCell);
-            var widthWorld = tilemap.CellToWorld(widthCell);
-            var heightWorld = tilemap.CellToWorld(heightCell);
-
-            boundsComp.MapWidth = width;
-            boundsComp.MapHeight = height;
-            boundsComp.MapWidthWorld = Mathf.Abs(widthWorld.x - boundsComp.MapOriginWorld.x);
-            boundsComp.MapHeightWorld = Mathf.Abs(heightWorld.y - boundsComp.MapOriginWorld.y);
-            boundsComp.HasMapMetrics = true;
-            return true;
         }
     }
 }

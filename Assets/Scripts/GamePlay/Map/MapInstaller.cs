@@ -42,32 +42,47 @@ namespace GamePlay.Map
                 return;
             }
 
-            m_World = GameManager.Instance.World;
-            m_MapEntity = m_World.AddChild("MapEntity");
+            var gameManager = GameManager.Instance;
+            if (gameManager == null)
+            {
+                return;
+            }
 
-            m_World.BindCapability<GenerateMapDataCap>(m_MapEntity);
-            m_World.BindCapability<DrawMapCap>(m_MapEntity);
+            m_World = gameManager.World;
+            if (m_World == null)
+            {
+                return;
+            }
 
-            var biomeComp = m_MapEntity.AddComponent<Biome>();
-            biomeComp.MountainLevel = MountainLevel;
-            biomeComp.SeaLevel = SeaLevel;
+            var config = new MapEntityPreset.Config
+            {
+                SeaLevel = SeaLevel,
+                MountainLevel = MountainLevel,
+                Width = Width,
+                Height = Height,
+                EnableSeamlessX = EnableSeamlessX,
+                EnableSeamlessY = EnableSeamlessY,
+                Seed = Seed,
+                MinOffset = MinOffset,
+                MaxOffset = MaxOffset,
+                HeightScale = HeightScale,
+                MinNoiseScale = MinNoiseScale,
+                Tilemap = ParamTileMap,
+                TerrainSettings = ParamTerrainSettings
+            };
 
-            var mapComp = m_MapEntity.AddComponent<Map>();
-            mapComp.Width = Width;
-            mapComp.Height = Height;
-            mapComp.EnableSeamlessX = EnableSeamlessX;
-            mapComp.EnableSeamlessY = EnableSeamlessY;
+            m_MapEntity = MapEntityPreset.Create(m_World, config);
+        }
 
-            var Noise = m_MapEntity.AddComponent<Noise>();
-            Noise.Seed = Seed;
-            Noise.MinOffset = MinOffset;
-            Noise.MaxOffset = MaxOffset;
-            Noise.HeightScale = HeightScale;
-            Noise.MinNoiseScale = MinNoiseScale;
+        private void OnDestroy()
+        {
+            if (m_World != null && m_World.Children != null && m_MapEntity != null)
+            {
+                m_World.RemoveChild(m_MapEntity);
+            }
 
-            var drawMap = m_MapEntity.AddComponent<DrawMap>();
-            drawMap.Tilemap = ParamTileMap;
-            drawMap.TerrainSettings = ParamTerrainSettings;
+            m_MapEntity = null;
+            m_World = null;
         }
     }
 }

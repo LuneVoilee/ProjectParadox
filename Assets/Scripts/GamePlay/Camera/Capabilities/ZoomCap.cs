@@ -2,7 +2,7 @@
 
 using Core;
 using Core.Capability;
-using GamePlay.Map;
+using NewGamePlay;
 using UnityEngine;
 
 #endregion
@@ -13,7 +13,7 @@ namespace GamePlay.Camera
     {
         private static readonly int m_RefId = Component<Ref>.TId;
         private static readonly int m_ZoomId = Component<Zoom>.TId;
-        private static readonly int m_DrawMapId = Component<DrawMap>.TId;
+        public override int TickGroupOrder { get; protected set; } = CapabilityOrder.PresentationCameraZoom;
 
         protected override void OnInit()
         {
@@ -33,8 +33,8 @@ namespace GamePlay.Camera
 
         protected override void OnActivated()
         {
-            if (!Owner.TryGetComponent<Ref>(m_RefId, out var refComp) ||
-                !Owner.TryGetComponent<Zoom>(m_ZoomId, out var zoomComp))
+            if (!Owner.TryGetRef(out var refComp) ||
+                !Owner.TryGetZoom(out var zoomComp))
             {
                 return;
             }
@@ -48,8 +48,8 @@ namespace GamePlay.Camera
 
         public override void TickActive(float deltaTime, float realElapsedSeconds)
         {
-            if (!Owner.TryGetComponent<Ref>(m_RefId, out var refComp) ||
-                !Owner.TryGetComponent<Zoom>(m_ZoomId, out var zoomComp) ||
+            if (!Owner.TryGetRef(out var refComp) ||
+                !Owner.TryGetZoom(out var zoomComp) ||
                 !zoomComp.EnableZoom)
             {
                 return;
@@ -85,40 +85,42 @@ namespace GamePlay.Camera
 
         private bool TryMarkMapDirty(Ref refComp)
         {
-            if (World == null || World.Children == null)
+            if (!TryResolveMapEntity(refComp, out CEntity mapEntity))
             {
                 return false;
             }
 
-            if (refComp.MapEntityId >= 0)
-            {
-                var cachedEntity = World.GetChild(refComp.MapEntityId);
-                if (TryMarkMapDirty(cachedEntity))
-                {
-                    return true;
-                }
+            return TryMarkMapDirty(mapEntity);
+        }
 
-                refComp.MapEntityId = -1;
+        private bool TryResolveMapEntity(Ref refComp, out CEntity entity)
+        {
+            entity = null;
+            if (refComp == null || World == null)
+            {
+                return false;
             }
 
-            foreach (var entity in World.Children)
+            if (World is GameWorld gameWorld &&
+                gameWorld.TryGetPrimaryMapEntity(out entity))
             {
-                if (!TryMarkMapDirty(entity))
-                {
-                    continue;
-                }
-
                 refComp.MapEntityId = entity.Id;
                 return true;
             }
 
-            return false;
+            if (refComp.MapEntityId < 0)
+            {
+                return false;
+            }
+
+            entity = World.GetChild(refComp.MapEntityId);
+            return entity != null;
         }
 
         private static bool TryMarkMapDirty(CEntity entity)
         {
             if (entity == null ||
-                !entity.TryGetComponent<DrawMap>(m_DrawMapId, out var drawMap) ||
+                !entity.TryGetDrawMap(out var drawMap) ||
                 drawMap == null)
             {
                 return false;

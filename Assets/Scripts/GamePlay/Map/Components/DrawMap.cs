@@ -14,7 +14,7 @@ namespace GamePlay.Map
 
         public bool AutoGhostColumns = true;
 
-        // Manual lower-bound for ghost columns. Auto mode can increase this at runtime.
+        // 手动鬼列下限；自动模式会在运行时按视野继续上调。
         public int GhostColumnsFloor = 6;
 
         public const int GhostPadding = 1;

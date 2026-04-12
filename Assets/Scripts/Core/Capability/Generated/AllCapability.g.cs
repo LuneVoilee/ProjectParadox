@@ -11,11 +11,11 @@ namespace Core.Capability
 
         private static int Order()
         {
-            var orderTid = CapabilityId<GamePlay.Camera.BoundsCap, IUpdateSystem>.TId;
-            orderTid = CapabilityId<GamePlay.Camera.MoveCap, IUpdateSystem>.TId;
+            var orderTid = CapabilityId<GamePlay.Map.GenerateMapDataCap, IUpdateSystem>.TId;
             orderTid = CapabilityId<GamePlay.Camera.ZoomCap, IUpdateSystem>.TId;
+            orderTid = CapabilityId<GamePlay.Camera.MoveCap, IUpdateSystem>.TId;
+            orderTid = CapabilityId<GamePlay.Camera.BoundsCap, IUpdateSystem>.TId;
             orderTid = CapabilityId<GamePlay.Map.DrawMapCap, IUpdateSystem>.TId;
-            orderTid = CapabilityId<GamePlay.Map.GenerateMapDataCap, IUpdateSystem>.TId;
             orderTid = CapabilityId<Core.Capability.DestroyCapability, IUpdateSystem>.TId;
             return 6;
         }

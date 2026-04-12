@@ -1,6 +1,7 @@
 ﻿#region
 
 using Core.Capability;
+using NewGamePlay;
 using UnityEngine;
 using Random = System.Random;
 
@@ -8,13 +9,13 @@ using Random = System.Random;
 
 namespace GamePlay.Map
 {
-    //Seamless
+    // 负责无缝地图数据生成。
     public class GenerateMapDataCap : CapabilityBase
     {
         private static readonly int m_MapId = Component<Map>.TId;
         private static readonly int m_NoiseId = Component<Noise>.TId;
         private static readonly int m_BiomeId = Component<Biome>.TId;
-        private static readonly int m_DrawMapId = Component<DrawMap>.TId;
+        public override int TickGroupOrder { get; protected set; } = CapabilityOrder.ScenarioMapGenerate;
 
         protected override void OnInit()
         {
@@ -35,10 +36,9 @@ namespace GamePlay.Map
 
         protected override void OnActivated()
         {
-            var map = Owner.GetComponent(m_MapId) as Map;
-            var noise = Owner.GetComponent(m_NoiseId) as Noise;
-            var biome = Owner.GetComponent(m_BiomeId) as Biome;
-            if (map == null || noise == null || biome == null)
+            if (!Owner.TryGetMap(out var map) ||
+                !Owner.TryGetNoise(out var noise) ||
+                !Owner.TryGetBiome(out var biome))
             {
                 Debug.LogError("MapGenerateCap: Missing required components.");
                 return;
@@ -84,7 +84,7 @@ namespace GamePlay.Map
                 }
             }
 
-            if (Owner.GetComponent(m_DrawMapId) is DrawMap drawMap)
+            if (Owner.TryGetDrawMap(out var drawMap))
             {
                 drawMap.IsDirty = true;
             }
