@@ -447,7 +447,7 @@ namespace Core.Capability.Editor
             string entityName = string.IsNullOrWhiteSpace(entity.Name)
                 ? entity.GetType().Name
                 : entity.Name;
-            return $"#{entity.Id} {entityName}";
+            return $"{entityName} - {entity.Id}";
         }
     }
 }
