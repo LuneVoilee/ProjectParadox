@@ -6,23 +6,22 @@ namespace Core.Capability
 
         protected override void OnInit()
         {
-            Filter(ComponentId<DestroyComponent>.TId);
+            Filter(Component<DestroyComponent>.TId);
         }
 
         public override bool ShouldActivate()
         {
-            return Owner.GetComponent(ComponentId<DestroyComponent>.TId) != null;
+            return Owner.GetComponent(Component<DestroyComponent>.TId) != null;
         }
 
-        public override void OnActivated()
+        protected override void OnActivated()
         {
-            base.OnActivated();
             World.RemoveChild(Owner);
         }
 
         public override bool ShouldDeactivate()
         {
-            return Owner.GetComponent(ComponentId<DestroyComponent>.TId) == null;
+            return Owner.GetComponent(Component<DestroyComponent>.TId) == null;
         }
     }
 }

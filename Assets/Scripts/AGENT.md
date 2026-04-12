@@ -33,15 +33,7 @@
 - 新增命名空间尽量不超过两层（示例：`Core.Capability`、`Map.Systems`）。
 
 ## 5. 玩法层约束
-- 保证数据和逻辑分离
-- 命名方式：逻辑类以System结尾，数据类以Data结尾，继承ScriptableObject的类以Settings结尾。
-- 除非需要采用独特的开发范式，否则一个模块应当由以下分类文件夹中的全部或几个构成
-  - Common 枚举，在该模块内部的通用方法或数据结构等
-  - Data 数据类
-  - Systems 逻辑类
-  - Settings ScriptableObject，注意仅当有必要时才将数据配置在ScriptableObject
-  - Manager 一般是继承SingletonMono<MapManager>的单例，组合逻辑与数据之间的通讯，以及作为MonoBehaviour与引擎桥接。
-  - View 引擎渲染相关
+- 使用Capability框架，保证数据和逻辑分离
 
 ## 7. 通用代码放置策略
 

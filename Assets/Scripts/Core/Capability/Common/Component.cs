@@ -1,5 +1,9 @@
+#region
+
 using System;
 using System.Collections.Generic;
+
+#endregion
 
 namespace Core.Capability
 {
@@ -14,7 +18,7 @@ namespace Core.Capability
         }
     }
 
-    public static class ComponentId<TComponent> where TComponent : CComponent
+    public static class Component<TComponent> where TComponent : CComponent
     {
         public static readonly int TId = ComponentIdGenerator.GetId<TComponent>();
     }

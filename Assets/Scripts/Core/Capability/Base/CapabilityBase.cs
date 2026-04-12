@@ -1,5 +1,9 @@
+#region
+
 using System;
 using System.Collections.Generic;
+
+#endregion
 
 namespace Core.Capability
 {
@@ -15,7 +19,8 @@ namespace Core.Capability
 
         public bool IsActive { get; internal set; }
 
-        public virtual CapabilityUpdateMode UpdateMode { get; protected set; } = CapabilityUpdateMode.Update;
+        public virtual CapabilityUpdateMode UpdateMode { get; protected set; } =
+            CapabilityUpdateMode.Update;
 
         public virtual int TickGroupOrder { get; protected set; }
 
@@ -54,7 +59,8 @@ namespace Core.Capability
         {
             if (componentIds == null)
             {
-                throw new ArgumentNullException(nameof(componentIds), $"{GetType().Name} componentIds is null");
+                throw new ArgumentNullException(nameof(componentIds),
+                    $"{GetType().Name} componentIds is null");
             }
 
             m_CapabilityCollector = CapabilityCollector.CreateCollector(World, this, componentIds);
@@ -65,14 +71,25 @@ namespace Core.Capability
 
         public abstract bool ShouldDeactivate();
 
-        public virtual void OnActivated()
+
+        public void Activated()
         {
             IsActive = true;
+            OnActivated();
         }
 
-        public virtual void OnDeactivated()
+        protected virtual void OnActivated()
+        {
+        }
+
+        public void Deactivated()
         {
             IsActive = false;
+            OnDeactivated();
+        }
+
+        protected virtual void OnDeactivated()
+        {
         }
 
         public virtual void TickActive(float deltaTime, float realElapsedSeconds)

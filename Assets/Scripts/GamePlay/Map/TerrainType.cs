@@ -1,10 +1,9 @@
-namespace Map.Common
+namespace GamePlay.Map
 {
     public enum TerrainType
     {
-        Grass = 0,
+        Plain = 0,
         Ocean = 1,
         Mountain = 2,
-        Desert = 3
     }
 }

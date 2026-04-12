@@ -150,7 +150,7 @@ namespace UI
             // 处理悬停事件
             if (current.type == EventType.Repaint && iconRect.Contains(current.mousePosition))
             {
-                Component comp = EditorUtility.InstanceIDToObject(componentID) as Component;
+                Component comp = EditorUtility.EntityIdToObject(componentID) as Component;
                 if (comp != null)
                 {
                     AutoUIBinderBase iconHandler = HierarchyManager.FindIconHandler(comp);
@@ -175,7 +175,7 @@ namespace UI
                     return;
                 }
 
-                Component comp = EditorUtility.InstanceIDToObject(componentID) as Component;
+                Component comp = EditorUtility.EntityIdToObject(componentID) as Component;
                 if (comp != null)
                 {
                     // 检查节点名称是否包含括号，如果包含则自动重命名
@@ -230,11 +230,8 @@ namespace UI
                         if (HierarchyManager.IsComponentHighlighted(componentID))
                         {
                             // 直接从当前handler移除引用
-                            if (iconHandler != null)
-                            {
-                                iconHandler.RemoveComponentRef(key);
-                                EditorUtility.SetDirty(iconHandler.gameObject);
-                            }
+                            iconHandler.RemoveComponentRef(key);
+                            EditorUtility.SetDirty(iconHandler.gameObject);
 
                             // 移除高亮状态
                             HierarchyManager.SetComponentHighlight(componentID, false);
@@ -404,7 +401,7 @@ namespace UI
                     return;
                 }
 
-                GameObject gameObject = EditorUtility.InstanceIDToObject(instanceID) as GameObject;
+                GameObject gameObject = EditorUtility.EntityIdToObject(instanceID) as GameObject;
                 if (gameObject == null)
                     return;
 
@@ -737,7 +734,7 @@ namespace UI
             var highlightedIds = HierarchyManager.GetHighlightedComponentIds();
             foreach (var componentID in highlightedIds)
             {
-                Component comp = EditorUtility.InstanceIDToObject(componentID) as Component;
+                Component comp = EditorUtility.EntityIdToObject(componentID) as Component;
 
 
                 // 如果组件已被删除，直接移除高亮状态

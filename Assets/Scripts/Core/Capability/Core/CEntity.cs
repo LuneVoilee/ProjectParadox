@@ -1,5 +1,9 @@
-using System;
+#region
+
 using Tool;
+using UnityEngine;
+
+#endregion
 
 namespace Core.Capability
 {
@@ -38,10 +42,11 @@ namespace Core.Capability
 
         public TComponent AddComponent<TComponent>() where TComponent : CComponent, new()
         {
-            int componentId = ComponentId<TComponent>.TId;
+            int componentId = Component<TComponent>.TId;
             if (Components[componentId] != null)
             {
-                throw new Exception($"Entity already has component: {typeof(TComponent).FullName}");
+                Debug.LogWarning($"Entity already has component: {typeof(TComponent).FullName}");
+                return (TComponent)Components[componentId];
             }
 
             TComponent component = new TComponent();
@@ -56,16 +61,24 @@ namespace Core.Capability
             return Components[componentId];
         }
 
+        public bool TryGetComponent<TComponent>
+            (int componentId, out TComponent component) where TComponent : CComponent
+        {
+            component = Components[componentId] as TComponent;
+
+            return component != null;
+        }
+
         public bool HasComponent(int componentId)
         {
             return Components[componentId] != null;
         }
 
-        public bool HasComponents(int[] componentIds)
+        public bool HasComponents(params int[] componentIds)
         {
-            for (int i = 0; i < componentIds.Length; i++)
+            foreach (var id in componentIds)
             {
-                if (Components[componentIds[i]] == null)
+                if (Components[id] == null)
                 {
                     return false;
                 }

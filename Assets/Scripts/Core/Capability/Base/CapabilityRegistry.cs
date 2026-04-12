@@ -1,6 +1,9 @@
+#region
+
 using System;
-using System.Collections.Generic;
 using Tool;
+
+#endregion
 
 namespace Core.Capability
 {
@@ -33,7 +36,8 @@ namespace Core.Capability
             ProcessCapabilities(m_FixedUpdateCapabilities, deltaTime, realElapsedSeconds);
         }
 
-        private void ProcessCapabilities(IndexedObjectArray<CapabilityBase>[] arrays, float deltaTime, float realElapsedSeconds)
+        private void ProcessCapabilities
+            (IndexedObjectArray<CapabilityBase>[] arrays, float deltaTime, float realElapsedSeconds)
         {
             if (arrays == null || arrays.Length == 0)
             {
@@ -51,14 +55,20 @@ namespace Core.Capability
             }
         }
 
-        private void UpdateCapabilityArray(IndexedObjectArray<CapabilityBase> capabilityArray, float deltaTime, float realElapsedSeconds)
+        private void UpdateCapabilityArray
+        (
+            IndexedObjectArray<CapabilityBase> capabilityArray, float deltaTime,
+            float realElapsedSeconds
+        )
         {
             foreach (CapabilityBase capability in capabilityArray)
             {
                 CEntity owner = capability.Owner;
                 if (capability.TagList != null)
                 {
-                    CapabilityBlockComponent blockComponent = (CapabilityBlockComponent)owner.GetComponent(ComponentId<CapabilityBlockComponent>.TId);
+                    CapabilityBlockComponent blockComponent =
+                        (CapabilityBlockComponent)owner.GetComponent(
+                            Component<CapabilityBlockComponent>.TId);
                     if (blockComponent != null && blockComponent.IsBlocked(capability.TagList))
                     {
                         continue;
@@ -72,7 +82,7 @@ namespace Core.Capability
                         bool shouldActivate = capability.ShouldActivate();
                         if (shouldActivate)
                         {
-                            capability.OnActivated();
+                            capability.Activated();
                         }
                     }
                     else
@@ -80,7 +90,7 @@ namespace Core.Capability
                         bool shouldDeactivate = capability.ShouldDeactivate();
                         if (shouldDeactivate)
                         {
-                            capability.OnDeactivated();
+                            capability.Deactivated();
                         }
                     }
                 }

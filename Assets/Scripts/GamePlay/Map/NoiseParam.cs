@@ -1,4 +1,4 @@
-namespace Map.Common
+namespace GamePlay.Map
 {
     public struct NoiseParam
     {

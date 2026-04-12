@@ -1,13 +1,16 @@
-using System;
+#region
+
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
+
+#endregion
 
 namespace Core.Capability.Editor
 {
     public class CapabilityDebugWindow : EditorWindow
     {
-        private const string MenuPath = "GX框架工具/Capability/调试/Capability 可视化";
+        private const string MenuPath = "框架工具/调试/Capability 可视化";
 
         private static readonly Color m_NoneStateColor = new Color(0.25f, 0.25f, 0.25f, 0.4f);
 
@@ -23,13 +26,17 @@ namespace Core.Capability.Editor
 
         private readonly List<CapabilityBase> m_UpdateCapabilities = new List<CapabilityBase>(64);
 
-        private readonly List<CapabilityBase> m_FixedUpdateCapabilities = new List<CapabilityBase>(64);
+        private readonly List<CapabilityBase> m_FixedUpdateCapabilities =
+            new List<CapabilityBase>(64);
 
-        private readonly Dictionary<string, CapabilityTimelineTrack> m_UpdateTracks = new Dictionary<string, CapabilityTimelineTrack>(64);
+        private readonly Dictionary<string, CapabilityTimelineTrack> m_UpdateTracks =
+            new Dictionary<string, CapabilityTimelineTrack>(64);
 
-        private readonly Dictionary<string, CapabilityTimelineTrack> m_FixedUpdateTracks = new Dictionary<string, CapabilityTimelineTrack>(64);
+        private readonly Dictionary<string, CapabilityTimelineTrack> m_FixedUpdateTracks =
+            new Dictionary<string, CapabilityTimelineTrack>(64);
 
-        private readonly List<CapabilityTimelineTrack> m_SortedTracks = new List<CapabilityTimelineTrack>(64);
+        private readonly List<CapabilityTimelineTrack> m_SortedTracks =
+            new List<CapabilityTimelineTrack>(64);
 
         private CapabilityWorld m_SelectedWorld;
 
@@ -213,7 +220,8 @@ namespace Core.Capability.Editor
             EditorGUI.LabelField(labelRect, text);
         }
 
-        private void DrawTrackGroup(string groupName, Dictionary<string, CapabilityTimelineTrack> tracks)
+        private void DrawTrackGroup
+            (string groupName, Dictionary<string, CapabilityTimelineTrack> tracks)
         {
             EditorGUILayout.LabelField(groupName, EditorStyles.boldLabel);
             if (tracks.Count == 0)
@@ -263,7 +271,8 @@ namespace Core.Capability.Editor
                 }
             }
 
-            Rect labelRect = new Rect(timelineRect.xMax + 8f, rowRect.y, Mathf.Max(40f, position.width - timelineRect.width - 24f), rowRect.height);
+            Rect labelRect = new Rect(timelineRect.xMax + 8f, rowRect.y,
+                Mathf.Max(40f, position.width - timelineRect.width - 24f), rowRect.height);
             EditorGUI.LabelField(labelRect, track.Name);
         }
 
@@ -375,13 +384,15 @@ namespace Core.Capability.Editor
 
             m_UpdateCapabilities.Clear();
             m_FixedUpdateCapabilities.Clear();
-            m_SelectedWorld.GetCapabilities(m_SelectedEntity, m_UpdateCapabilities, m_FixedUpdateCapabilities);
+            m_SelectedWorld.GetCapabilities(m_SelectedEntity, m_UpdateCapabilities,
+                m_FixedUpdateCapabilities);
 
             SampleCapabilityList(m_UpdateCapabilities, m_UpdateTracks);
             SampleCapabilityList(m_FixedUpdateCapabilities, m_FixedUpdateTracks);
         }
 
-        private void SampleCapabilityList(List<CapabilityBase> capabilities, Dictionary<string, CapabilityTimelineTrack> tracks)
+        private void SampleCapabilityList
+            (List<CapabilityBase> capabilities, Dictionary<string, CapabilityTimelineTrack> tracks)
         {
             for (int i = 0; i < capabilities.Count; i++)
             {
@@ -412,23 +423,30 @@ namespace Core.Capability.Editor
 
         private CapabilityRuntimeState ResolveCapabilityState(CapabilityBase capability)
         {
-            if (capability.TagList != null && m_SelectedWorld.IsCapabilityBlocked(m_SelectedEntity, capability.TagList))
+            if (capability.TagList != null &&
+                m_SelectedWorld.IsCapabilityBlocked(m_SelectedEntity, capability.TagList))
             {
                 return CapabilityRuntimeState.Blocked;
             }
 
-            return capability.IsActive ? CapabilityRuntimeState.Active : CapabilityRuntimeState.Inactive;
+            return capability.IsActive
+                ? CapabilityRuntimeState.Active
+                : CapabilityRuntimeState.Inactive;
         }
 
         private string GetWorldDisplayName(CapabilityWorld world)
         {
-            string worldName = string.IsNullOrWhiteSpace(world.Name) ? world.GetType().Name : world.Name;
+            string worldName = string.IsNullOrWhiteSpace(world.Name)
+                ? world.GetType().Name
+                : world.Name;
             return $"{worldName} [{world.GetType().Name}]";
         }
 
         private string GetEntityDisplayName(CEntity entity)
         {
-            string entityName = string.IsNullOrWhiteSpace(entity.Name) ? entity.GetType().Name : entity.Name;
+            string entityName = string.IsNullOrWhiteSpace(entity.Name)
+                ? entity.GetType().Name
+                : entity.Name;
             return $"#{entity.Id} {entityName}";
         }
     }

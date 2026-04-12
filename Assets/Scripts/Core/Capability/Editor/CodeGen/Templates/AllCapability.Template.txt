@@ -9,8 +9,6 @@ namespace Core.Capability
     {
         public static readonly int TotalCapabilities = Order();
 
-        public static readonly int TotallCapabiltys = TotalCapabilities;
-
         private static int Order()
         {
 {0}

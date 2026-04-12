@@ -1,7 +1,10 @@
+#region
+
 using Core;
 using Map.View;
 using UnityEngine;
 
+#endregion
 
 namespace GamePlay.KCamera
 {
@@ -9,20 +12,17 @@ namespace GamePlay.KCamera
     {
         [SerializeField] private float m_MoveSpeed = 10f;
         [SerializeField] private Transform m_Target;
-        [SerializeField] private Camera m_Camera;
+        [SerializeField] private UnityEngine.Camera m_Camera;
 
-        [Header("Zoom")]
-        [SerializeField] private bool m_EnableZoom = true;
+        [Header("Zoom")] [SerializeField] private bool m_EnableZoom = true;
         [SerializeField] private float m_ZoomSpeed = 5f;
         [SerializeField] private float m_MinZoom = 4f;
         [SerializeField] private float m_MaxZoom = 20f;
 
-        [Header("Wrap")]
-        [SerializeField] private bool m_WrapX = true;
+        [Header("Wrap")] [SerializeField] private bool m_WrapX = true;
         [SerializeField] private bool m_WrapY;
 
-        [Header("Clamp")]
-        [SerializeField] private bool m_ClampY = true;
+        [Header("Clamp")] [SerializeField] private bool m_ClampY = true;
         [SerializeField] private HexMapRenderer m_MapRenderer;
         private bool m_HasMapMetrics;
         private Vector3 m_MapOriginWorld;
@@ -202,7 +202,8 @@ namespace GamePlay.KCamera
                 return;
             }
 
-            var targetSize = Mathf.Clamp(m_Camera.orthographicSize - scroll * m_ZoomSpeed, m_MinZoom, m_MaxZoom);
+            var targetSize = Mathf.Clamp(m_Camera.orthographicSize - scroll * m_ZoomSpeed,
+                m_MinZoom, m_MaxZoom);
             if (Mathf.Abs(targetSize - m_Camera.orthographicSize) <= Mathf.Epsilon)
             {
                 return;

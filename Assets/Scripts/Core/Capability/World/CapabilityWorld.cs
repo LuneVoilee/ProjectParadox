@@ -1,4 +1,8 @@
+#region
+
 using System.Collections.Generic;
+
+#endregion
 
 namespace Core.Capability
 {
@@ -16,11 +20,13 @@ namespace Core.Capability
             }
 
             BindCapability<DestroyCapability>(entity);
-            CapabilityBlockComponent blockComponent = entity.AddComponent<CapabilityBlockComponent>();
+            CapabilityBlockComponent blockComponent =
+                entity.AddComponent<CapabilityBlockComponent>();
             blockComponent.Init(m_MaxCapabilityTag);
         }
 
-        protected void InitCapabilities(int maxCapabilityCount, int maxTag, int estimatedEntityCount)
+        protected void InitCapabilities
+            (int maxCapabilityCount, int maxTag, int estimatedEntityCount)
         {
             m_MaxCapabilityTag = maxTag;
             m_CapabilityRegistry = new CapabilityRegistry();
@@ -52,17 +58,23 @@ namespace Core.Capability
             base.RemoveChild(entity);
         }
 
-        public void GetCapabilities(CEntity entity, List<CapabilityBase> updateCapabilities, List<CapabilityBase> fixedUpdateCapabilities)
+        public void GetCapabilities
+        (
+            CEntity entity, List<CapabilityBase> updateCapabilities,
+            List<CapabilityBase> fixedUpdateCapabilities
+        )
         {
             if (entity == null || m_CapabilityRegistry == null)
             {
                 return;
             }
 
-            m_CapabilityRegistry.GetCapabilitiesByEntity(entity, updateCapabilities, fixedUpdateCapabilities);
+            m_CapabilityRegistry.GetCapabilitiesByEntity(entity, updateCapabilities,
+                fixedUpdateCapabilities);
         }
 
-        public void BindCapability<TCapability>(CEntity entity) where TCapability : CapabilityBase, new()
+        public void BindCapability<TCapability>
+            (CEntity entity) where TCapability : CapabilityBase, new()
         {
             if (entity == null || m_CapabilityRegistry == null)
             {
@@ -72,7 +84,8 @@ namespace Core.Capability
             m_CapabilityRegistry.Add<TCapability>(entity);
         }
 
-        public void UnbindCapability<TCapability>(CEntity entity) where TCapability : CapabilityBase, new()
+        public void UnbindCapability<TCapability>
+            (CEntity entity) where TCapability : CapabilityBase, new()
         {
             if (entity == null || m_CapabilityRegistry == null)
             {
@@ -104,7 +117,9 @@ namespace Core.Capability
                 return false;
             }
 
-            CapabilityBlockComponent blockComponent = (CapabilityBlockComponent)entity.GetComponent(ComponentId<CapabilityBlockComponent>.TId);
+            CapabilityBlockComponent blockComponent =
+                (CapabilityBlockComponent)entity.GetComponent(Component<CapabilityBlockComponent>
+                    .TId);
             return blockComponent != null && blockComponent.IsBlocked(tagIndices);
         }
 

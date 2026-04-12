@@ -1,11 +1,20 @@
+#region
+
 using System;
 using UnityEngine;
 
-namespace Map.Common
+#endregion
+
+namespace GamePlay.Map
 {
     public enum HexDirection
     {
-        NE, E, SE, SW, W, NW
+        NE,
+        E,
+        SE,
+        SW,
+        W,
+        NW
     }
 
     [Serializable]
@@ -47,10 +56,10 @@ namespace Map.Common
             return direction switch
             {
                 HexDirection.NE => new HexCoordinates(X, Y - 1, Z + 1),
-                HexDirection.E  => new HexCoordinates(X + 1, Y - 1, Z),
+                HexDirection.E => new HexCoordinates(X + 1, Y - 1, Z),
                 HexDirection.SE => new HexCoordinates(X + 1, Y, Z - 1),
                 HexDirection.SW => new HexCoordinates(X, Y + 1, Z - 1),
-                HexDirection.W  => new HexCoordinates(X - 1, Y + 1, Z),
+                HexDirection.W => new HexCoordinates(X - 1, Y + 1, Z),
                 HexDirection.NW => new HexCoordinates(X - 1, Y, Z + 1),
                 _ => this
             };
