@@ -1,7 +1,8 @@
-﻿#region
+#region
 
 using Sirenix.OdinInspector;
 using Tool;
+using UnityEngine;
 
 #endregion
 
@@ -17,6 +18,16 @@ namespace NewGamePlay
         {
             base.Awake();
             World.OnInitialize(MaxComponentCount);
+        }
+
+        private void Update()
+        {
+            World?.OnUpdate(Time.deltaTime, Time.realtimeSinceStartup);
+        }
+
+        private void FixedUpdate()
+        {
+            World?.OnFixedUpdate(Time.fixedDeltaTime, Time.realtimeSinceStartup);
         }
     }
 }

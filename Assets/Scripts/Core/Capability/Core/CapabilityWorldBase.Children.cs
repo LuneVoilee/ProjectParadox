@@ -1,6 +1,10 @@
+#region
+
 using System;
 using System.Collections.Generic;
 using Tool;
+
+#endregion
 
 namespace Core.Capability
 {
@@ -10,7 +14,7 @@ namespace Core.Capability
 
         public int ChildrenCount => Children?.Count ?? 0;
 
-        private Stack<int> m_RecycledEntityIds = new Stack<int>();
+        private readonly Stack<int> m_RecycledEntityIds = new Stack<int>();
 
         private void InitializeChildren()
         {
@@ -27,9 +31,11 @@ namespace Core.Capability
             return (TEntity)CreateChild(typeof(TEntity));
         }
 
-        public virtual CEntity AddChild()
+        public virtual CEntity AddChild(string name = null)
         {
-            return CreateChild(typeof(CEntity));
+            var entity = CreateChild(typeof(CEntity));
+            entity.Name = name;
+            return entity;
         }
 
         private CEntity CreateChild(Type type)

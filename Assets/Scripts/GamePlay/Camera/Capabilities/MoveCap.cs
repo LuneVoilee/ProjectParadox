@@ -1,4 +1,4 @@
-﻿#region
+#region
 
 using Core;
 using Core.Capability;
@@ -10,15 +10,18 @@ namespace GamePlay.Camera
 {
     public class MoveCap : CapabilityBase
     {
+        private static readonly int m_RefId = Component<Ref>.TId;
+        private static readonly int m_MoveId = Component<Move>.TId;
+
         protected override void OnInit()
         {
-            Filter(Component<Ref>.TId, Component<Move>.TId);
+            Filter(m_RefId, m_MoveId);
         }
 
         public override bool ShouldActivate()
         {
-            return Owner.HasComponent(Component<Ref>.TId) &&
-                   Owner.HasComponent(Component<Move>.TId);
+            return Owner.HasComponent(m_RefId) &&
+                   Owner.HasComponent(m_MoveId);
         }
 
         public override bool ShouldDeactivate() => !ShouldActivate();
@@ -32,15 +35,9 @@ namespace GamePlay.Camera
                 return;
             }
 
-            var moveComp = Owner.GetComponent(Component<Move>.TId) as Move;
-            var refComp = Owner.GetComponent(Component<Ref>.TId) as Ref;
-
-            if (moveComp == null || refComp == null)
-            {
-                return;
-            }
-
-            if (refComp.Target == null)
+            if (!Owner.TryGetComponent<Move>(m_MoveId, out var moveComp) ||
+                !Owner.TryGetComponent<Ref>(m_RefId, out var refComp) ||
+                refComp.Target == null)
             {
                 return;
             }

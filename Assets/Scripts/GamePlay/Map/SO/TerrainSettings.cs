@@ -1,9 +1,12 @@
+#region
+
 using System;
 using UnityEngine;
 using UnityEngine.Tilemaps;
-using Map.Common;
 
-namespace Map.Settings
+#endregion
+
+namespace GamePlay.Map
 {
     [CreateAssetMenu(menuName = "World/Terrain Palette", fileName = "TerrainPalette")]
     public class TerrainSettings : ScriptableObject

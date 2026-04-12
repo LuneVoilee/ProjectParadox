@@ -1,7 +1,8 @@
-﻿#region
+#region
 
 using Core;
 using Core.Capability;
+using GamePlay.Map;
 using UnityEngine;
 
 #endregion
@@ -10,15 +11,19 @@ namespace GamePlay.Camera
 {
     public class ZoomCap : CapabilityBase
     {
+        private static readonly int m_RefId = Component<Ref>.TId;
+        private static readonly int m_ZoomId = Component<Zoom>.TId;
+        private static readonly int m_DrawMapId = Component<DrawMap>.TId;
+
         protected override void OnInit()
         {
-            Filter(Component<Ref>.TId, Component<Zoom>.TId);
+            Filter(m_RefId, m_ZoomId);
         }
 
         public override bool ShouldActivate()
         {
-            return Owner.HasComponent(Component<Ref>.TId) &&
-                   Owner.HasComponent(Component<Zoom>.TId);
+            return Owner.HasComponent(m_RefId) &&
+                   Owner.HasComponent(m_ZoomId);
         }
 
         public override bool ShouldDeactivate()
@@ -26,19 +31,32 @@ namespace GamePlay.Camera
             return !ShouldActivate();
         }
 
-        public override void TickActive(float deltaTime, float realElapsedSeconds)
+        protected override void OnActivated()
         {
-            var @ref = Owner.GetComponent(Component<Ref>.TId) as Ref;
-            var zoom = Owner.GetComponent(Component<Zoom>.TId) as Zoom;
-
-            if (@ref == null || zoom == null)
+            if (!Owner.TryGetComponent<Ref>(m_RefId, out var refComp) ||
+                !Owner.TryGetComponent<Zoom>(m_ZoomId, out var zoomComp))
             {
                 return;
             }
 
-            var camera = @ref.Camera;
+            var camera = refComp.Camera;
+            if (camera != null && camera.orthographic)
+            {
+                zoomComp.LastZoom = camera.orthographicSize;
+            }
+        }
 
-            if (camera == null || !camera.gameObject.activeInHierarchy || !camera.orthographic)
+        public override void TickActive(float deltaTime, float realElapsedSeconds)
+        {
+            if (!Owner.TryGetComponent<Ref>(m_RefId, out var refComp) ||
+                !Owner.TryGetComponent<Zoom>(m_ZoomId, out var zoomComp) ||
+                !zoomComp.EnableZoom)
+            {
+                return;
+            }
+
+            var camera = refComp.Camera;
+            if (camera == null || !camera.orthographic)
             {
                 return;
             }
@@ -50,23 +68,64 @@ namespace GamePlay.Camera
                 return;
             }
 
-            var targetSize = Mathf.Clamp(camera.orthographicSize - scroll * zoom.ZoomSpeed,
-                zoom.MinZoom, zoom.MaxZoom);
-
+            var targetSize = Mathf.Clamp(camera.orthographicSize - scroll * zoomComp.ZoomSpeed,
+                zoomComp.MinZoom, zoomComp.MaxZoom);
             if (Mathf.Abs(targetSize - camera.orthographicSize) <= Mathf.Epsilon)
             {
                 return;
             }
 
             camera.orthographicSize = targetSize;
-            if (Mathf.Abs(targetSize - zoom.LastZoom) > 0.001f)
+            if (Mathf.Abs(targetSize - zoomComp.LastZoom) > 0.001f)
             {
-                zoom.LastZoom = targetSize;
-                if (@ref.MapRenderer != null)
-                {
-                    @ref.MapRenderer.RefreshGhostColumns();
-                }
+                zoomComp.LastZoom = targetSize;
+                TryMarkMapDirty(refComp);
             }
+        }
+
+        private bool TryMarkMapDirty(Ref refComp)
+        {
+            if (World == null || World.Children == null)
+            {
+                return false;
+            }
+
+            if (refComp.MapEntityId >= 0)
+            {
+                var cachedEntity = World.GetChild(refComp.MapEntityId);
+                if (TryMarkMapDirty(cachedEntity))
+                {
+                    return true;
+                }
+
+                refComp.MapEntityId = -1;
+            }
+
+            foreach (var entity in World.Children)
+            {
+                if (!TryMarkMapDirty(entity))
+                {
+                    continue;
+                }
+
+                refComp.MapEntityId = entity.Id;
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool TryMarkMapDirty(CEntity entity)
+        {
+            if (entity == null ||
+                !entity.TryGetComponent<DrawMap>(m_DrawMapId, out var drawMap) ||
+                drawMap == null)
+            {
+                return false;
+            }
+
+            drawMap.IsDirty = true;
+            return true;
         }
     }
 }

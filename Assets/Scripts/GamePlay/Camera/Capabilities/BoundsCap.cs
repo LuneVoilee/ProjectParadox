@@ -1,7 +1,9 @@
-﻿#region
+#region
 
 using Core.Capability;
+using GamePlay.Map;
 using UnityEngine;
+using Grid = GamePlay.Map.Grid;
 
 #endregion
 
@@ -9,15 +11,20 @@ namespace GamePlay.Camera
 {
     public class BoundsCap : CapabilityBase
     {
+        private static readonly int m_RefId = Component<Ref>.TId;
+        private static readonly int m_BoundsId = Component<Bounds>.TId;
+        private static readonly int m_DrawMapId = Component<DrawMap>.TId;
+        private static readonly int m_GridId = Component<Grid>.TId;
+
         protected override void OnInit()
         {
-            Filter(Component<Ref>.TId, Component<Bounds>.TId);
+            Filter(m_RefId, m_BoundsId);
         }
 
         public override bool ShouldActivate()
         {
-            return Owner.HasComponent(Component<Ref>.TId) &&
-                   Owner.HasComponent(Component<Bounds>.TId);
+            return Owner.HasComponent(m_RefId) &&
+                   Owner.HasComponent(m_BoundsId);
         }
 
         public override bool ShouldDeactivate()
@@ -27,22 +34,25 @@ namespace GamePlay.Camera
 
         public override void TickActive(float deltaTime, float realElapsedSeconds)
         {
-            if (Owner.GetComponent(Component<Ref>.TId) is not Ref @ref)
+            if (!Owner.TryGetComponent<Ref>(m_RefId, out var refComp) ||
+                !Owner.TryGetComponent<Bounds>(m_BoundsId, out var boundsComp))
             {
                 return;
             }
 
-            if (Owner.GetComponent(Component<Bounds>.TId) is not Bounds bounds)
+            var target = refComp.Target;
+            if (target == null)
             {
                 return;
             }
 
-            var camera = @ref.Camera;
-            var target = @ref.Target;
-            var isWrapX = bounds.IsWrapX;
-            var isWrapY = bounds.IsWrapY;
+            if (!boundsComp.IsWrapX && !boundsComp.IsWrapY && !boundsComp.IsClampY)
+            {
+                return;
+            }
 
-            if (!TryRefreshMapMetrics())
+            if (!TryResolveMapData(refComp, out var drawMap, out var grid) ||
+                !TryRefreshMapMetrics(drawMap, grid, boundsComp))
             {
                 return;
             }
@@ -51,53 +61,81 @@ namespace GamePlay.Camera
 
             var halfHeight = 0f;
             var halfWidth = 0f;
+            var camera = refComp.Camera;
             if (camera != null && camera.orthographic)
             {
                 halfHeight = camera.orthographicSize;
                 halfWidth = halfHeight * camera.aspect;
             }
 
-            // X 轴 Wrap (已移除冗余的 else 和无意义的 left/right 局部变量)
-            if (isWrapX && m_MapWidthWorld > Mathf.Epsilon)
+            if (boundsComp.IsWrapX && boundsComp.MapWidthWorld > Mathf.Epsilon)
             {
-                var wrapLeft = m_MapOriginWorld.x - halfWidth;
-                var wrapRight = m_MapOriginWorld.x + m_MapWidthWorld + halfWidth;
+                var left = boundsComp.MapOriginWorld.x;
+                var right = left + boundsComp.MapWidthWorld;
+                var wrapLeft = left - halfWidth;
+                var wrapRight = right + halfWidth;
 
-                if (position.x < wrapLeft)
+                if (wrapLeft <= wrapRight)
                 {
-                    position.x += m_MapWidthWorld;
+                    if (position.x < wrapLeft)
+                    {
+                        position.x += boundsComp.MapWidthWorld;
+                    }
+                    else if (position.x > wrapRight)
+                    {
+                        position.x -= boundsComp.MapWidthWorld;
+                    }
                 }
-                else if (position.x > wrapRight)
+                else
                 {
-                    position.x -= m_MapWidthWorld;
+                    if (position.x < left)
+                    {
+                        position.x += boundsComp.MapWidthWorld;
+                    }
+                    else if (position.x >= right)
+                    {
+                        position.x -= boundsComp.MapWidthWorld;
+                    }
                 }
             }
 
-            // Y 轴 Wrap (已移除冗余的 else)
-            if (isWrapY && m_MapHeightWorld > Mathf.Epsilon)
+            if (boundsComp.IsWrapY && boundsComp.MapHeightWorld > Mathf.Epsilon)
             {
-                var wrapBottom = m_MapOriginWorld.y - halfHeight;
-                var wrapTop = m_MapOriginWorld.y + m_MapHeightWorld + halfHeight;
+                var bottom = boundsComp.MapOriginWorld.y;
+                var top = bottom + boundsComp.MapHeightWorld;
+                var wrapBottom = bottom - halfHeight;
+                var wrapTop = top + halfHeight;
 
-                if (position.y < wrapBottom)
+                if (wrapBottom <= wrapTop)
                 {
-                    position.y += m_MapHeightWorld;
+                    if (position.y < wrapBottom)
+                    {
+                        position.y += boundsComp.MapHeightWorld;
+                    }
+                    else if (position.y > wrapTop)
+                    {
+                        position.y -= boundsComp.MapHeightWorld;
+                    }
                 }
-                else if (position.y > wrapTop)
+                else
                 {
-                    position.y -= m_MapHeightWorld;
+                    if (position.y < bottom)
+                    {
+                        position.y += boundsComp.MapHeightWorld;
+                    }
+                    else if (position.y >= top)
+                    {
+                        position.y -= boundsComp.MapHeightWorld;
+                    }
                 }
             }
-            // Y 轴 Clamp
-            else if (m_ClampY && m_MapHeightWorld > Mathf.Epsilon)
+            else if (boundsComp.IsClampY && boundsComp.MapHeightWorld > Mathf.Epsilon)
             {
-                var minY = m_MapOriginWorld.y + halfHeight;
-                var maxY = m_MapOriginWorld.y + m_MapHeightWorld - halfHeight;
-
+                var minY = boundsComp.MapOriginWorld.y + halfHeight;
+                var maxY = boundsComp.MapOriginWorld.y + boundsComp.MapHeightWorld - halfHeight;
                 if (minY > maxY)
                 {
-                    // 如果屏幕比地图还高，直接将相机固定在地图中心
-                    position.y = m_MapOriginWorld.y + m_MapHeightWorld * 0.5f;
+                    position.y = boundsComp.MapOriginWorld.y + boundsComp.MapHeightWorld * 0.5f;
                 }
                 else
                 {
@@ -108,39 +146,91 @@ namespace GamePlay.Camera
             target.position = position;
         }
 
-        private bool TryRefreshMapMetrics()
+        private bool TryResolveMapData(Ref refComp, out DrawMap drawMap, out Grid grid)
         {
-            if (m_MapRenderer == null || m_MapRenderer.Tilemap == null)
+            drawMap = null;
+            grid = null;
+
+            if (World == null || World.Children == null)
             {
                 return false;
             }
 
-            var width = m_MapRenderer.MapWidth;
-            var height = m_MapRenderer.MapHeight;
+            if (refComp.MapEntityId >= 0)
+            {
+                var cachedEntity = World.GetChild(refComp.MapEntityId);
+                if (TryGetMapComponents(cachedEntity, out drawMap, out grid))
+                {
+                    return true;
+                }
+
+                refComp.MapEntityId = -1;
+            }
+
+            foreach (var entity in World.Children)
+            {
+                if (!TryGetMapComponents(entity, out drawMap, out grid))
+                {
+                    continue;
+                }
+
+                refComp.MapEntityId = entity.Id;
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool TryGetMapComponents(CEntity entity, out DrawMap drawMap, out Grid grid)
+        {
+            drawMap = null;
+            grid = null;
+
+            if (entity == null ||
+                !entity.TryGetComponent(m_DrawMapId, out drawMap) ||
+                !drawMap.Tilemap ||
+                !entity.TryGetComponent(m_GridId, out grid))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        private static bool TryRefreshMapMetrics(DrawMap drawMap, Grid grid, Bounds boundsComp)
+        {
+            var tilemap = drawMap.Tilemap;
+            if (tilemap == null)
+            {
+                return false;
+            }
+
+            var width = grid.Width;
+            var height = grid.Height;
             if (width <= 0 || height <= 0)
             {
                 return false;
             }
 
-            if (m_HasMapMetrics && width == m_MapWidth && height == m_MapHeight)
+            if (boundsComp.HasMapMetrics && width == boundsComp.MapWidth &&
+                height == boundsComp.MapHeight)
             {
                 return true;
             }
 
-            var tilemap = m_MapRenderer.Tilemap;
             var originCell = new Vector3Int(0, 0, 0);
             var widthCell = new Vector3Int(width, 0, 0);
             var heightCell = new Vector3Int(0, height, 0);
 
-            m_MapOriginWorld = tilemap.CellToWorld(originCell);
+            boundsComp.MapOriginWorld = tilemap.CellToWorld(originCell);
             var widthWorld = tilemap.CellToWorld(widthCell);
             var heightWorld = tilemap.CellToWorld(heightCell);
 
-            m_MapWidth = width;
-            m_MapHeight = height;
-            m_MapWidthWorld = Mathf.Abs(widthWorld.x - m_MapOriginWorld.x);
-            m_MapHeightWorld = Mathf.Abs(heightWorld.y - m_MapOriginWorld.y);
-            m_HasMapMetrics = true;
+            boundsComp.MapWidth = width;
+            boundsComp.MapHeight = height;
+            boundsComp.MapWidthWorld = Mathf.Abs(widthWorld.x - boundsComp.MapOriginWorld.x);
+            boundsComp.MapHeightWorld = Mathf.Abs(heightWorld.y - boundsComp.MapOriginWorld.y);
+            boundsComp.HasMapMetrics = true;
             return true;
         }
     }

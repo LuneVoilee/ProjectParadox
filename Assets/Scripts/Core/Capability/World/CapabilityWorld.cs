@@ -40,12 +40,13 @@ namespace Core.Capability
             return child;
         }
 
-        public override CEntity AddChild()
+        public override CEntity AddChild(string name = null)
         {
-            CEntity child = base.AddChild();
+            CEntity child = base.AddChild(name);
             InitializeEntityCapabilities(child);
             return child;
         }
+
 
         public override void RemoveChild(CEntity entity)
         {

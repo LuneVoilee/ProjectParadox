@@ -14,6 +14,7 @@ namespace GamePlay.Map
         private static readonly int m_MapId = Component<Map>.TId;
         private static readonly int m_NoiseId = Component<Noise>.TId;
         private static readonly int m_BiomeId = Component<Biome>.TId;
+        private static readonly int m_DrawMapId = Component<DrawMap>.TId;
 
         protected override void OnInit()
         {
@@ -81,6 +82,11 @@ namespace GamePlay.Map
 
                     index++;
                 }
+            }
+
+            if (Owner.GetComponent(m_DrawMapId) is DrawMap drawMap)
+            {
+                drawMap.IsDirty = true;
             }
 
             Owner.RemoveComponent(m_MapId);

@@ -1,4 +1,4 @@
-﻿#region
+#region
 
 using Core.Capability;
 
@@ -8,6 +8,6 @@ namespace GamePlay.Camera
 {
     public class Move : CComponent
     {
-        public float MoveSpeed = 50f;
+        public float MoveSpeed = 10f;
     }
 }

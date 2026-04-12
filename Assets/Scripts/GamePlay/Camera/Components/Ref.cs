@@ -1,7 +1,6 @@
-﻿#region
+#region
 
 using Core.Capability;
-using Map.View;
 using UnityEngine;
 
 #endregion
@@ -10,15 +9,16 @@ namespace GamePlay.Camera
 {
     public class Ref : CComponent
     {
+        //
         public Transform Target;
         public UnityEngine.Camera Camera;
-        public HexMapRenderer MapRenderer;
+        public int MapEntityId = -1;
 
         public override void Dispose()
         {
             Target = null;
             Camera = null;
-            MapRenderer = null;
+            MapEntityId = -1;
         }
     }
 }
