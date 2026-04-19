@@ -1,7 +1,10 @@
-using System;
+#region
+
 using System.Linq;
 
-namespace Tool.Json.GameFramework
+#endregion
+
+namespace Tool.Json
 {
     public partial class JsonTemplateSet<TSelf, TTemplate>
         where TSelf : JsonTemplateSet<TSelf, TTemplate>

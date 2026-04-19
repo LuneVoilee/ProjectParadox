@@ -1,9 +1,12 @@
+#region
+
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using Tool;
 
-namespace Tool.Json.GameFramework
+#endregion
+
+namespace Tool.Json
 {
     internal interface IJsonTemplateSet
     {
@@ -65,7 +68,8 @@ namespace Tool.Json.GameFramework
                     continue;
                 }
 
-                TemplatePreloadOrderAttribute attr = type.GetCustomAttribute<TemplatePreloadOrderAttribute>();
+                TemplatePreloadOrderAttribute attr =
+                    type.GetCustomAttribute<TemplatePreloadOrderAttribute>();
                 all.Add(attr != null ? (attr.Order, type) : (0, type));
             }
 

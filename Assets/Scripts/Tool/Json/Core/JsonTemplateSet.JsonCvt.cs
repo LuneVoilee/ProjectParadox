@@ -1,7 +1,11 @@
+#region
+
 using System;
 using Newtonsoft.Json;
 
-namespace Tool.Json.GameFramework
+#endregion
+
+namespace Tool.Json
 {
     public abstract partial class JsonTemplateSet<TSelf, TTemplate>
         where TSelf : JsonTemplateSet<TSelf, TTemplate>
@@ -9,7 +13,8 @@ namespace Tool.Json.GameFramework
     {
         public class ReferenceCvt : JsonConverter
         {
-            public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+            public override void WriteJson
+                (JsonWriter writer, object value, JsonSerializer serializer)
             {
                 if (value is TTemplate template)
                 {
@@ -25,11 +30,13 @@ namespace Tool.Json.GameFramework
                 }
             }
 
-            public override object ReadJson(
+            public override object ReadJson
+            (
                 JsonReader reader,
                 Type objectType,
                 object existingValue,
-                JsonSerializer serializer)
+                JsonSerializer serializer
+            )
             {
                 object primaryKey = reader.Value;
                 if (primaryKey == null)
@@ -65,18 +72,17 @@ namespace Tool.Json.GameFramework
 
         public class Ref
         {
-            private readonly object m_Key;
             private TTemplate m_Template;
             private bool m_HasQuery;
 
             public Ref(object key)
             {
-                m_Key = key;
+                Key = key;
                 m_Template = null;
                 m_HasQuery = false;
             }
 
-            public object Key => m_Key;
+            public object Key { get; }
 
             public TTemplate Get()
             {
@@ -86,7 +92,7 @@ namespace Tool.Json.GameFramework
 
             public override string ToString()
             {
-                return m_Template?.ToString() ?? m_Key?.ToString() ?? string.Empty;
+                return m_Template?.ToString() ?? Key?.ToString() ?? string.Empty;
             }
 
             public static implicit operator TTemplate(Ref r)
@@ -136,13 +142,13 @@ namespace Tool.Json.GameFramework
                     return;
                 }
 
-                Instance.TryGetTemplate(m_Key, out m_Template);
+                Instance.TryGetTemplate(Key, out m_Template);
                 m_HasQuery = true;
             }
 
             protected bool Equals(Ref other)
             {
-                return Equals(m_Key, other.m_Key);
+                return Equals(Key, other.Key);
             }
 
             public override bool Equals(object obj)
@@ -167,7 +173,7 @@ namespace Tool.Json.GameFramework
 
             public override int GetHashCode()
             {
-                return m_Key != null ? m_Key.GetHashCode() : 0;
+                return Key != null ? Key.GetHashCode() : 0;
             }
         }
     }

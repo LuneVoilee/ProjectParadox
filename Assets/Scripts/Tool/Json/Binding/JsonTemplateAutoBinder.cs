@@ -1,16 +1,19 @@
+#region
+
 using System;
 using System.Collections.Generic;
 using System.Reflection;
 using Core.Capability;
-using Tool.Json.GameFramework;
+
+#endregion
 
 namespace Tool.Json
 {
     /// <summary>
-    /// CEntity 组件自动模板绑定器。
-    /// 触发点：
-    /// 1) 组件新增时尝试绑定。
-    /// 2) 实体模板 key 变更时，重试此前等待绑定的组件。
+    ///     CEntity 组件自动模板绑定器。
+    ///     触发点：
+    ///     1) 组件新增时尝试绑定。
+    ///     2) 实体模板 key 变更时，重试此前等待绑定的组件。
     /// </summary>
     internal static class JsonTemplateAutoBinder
     {
@@ -58,7 +61,8 @@ namespace Tool.Json
                 return;
             }
 
-            if (!s_PendingByEntityId.TryGetValue(entity.Id, out List<PendingBinding> list) || list == null)
+            if (!s_PendingByEntityId.TryGetValue(entity.Id, out List<PendingBinding> list) ||
+                list == null)
             {
                 return;
             }
@@ -113,7 +117,10 @@ namespace Tool.Json
         }
 
         private static bool TryBindOne
-            (CEntity entity, CComponent component, TemplateBindingAttribute binding, bool logOnMissingKey)
+        (
+            CEntity entity, CComponent component, TemplateBindingAttribute binding,
+            bool logOnMissingKey
+        )
         {
             if (!TryResolveTemplateKey(entity, binding, out object templateKey))
             {
@@ -129,7 +136,8 @@ namespace Tool.Json
 
             try
             {
-                object template = GetTemplate(binding.TemplateSetType, binding.TemplateType, templateKey);
+                object template = GetTemplate(binding.TemplateSetType, binding.TemplateType,
+                    templateKey);
                 if (template == null)
                 {
                     if (logOnMissingKey && !binding.Optional)
@@ -141,7 +149,8 @@ namespace Tool.Json
                     return false;
                 }
 
-                JsonTemplateProcessor.AddFromTemplate(entity, component.GetType(), template, templateKey?.ToString());
+                JsonTemplateProcessor.AddFromTemplate(entity, component.GetType(), template,
+                    templateKey?.ToString());
                 return true;
             }
             catch (Exception e)
@@ -178,7 +187,8 @@ namespace Tool.Json
 
         private static object GetTemplate(Type templateSetType, Type templateType, object key)
         {
-            Type baseSetType = typeof(BaseTemplateSet<,>).MakeGenericType(templateSetType, templateType);
+            Type baseSetType =
+                typeof(BaseTemplateSet<,>).MakeGenericType(templateSetType, templateType);
             object setInstance = baseSetType.GetProperty("Instance",
                     BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy)
                 ?.GetValue(null);
@@ -205,7 +215,8 @@ namespace Tool.Json
                 return cached;
             }
 
-            object[] attrs = componentType.GetCustomAttributes(typeof(TemplateBindingAttribute), true);
+            object[] attrs =
+                componentType.GetCustomAttributes(typeof(TemplateBindingAttribute), true);
             if (attrs == null || attrs.Length == 0)
             {
                 cached = Array.Empty<TemplateBindingAttribute>();
@@ -227,7 +238,8 @@ namespace Tool.Json
             return cached;
         }
 
-        private static void AddPending(CEntity entity, CComponent component, TemplateBindingAttribute binding)
+        private static void AddPending
+            (CEntity entity, CComponent component, TemplateBindingAttribute binding)
         {
             List<PendingBinding> list = s_PendingByEntityId.GetOrNew(entity.Id);
             for (int i = 0; i < list.Count; i++)
@@ -236,7 +248,8 @@ namespace Tool.Json
                 if (pending?.Component == component &&
                     pending.Binding != null &&
                     pending.Binding.TemplateSetType == binding.TemplateSetType &&
-                    string.Equals(NormalizeSlot(pending.Binding.Slot), NormalizeSlot(binding.Slot), StringComparison.Ordinal))
+                    string.Equals(NormalizeSlot(pending.Binding.Slot), NormalizeSlot(binding.Slot),
+                        StringComparison.Ordinal))
                 {
                     return;
                 }

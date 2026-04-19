@@ -1,17 +1,19 @@
 //#define KG_EDIT_JSON_ON_LOAD
 
+#region
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using Tool;
 using UnityEngine;
 using UnityEngine.Profiling;
-
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
+
+#endregion
 
 namespace Tool.Json
 {
@@ -20,11 +22,13 @@ namespace Tool.Json
     {
         public static event Action<List<string>> OnJsonAssetReimportEvent;
 
-        private static void OnPostprocessAllAssets(
+        private static void OnPostprocessAllAssets
+        (
             string[] importedAssets,
             string[] deletedAssets,
             string[] movedAssets,
-            string[] movedFromAssetPaths)
+            string[] movedFromAssetPaths
+        )
         {
             List<string> jsonPath = importedAssets.Where(s => s.EndsWithOrdinal(".json")).ToList();
             if (jsonPath.Count > 0)
@@ -36,7 +40,7 @@ namespace Tool.Json
 #endif
 }
 
-namespace Tool.Json.GameFramework
+namespace Tool.Json
 {
     public interface ITemplateRelated<out TTemplate>
     {
@@ -85,7 +89,7 @@ namespace Tool.Json.GameFramework
             Profiler.BeginSample($"{GetType()}:Load");
 
             ms_UseFrameLimit = false;
-            JsonCoroutineUtil.Complete(CoLoad(dir));
+            CoLoad(dir).Complete();
 
             Profiler.EndSample();
         }
@@ -142,7 +146,7 @@ namespace Tool.Json.GameFramework
             Profiler.BeginSample($"{typeof(TSelf).Name}:WaitLoadingComplete");
 
             ms_UseFrameLimit = false;
-            JsonCoroutineUtil.Complete(ms_PreloadCoroutine);
+            ms_PreloadCoroutine.Complete();
 
             Profiler.EndSample();
             Log.Warn(
@@ -235,7 +239,8 @@ namespace Tool.Json.GameFramework
 
             protected Classifier()
             {
-                List<TTemplate> allTemplate = JsonTemplateSet<TSelf, TTemplate>.Instance.AllTemplates.Values
+                List<TTemplate> allTemplate = JsonTemplateSet<TSelf, TTemplate>.Instance
+                    .AllTemplates.Values
                     .ToList();
                 OnReloadAll(allTemplate);
                 JsonTemplateSet<TSelf, TTemplate>.Instance.OnReloadAllEvent += OnReloadAll;
@@ -296,7 +301,8 @@ namespace Tool.Json.GameFramework
 
             protected Classifier()
             {
-                List<TTemplate> allTemplate = JsonTemplateSet<TSelf, TTemplate>.Instance.AllTemplates.Values
+                List<TTemplate> allTemplate = JsonTemplateSet<TSelf, TTemplate>.Instance
+                    .AllTemplates.Values
                     .ToList();
                 OnReloadAll(allTemplate);
                 JsonTemplateSet<TSelf, TTemplate>.Instance.OnReloadAllEvent += OnReloadAll;
@@ -347,9 +353,11 @@ namespace Tool.Json.GameFramework
 
             public IEnumerable<TValue> AllValues => m_IndexMap.SelectMany(pair => pair.Value);
 
-            protected abstract void GetKeyValues(
+            protected abstract void GetKeyValues
+            (
                 TTemplate template,
-                ref List<KeyValuePair<TKey, TValue>> classifyResults);
+                ref List<KeyValuePair<TKey, TValue>> classifyResults
+            );
         }
     }
 }

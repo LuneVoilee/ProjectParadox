@@ -1,15 +1,16 @@
+#region
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Newtonsoft.Json;
-using Tool;
-using Tool.Json.GameFramework;
 using UnityEngine;
-
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
+
+#endregion
 
 namespace Tool.Json
 {
@@ -22,8 +23,8 @@ namespace Tool.Json
     }
 
     /// <summary>
-    /// 模板集合基类：
-    /// 负责主键索引、模板注册、按主键查询。
+    ///     模板集合基类：
+    ///     负责主键索引、模板注册、按主键查询。
     /// </summary>
     public abstract class BaseTemplateSet<TSelf, TTemplate> : Singleton<TSelf>
         where TSelf : BaseTemplateSet<TSelf, TTemplate>
@@ -44,7 +45,8 @@ namespace Tool.Json
 
             foreach (FieldInfo fieldInfo in typeof(TTemplate).GetFields())
             {
-                PrimaryKeyAttribute primaryKeyAttr = fieldInfo.GetCustomAttribute<PrimaryKeyAttribute>();
+                PrimaryKeyAttribute primaryKeyAttr =
+                    fieldInfo.GetCustomAttribute<PrimaryKeyAttribute>();
                 if (primaryKeyAttr == null)
                 {
                     continue;
@@ -68,13 +70,15 @@ namespace Tool.Json
                 object key = primaryKey.FieldInfo.GetValue(template);
                 if (key == null)
                 {
-                    throw new Exception($"主键不能为空: {typeof(TTemplate).Name}.{primaryKey.FieldInfo.Name}");
+                    throw new Exception(
+                        $"主键不能为空: {typeof(TTemplate).Name}.{primaryKey.FieldInfo.Name}");
                 }
 
                 Dictionary<object, TTemplate> destDic = m_PrimaryMap.GetOrNew(primaryKey.Name);
                 if (!destDic.TryAdd(key, template))
                 {
-                    throw new Exception($"主键重复: {typeof(TTemplate).Name}.{primaryKey.FieldInfo.Name} = {key}");
+                    throw new Exception(
+                        $"主键重复: {typeof(TTemplate).Name}.{primaryKey.FieldInfo.Name} = {key}");
                 }
             }
         }
@@ -96,12 +100,14 @@ namespace Tool.Json
                 return template;
             }
 
-            throw new Exception($"找不到模板: [{typeof(TTemplate).Name}]{primaryKey}\n{TemplateEnv.GetFullPath()}");
+            throw new Exception(
+                $"找不到模板: [{typeof(TTemplate).Name}]{primaryKey}\n{TemplateEnv.GetFullPath()}");
         }
 
         public bool TryGetTemplate(object name, object primaryKey, out TTemplate template)
         {
-            if (primaryKey != null && m_PrimaryMap.TryGetValue(name, out Dictionary<object, TTemplate> destDic))
+            if (primaryKey != null &&
+                m_PrimaryMap.TryGetValue(name, out Dictionary<object, TTemplate> destDic))
             {
                 return destDic.TryGetValue(primaryKey, out template);
             }
@@ -122,7 +128,8 @@ namespace Tool.Json
                 return true;
             }
 
-            Log.Error($"找不到模板: [{typeof(TTemplate).Name}]{primaryKey}\n{TemplateEnv.GetFullPath()}");
+            Log.Error(
+                $"找不到模板: [{typeof(TTemplate).Name}]{primaryKey}\n{TemplateEnv.GetFullPath()}");
             return false;
         }
 
@@ -154,7 +161,7 @@ namespace Tool.Json
     }
 
     /// <summary>
-    /// 基于 TextAsset(JSON) 的模板集合实现，含编辑器热重载能力。
+    ///     基于 TextAsset(JSON) 的模板集合实现，含编辑器热重载能力。
     /// </summary>
     public abstract class JsonAssetTemplateSet<TSelf, TTemplate> : BaseTemplateSet<TSelf, TTemplate>
         where TSelf : JsonAssetTemplateSet<TSelf, TTemplate>
@@ -218,7 +225,8 @@ namespace Tool.Json
             }
             catch (Exception e)
             {
-                Log.Exception($"解析JSON配置时发生异常: {{0}}\n异常配置[{typeof(TTemplate).Name}]{textAssetName}", e);
+                Log.Exception(
+                    $"解析JSON配置时发生异常: {{0}}\n异常配置[{typeof(TTemplate).Name}]{textAssetName}", e);
             }
             finally
             {
@@ -261,10 +269,12 @@ namespace Tool.Json
 
                         Log.Warn($"[{typeof(TTemplate).Name}] 重载 JSON 配置: {unit.PrimaryKey}");
 
-                        object newPrimaryKey = GetPrimaryKey(ms_DefaultPrimaryKeyName, unit.Template);
+                        object newPrimaryKey =
+                            GetPrimaryKey(ms_DefaultPrimaryKeyName, unit.Template);
                         if (!Equals(unit.PrimaryKey, newPrimaryKey))
                         {
-                            Log.Error($"主键发生改变, 无法正确重载, 请重新运行：{unit.PrimaryKey} -> {newPrimaryKey}");
+                            Log.Error(
+                                $"主键发生改变, 无法正确重载, 请重新运行：{unit.PrimaryKey} -> {newPrimaryKey}");
                         }
 
                         changedTemplates.Add(unit.Template);
