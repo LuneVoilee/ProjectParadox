@@ -12,6 +12,12 @@ namespace Core.Capability
 
         private CapabilityRegistry m_CapabilityRegistry;
 
+        static CapabilityWorld()
+        {
+            // 触发 Tool.Json 自动绑定器初始化（若未引入 Tool.Json，不产生实际绑定行为）。
+            Tool.Json.JsonTemplateAutoBinder.EnsureInitialized();
+        }
+
         private void InitializeEntityCapabilities(CEntity entity)
         {
             if (entity == null || m_CapabilityRegistry == null)

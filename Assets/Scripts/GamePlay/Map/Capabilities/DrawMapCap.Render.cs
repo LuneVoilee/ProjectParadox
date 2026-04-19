@@ -70,6 +70,24 @@ namespace GamePlay.Map
             return terrainSettings.GetTile(cell.TerrainType);
         }
 
+        private void SetHexColor(DrawMap drawMap, Vector3Int cellPosition, Color color)
+        {
+            var hexTilemap = drawMap.Tilemap;
+            // 1. 获取该位置上的 TileBase
+            TileBase tile = hexTilemap.GetTile(cellPosition);
+            if (tile == null) return;
+
+            // 2. 解锁该瓦片的颜色锁定标志（允许改变颜色）
+            //    这一步非常重要！否则 SetColor 无效
+            hexTilemap.SetTileFlags(cellPosition, TileFlags.None);
+
+            // 3. 设置颜色
+            hexTilemap.SetColor(cellPosition, color);
+
+            // 4. （可选）立即刷新该格子
+            hexTilemap.RefreshTile(cellPosition);
+        }
+
         private static int WrapIndex(int value, int max)
         {
             if (max <= 0)

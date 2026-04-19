@@ -1,0 +1,6 @@
+﻿{
+  "Id": "fireball",
+  "DisplayName": "Fire Ball",
+  "Damage": 35,
+  "Cooldown": 3.5
+}

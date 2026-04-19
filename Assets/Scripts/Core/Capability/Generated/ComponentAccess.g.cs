@@ -7,6 +7,7 @@ namespace Core.Capability
 {
     public static class ComponentAccess
     {
+        public static readonly int CComponentId = Component<Core.Capability.CComponent>.TId;
         public static readonly int CapabilityBlockComponentId = Component<Core.Capability.CapabilityBlockComponent>.TId;
         public static readonly int DestroyComponentId = Component<Core.Capability.DestroyComponent>.TId;
         public static readonly int BoundsId = Component<GamePlay.Camera.Bounds>.TId;
@@ -18,8 +19,43 @@ namespace Core.Capability
         public static readonly int GridId = Component<GamePlay.Map.Grid>.TId;
         public static readonly int MapId = Component<GamePlay.Map.Map>.TId;
         public static readonly int NoiseId = Component<GamePlay.Map.Noise>.TId;
+        public static readonly int ChangedHexsId = Component<GamePlay.Strategy.ChangedHexs>.TId;
+        public static readonly int NationId = Component<GamePlay.Strategy.Nation>.TId;
+        public static readonly int UnitId = Component<GamePlay.Strategy.Unit>.TId;
 
-        public static int Count => 11;
+        public static int Count => 15;
+
+        public static bool HasCComponent(this CEntity entity)
+        {
+            return entity != null && entity.HasComponent(CComponentId);
+        }
+
+        public static bool TryGetCComponent(this CEntity entity, out Core.Capability.CComponent component)
+        {
+            component = null;
+            return entity != null && entity.TryGetComponent(CComponentId, out component);
+        }
+
+        public static Core.Capability.CComponent GetCComponentOrNull(this CEntity entity)
+        {
+            return entity != null ? entity.GetComponent(CComponentId) as Core.Capability.CComponent : null;
+        }
+
+        public static Core.Capability.CComponent AddCComponent(this CEntity entity)
+        {
+            return entity != null ? entity.AddComponent<Core.Capability.CComponent>() : null;
+        }
+
+        public static bool RemoveCComponent(this CEntity entity)
+        {
+            if (entity == null || !entity.HasComponent(CComponentId))
+            {
+                return false;
+            }
+
+            entity.RemoveComponent(CComponentId);
+            return true;
+        }
 
         public static bool HasCapabilityBlockComponent(this CEntity entity)
         {
@@ -373,6 +409,100 @@ namespace Core.Capability
             return true;
         }
 
+        public static bool HasChangedHexs(this CEntity entity)
+        {
+            return entity != null && entity.HasComponent(ChangedHexsId);
+        }
+
+        public static bool TryGetChangedHexs(this CEntity entity, out GamePlay.Strategy.ChangedHexs component)
+        {
+            component = null;
+            return entity != null && entity.TryGetComponent(ChangedHexsId, out component);
+        }
+
+        public static GamePlay.Strategy.ChangedHexs GetChangedHexsOrNull(this CEntity entity)
+        {
+            return entity != null ? entity.GetComponent(ChangedHexsId) as GamePlay.Strategy.ChangedHexs : null;
+        }
+
+        public static GamePlay.Strategy.ChangedHexs AddChangedHexs(this CEntity entity)
+        {
+            return entity != null ? entity.AddComponent<GamePlay.Strategy.ChangedHexs>() : null;
+        }
+
+        public static bool RemoveChangedHexs(this CEntity entity)
+        {
+            if (entity == null || !entity.HasComponent(ChangedHexsId))
+            {
+                return false;
+            }
+
+            entity.RemoveComponent(ChangedHexsId);
+            return true;
+        }
+
+        public static bool HasNation(this CEntity entity)
+        {
+            return entity != null && entity.HasComponent(NationId);
+        }
+
+        public static bool TryGetNation(this CEntity entity, out GamePlay.Strategy.Nation component)
+        {
+            component = null;
+            return entity != null && entity.TryGetComponent(NationId, out component);
+        }
+
+        public static GamePlay.Strategy.Nation GetNationOrNull(this CEntity entity)
+        {
+            return entity != null ? entity.GetComponent(NationId) as GamePlay.Strategy.Nation : null;
+        }
+
+        public static GamePlay.Strategy.Nation AddNation(this CEntity entity)
+        {
+            return entity != null ? entity.AddComponent<GamePlay.Strategy.Nation>() : null;
+        }
+
+        public static bool RemoveNation(this CEntity entity)
+        {
+            if (entity == null || !entity.HasComponent(NationId))
+            {
+                return false;
+            }
+
+            entity.RemoveComponent(NationId);
+            return true;
+        }
+
+        public static bool HasUnit(this CEntity entity)
+        {
+            return entity != null && entity.HasComponent(UnitId);
+        }
+
+        public static bool TryGetUnit(this CEntity entity, out GamePlay.Strategy.Unit component)
+        {
+            component = null;
+            return entity != null && entity.TryGetComponent(UnitId, out component);
+        }
+
+        public static GamePlay.Strategy.Unit GetUnitOrNull(this CEntity entity)
+        {
+            return entity != null ? entity.GetComponent(UnitId) as GamePlay.Strategy.Unit : null;
+        }
+
+        public static GamePlay.Strategy.Unit AddUnit(this CEntity entity)
+        {
+            return entity != null ? entity.AddComponent<GamePlay.Strategy.Unit>() : null;
+        }
+
+        public static bool RemoveUnit(this CEntity entity)
+        {
+            if (entity == null || !entity.HasComponent(UnitId))
+            {
+                return false;
+            }
+
+            entity.RemoveComponent(UnitId);
+            return true;
+        }
     }
 }
-

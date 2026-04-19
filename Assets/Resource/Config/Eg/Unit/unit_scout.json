@@ -1,0 +1,8 @@
+﻿{
+  "Id": "unit_scout",
+  "Name": "Scout",
+  "Hp": 120,
+  "Speed": 6.5,
+  "IsElite": false,
+  "Skill": "fireball"
+}
