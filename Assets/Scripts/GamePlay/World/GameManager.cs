@@ -6,7 +6,7 @@ using UnityEngine;
 
 #endregion
 
-namespace NewGamePlay
+namespace GamePlay.World
 {
     public class GameManager : SingletonMono<GameManager>
     {

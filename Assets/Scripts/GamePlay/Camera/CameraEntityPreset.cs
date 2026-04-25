@@ -1,6 +1,10 @@
+#region
+
 using Core.Capability;
-using NewGamePlay;
+using GamePlay.World;
 using UnityEngine;
+
+#endregion
 
 namespace GamePlay.Camera
 {
@@ -22,7 +26,8 @@ namespace GamePlay.Camera
             public bool ClampY;
         }
 
-        public static CEntity Create(GameWorld world, in Config config, string entityName = "CameraEntity")
+        public static CEntity Create
+            (GameWorld world, in Config config, string entityName = "CameraEntity")
         {
             if (world == null)
             {

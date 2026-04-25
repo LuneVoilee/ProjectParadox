@@ -1,9 +1,10 @@
 #region
 
 using System;
+using Common.Contracts;
 using Core.Capability;
 using GamePlay.Strategy;
-using NewGamePlay;
+using GamePlay.World;
 using UnityEngine.Tilemaps;
 
 #endregion
@@ -69,7 +70,7 @@ namespace GamePlay.Map
             drawMap.TerrainSettings = config.TerrainSettings;
 
             var time = entity.AddComponent<Time>();
-            time.StartDate = new DateTime(500, 1, 1);
+            time.CurrentDate = new DateTime(500, 1, 1);
             time.NewTimeType = TimeType.Speed1;
 
             world.RegisterPrimaryMapEntity(entity);

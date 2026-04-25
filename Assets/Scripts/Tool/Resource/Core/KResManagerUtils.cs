@@ -3,7 +3,6 @@
 using System;
 using System.IO;
 using System.Text.RegularExpressions;
-using Tool.Json;
 using UnityEngine;
 
 #endregion
@@ -33,7 +32,7 @@ namespace Tool.Resource
             string localPath = Path.Combine(Application.streamingAssetsPath, path);
             if (!File.Exists(localPath))
             {
-                Log.Error($"error while reading files : {localPath}");
+                Debug.LogError($"error while reading files : {localPath}");
                 return string.Empty;
             }
 
@@ -45,7 +44,7 @@ namespace Tool.Resource
             string localPath = Path.Combine(Application.streamingAssetsPath, path);
             if (!File.Exists(localPath))
             {
-                Log.Error($"error while reading files : {localPath}");
+                Debug.LogError($"error while reading files : {localPath}");
                 return Array.Empty<byte>();
             }
 

@@ -1,7 +1,7 @@
 #region
 
 using Core.Capability;
-using NewGamePlay;
+using GamePlay.World;
 using UnityEngine;
 
 #endregion

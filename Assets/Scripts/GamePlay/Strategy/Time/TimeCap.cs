@@ -1,7 +1,10 @@
 ﻿#region
 
+using Common.Event;
+using Common.Contracts;
 using Core.Capability;
-using NewGamePlay;
+using GamePlay.Util;
+using GamePlay.World;
 
 #endregion
 
@@ -18,12 +21,12 @@ namespace GamePlay.Strategy
 
         public override bool ShouldActivate()
         {
-            return true;
+            return Owner.HasComponent(m_TimeId);
         }
 
         public override bool ShouldDeactivate()
         {
-            return true;
+            return !ShouldActivate();
         }
 
         protected override void OnActivated()
@@ -33,12 +36,32 @@ namespace GamePlay.Strategy
                 return;
             }
 
+            EventBus.OnSpeedChangeRequest += ChangeTimeSpeed;
+            ChangeTimeSpeed(time.NewTimeType);
+
+            //Day1
+            EventBus.OnTimeChangeAction?.Invoke(time.CurrentDate);
+        }
+
+        protected override void OnDeactivated()
+        {
+            EventBus.OnSpeedChangeRequest -= ChangeTimeSpeed;
+        }
+
+        private void ChangeTimeSpeed(TimeType timeType)
+        {
             if (World is not GameWorld gameWorld)
             {
                 return;
             }
 
-            gameWorld.ChangeGameSpeed(time.NewTimeType);
+            if (Owner.TryGetTime(out var time))
+            {
+                time.NewTimeType = timeType;
+            }
+
+            gameWorld.ChangeGameSpeed(timeType);
+            EventBus.OnSpeedChanged?.Invoke(timeType);
         }
 
         public override void TickActive(float deltaTime, float realElapsedSeconds)
@@ -49,7 +72,7 @@ namespace GamePlay.Strategy
             }
 
             // 定义基础时间流速比：现实 1 秒 = 游戏内 0.5 小时 (1小时 = 3600秒)
-            double gameSecondsPerRealSecond = 1800.0;
+            double gameSecondsPerRealSecond = 3600.0;
 
             time.SubSecondAccumulator += deltaTime * gameSecondsPerRealSecond;
 
@@ -68,13 +91,11 @@ namespace GamePlay.Strategy
             }
 
 
-            /* 跨天逻辑触发示例
+            //NOTICE: 跨天逻辑触发
             if (time.CurrentDate.Day != oldDay)
             {
-                // 可以在这里触发跨天结算组件/事件，例如：
-                // Owner.AddComponent<DailySettleEventComponent>();
+                EventBus.OnTimeChangeAction?.Invoke(time.CurrentDate);
             }
-            */
         }
     }
 }

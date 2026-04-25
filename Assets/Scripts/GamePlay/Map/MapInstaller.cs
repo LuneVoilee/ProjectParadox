@@ -1,7 +1,7 @@
 ﻿#region
 
 using Core.Capability;
-using NewGamePlay;
+using GamePlay.World;
 using Sirenix.OdinInspector;
 using UnityEngine;
 using UnityEngine.Tilemaps;

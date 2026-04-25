@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using Tool.Json;
 using UnityEngine;
 using UnityEngine.Profiling;
 using Debug = UnityEngine.Debug;
@@ -54,8 +53,8 @@ namespace Tool.Resource
 
         private static void LoadRecordFile()
         {
-            Log.Info($"DataPath: {Application.dataPath}");
-            Log.Info($"StreamingAssetPath: {Application.streamingAssetsPath}");
+            Debug.Log($"DataPath: {Application.dataPath}");
+            Debug.Log($"StreamingAssetPath: {Application.streamingAssetsPath}");
             LoadRecordFileOtherPlatform();
         }
 
@@ -86,7 +85,7 @@ namespace Tool.Resource
                 }
                 else
                 {
-                    Log.Warn("Load depends asset bundle " + abName + " failed!");
+                    Debug.LogWarning("Load depends asset bundle " + abName + " failed!");
                 }
 
                 ResourceManager.RecordLoadingAB(assetPath, abRealPath);
@@ -117,7 +116,7 @@ namespace Tool.Resource
 
                         if (timeTrans.TotalSeconds > s_MaxAbLoadWaitSeconds)
                         {
-                            Log.Warn(
+                            Debug.LogWarning(
                                 $"Load ab while wait seconds {timeTrans.TotalSeconds}, over max, break!");
                             abSelf = null;
                             break;
@@ -141,7 +140,7 @@ namespace Tool.Resource
                 }
                 else
                 {
-                    Log.Error("Load asset bundle" + assetBundleName + "failed!");
+                    Debug.LogError("Load asset bundle" + assetBundleName + "failed!");
                 }
 
                 ResourceManager.RecordLoadingAB(assetPath, abRealPath);
@@ -170,7 +169,7 @@ namespace Tool.Resource
                 return abSelf;
             }
 
-            Log.Error("Load asset bundle" + assetBundleName + "failed!");
+            Debug.LogError("Load asset bundle" + assetBundleName + "failed!");
             return null;
         }
 
@@ -248,7 +247,7 @@ namespace Tool.Resource
             {
                 if (KResManagerConfig.ResGlobalConfig.Verbose)
                 {
-                    Log.Info($"Begin LoadAssetBundle : {abName}.");
+                    Debug.Log($"Begin LoadAssetBundle : {abName}.");
                 }
 
                 Profiler.BeginSample("LoadAbFromFile");
@@ -260,7 +259,7 @@ namespace Tool.Resource
                 if (s_Stopwatch.ElapsedMilliseconds >=
                     KResManagerConfig.ResGlobalConfig.BundleLoadTimeLogThresholdMs)
                 {
-                    Log.Info(
+                    Debug.Log(
                         $"End LoadAssetBundle : {abName} in {s_Stopwatch.ElapsedMilliseconds}(ms).");
                 }
 
@@ -269,7 +268,7 @@ namespace Tool.Resource
 
             if (KResManagerConfig.ResGlobalConfig.Verbose)
             {
-                Log.Info($"LoadAssetBundle : {abName}.");
+                Debug.Log($"LoadAssetBundle : {abName}.");
             }
 
             return AssetBundle.LoadFromFile(abName, 0U, (ulong)ABLoadOffset);
@@ -358,7 +357,7 @@ namespace Tool.Resource
                 MAbNameRecords[strArray[0]] = value;
             }
 
-            Log.Warn($"Asset Bundle records count {MAbNameRecords.Count}");
+            Debug.LogWarning($"Asset Bundle records count {MAbNameRecords.Count}");
         }
 
         public static string GetBundleName(ref string assetName, bool showError = true)
@@ -386,7 +385,7 @@ namespace Tool.Resource
             }
             else if (showError)
             {
-                Log.Error($"Does not find the record of {assetName}");
+                Debug.LogError($"Does not find the record of {assetName}");
             }
 
             return string.IsNullOrEmpty(dstAssetBundle) ? null : dstAssetBundle.TrimEnd('\r', '\n');
@@ -455,7 +454,7 @@ namespace Tool.Resource
             var dstBundleNames = new List<string>();
             if (assetPath.Length == 0)
             {
-                Log.Error($"The input asset path {assetPath} is invalid");
+                Debug.LogError($"The input asset path {assetPath} is invalid");
                 return dstBundleNames;
             }
 
@@ -504,7 +503,7 @@ namespace Tool.Resource
             var dstBundleRecords = new Dictionary<string, string>();
             if (string.IsNullOrEmpty(assetDirPath))
             {
-                Log.Error($"The input asset path {assetDirPath} is invalid");
+                Debug.LogError($"The input asset path {assetDirPath} is invalid");
                 return dstBundleRecords;
             }
 
@@ -599,13 +598,13 @@ namespace Tool.Resource
         {
             if (KResManagerConfig.ResGlobalConfig.Verbose)
             {
-                Log.Info($"Load asset [{assetName}] from {assetBundle.name}!");
+                Debug.Log($"Load asset [{assetName}] from {assetBundle.name}!");
             }
 
             GameObject gameObject = assetBundle.LoadAsset<GameObject>(assetName);
             if (gameObject == null)
             {
-                Log.Error("Load asset " + assetName + " failed!");
+                Debug.LogError("Load asset " + assetName + " failed!");
             }
 
             return gameObject;
@@ -617,20 +616,20 @@ namespace Tool.Resource
             T result = null;
             if (KResManagerConfig.ResGlobalConfig.Verbose)
             {
-                Log.Info($"Load asset [{assetName}] from {assetBundle.name}!");
+                Debug.Log($"Load asset [{assetName}] from {assetBundle.name}!");
             }
 
             string lowerAssetName = assetName.ToLowerInvariant();
             if (!assetBundle.Contains(lowerAssetName))
             {
-                Log.Error(lowerAssetName + "does not exist in " + assetBundle.name);
+                Debug.LogError(lowerAssetName + "does not exist in " + assetBundle.name);
                 return null;
             }
 
             result = assetBundle.LoadAsset<T>(lowerAssetName);
             if (result == null)
             {
-                Log.Error("Load asset " + lowerAssetName + " failed!");
+                Debug.LogError("Load asset " + lowerAssetName + " failed!");
             }
 
             return result;
@@ -645,7 +644,7 @@ namespace Tool.Resource
         {
             if (KResManagerConfig.ResGlobalConfig.Verbose)
             {
-                Log.Info($"Load all asset [{assetPathPrefix}] from {assetBundle.name}!");
+                Debug.Log($"Load all asset [{assetPathPrefix}] from {assetBundle.name}!");
             }
 
             var result = new List<T>();
@@ -729,7 +728,7 @@ namespace Tool.Resource
                     s_GlobalAssetBundleManifest.GetAllDependencies(assetBundleName);
                 if (KResManagerConfig.ResGlobalConfig.Verbose && Debug.isDebugBuild)
                 {
-                    Log.Error(
+                    Debug.LogError(
                         $"[ResourceManager] GetDependenceAbNames: {assetBundleName}, dependencies: {dependenceAb.Length}.");
                 }
 
@@ -767,7 +766,7 @@ namespace Tool.Resource
 
             if (!s_GlobalManifestAb)
             {
-                Log.Error($"Load manifest asset bundle failed-[{manifestAbPath}]");
+                Debug.LogError($"Load manifest asset bundle failed-[{manifestAbPath}]");
                 return null;
             }
 

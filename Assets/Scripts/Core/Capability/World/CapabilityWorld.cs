@@ -1,6 +1,7 @@
 #region
 
 using System.Collections.Generic;
+using Core.Json;
 
 #endregion
 
@@ -14,8 +15,8 @@ namespace Core.Capability
 
         static CapabilityWorld()
         {
-            // 触发 Tool.Json 自动绑定器初始化（若未引入 Tool.Json，不产生实际绑定行为）。
-            Tool.Json.JsonTemplateAutoBinder.EnsureInitialized();
+            // 触发 Core.Json 自动绑定器初始化（若未引入 Core.Json，不产生实际绑定行为）。
+            JsonTemplateAutoBinder.EnsureInitialized();
         }
 
         private void InitializeEntityCapabilities(CEntity entity)

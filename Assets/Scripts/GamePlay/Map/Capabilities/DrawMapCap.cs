@@ -2,7 +2,8 @@
 
 using System;
 using Core.Capability;
-using NewGamePlay;
+using GamePlay.Util;
+using GamePlay.World;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
@@ -14,7 +15,9 @@ namespace GamePlay.Map
     {
         private static readonly int m_GridId = Component<Grid>.TId;
         private static readonly int m_DrawMapId = Component<DrawMap>.TId;
-        public override int TickGroupOrder { get; protected set; } = CapabilityOrder.PresentationMapDraw;
+
+        public override int TickGroupOrder { get; protected set; } =
+            CapabilityOrder.PresentationMapDraw;
 
         // 复用缓存数组，避免高频重绘时产生 GC 抖动。
         private Vector3Int[] m_CachedPositions = Array.Empty<Vector3Int>();

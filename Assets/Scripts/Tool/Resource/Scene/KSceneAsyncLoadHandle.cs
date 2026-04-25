@@ -1,7 +1,6 @@
 #region
 
 using System;
-using Tool.Json;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -88,7 +87,7 @@ namespace Tool.Resource
                 {
                     SceneAsyncOpt = SceneManager.LoadSceneAsync(SceneName, Mode);
                     AbLoadedCallBack?.Invoke(SceneAsyncOpt);
-                    Log.Info($"[SceneManager] Asset loaded for {SceneName} with mode [{Mode}].");
+                    Debug.Log($"[SceneManager] Asset loaded for {SceneName} with mode [{Mode}].");
                 }
                 else
                 {
@@ -102,7 +101,7 @@ namespace Tool.Resource
                 if (!IsDirty)
                 {
                     SceneLoadedCallBack?.Invoke(this);
-                    Log.Info($"[SceneManager] Scene async done for {SceneName}.");
+                    Debug.Log($"[SceneManager] Scene async done for {SceneName}.");
                 }
                 else
                 {
@@ -113,7 +112,7 @@ namespace Tool.Resource
                     }
                     else
                     {
-                        Log.Error(
+                        Debug.LogError(
                             $"[SceneManager] [{scene.name}] is not loaded when try unload async!");
                     }
                 }

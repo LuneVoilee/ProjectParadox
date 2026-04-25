@@ -2,7 +2,8 @@
 
 using Core.Capability;
 using GamePlay.Map;
-using NewGamePlay;
+using GamePlay.Util;
+using GamePlay.World;
 using UnityEngine;
 using Grid = GamePlay.Map.Grid;
 

@@ -1,7 +1,6 @@
 #region
 
 using System.Collections.Generic;
-using Tool.Json;
 using UnityEngine;
 
 #endregion
@@ -27,7 +26,7 @@ namespace Tool.Resource
         {
             if (KResManagerConfig.ResGlobalConfig.Verbose)
             {
-                Log.Debug($"[ResourceCachePool] AddAsset {name}, lifeTime = {lifeTime}");
+                Debug.Log($"[ResourceCachePool] AddAsset {name}, lifeTime = {lifeTime}");
             }
 
             m_AssetInfo.Remove(name);
@@ -45,7 +44,7 @@ namespace Tool.Resource
         {
             if (KResManagerConfig.ResGlobalConfig.Verbose)
             {
-                Log.Debug($"[ResourceCachePool] RemoveAsset by name : {name}");
+                Debug.Log($"[ResourceCachePool] RemoveAsset by name : {name}");
             }
 
             m_AssetInfo.Remove(name);
@@ -62,7 +61,7 @@ namespace Tool.Resource
 
                 if (KResManagerConfig.ResGlobalConfig.Verbose)
                 {
-                    Log.Debug($"[ResourceCachePool] RemoveAsset by object : {pair.Key}");
+                    Debug.Log($"[ResourceCachePool] RemoveAsset by object : {pair.Key}");
                 }
 
                 m_AssetInfo.Remove(pair.Key);
@@ -88,7 +87,7 @@ namespace Tool.Resource
 
         public void Clear()
         {
-            Log.Debug("[ResourceCachePool] Clear.");
+            Debug.Log("[ResourceCachePool] Clear.");
             m_AssetInfo.Clear();
         }
 

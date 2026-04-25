@@ -24,7 +24,8 @@ namespace Core.Capability
 
             public bool Equals(TemplateKeyRoute other)
             {
-                return TemplateSetType == other.TemplateSetType && string.Equals(Slot, other.Slot, StringComparison.Ordinal);
+                return TemplateSetType == other.TemplateSetType &&
+                       string.Equals(Slot, other.Slot, StringComparison.Ordinal);
             }
 
             public override bool Equals(object obj)
@@ -43,17 +44,17 @@ namespace Core.Capability
         }
 
         /// <summary>
-        /// 组件新增通知。Tool.Json 等系统可订阅此事件做自动绑定。
+        ///     组件新增通知。Core.Json 等系统可订阅此事件做自动绑定。
         /// </summary>
         public static event Action<CEntity, CComponent> ComponentAdded;
 
         /// <summary>
-        /// 模板 Key 变化通知。用于触发“延迟组件”的补绑定。
+        ///     模板 Key 变化通知。用于触发“延迟组件”的补绑定。
         /// </summary>
         public static event Action<CEntity> TemplateKeysChanged;
 
         /// <summary>
-        /// 实体释放通知。订阅方可清理缓存，避免残留引用。
+        ///     实体释放通知。订阅方可清理缓存，避免残留引用。
         /// </summary>
         public static event Action<CEntity> EntityDisposed;
 
@@ -139,7 +140,7 @@ namespace Core.Capability
         }
 
         /// <summary>
-        /// 设置实体默认模板 Key。自动绑定找不到“按模板集的 Key”时会回退到这里。
+        ///     设置实体默认模板 Key。自动绑定找不到“按模板集的 Key”时会回退到这里。
         /// </summary>
         public void SetDefaultTemplateKey(object templateKey)
         {
@@ -154,8 +155,8 @@ namespace Core.Capability
         }
 
         /// <summary>
-        /// 设置某个模板集的模板 Key，可选 slot 用于同一模板集多路配置。
-        /// slot 为空字符串表示该模板集的默认路由。
+        ///     设置某个模板集的模板 Key，可选 slot 用于同一模板集多路配置。
+        ///     slot 为空字符串表示该模板集的默认路由。
         /// </summary>
         public void SetTemplateKey(Type templateSetType, object templateKey, string slot = "")
         {
@@ -184,7 +185,8 @@ namespace Core.Capability
             SetTemplateKey(typeof(TTemplateSet), templateKey, slot);
         }
 
-        public bool TryGetTemplateKey(Type templateSetType, out object templateKey, string slot = "")
+        public bool TryGetTemplateKey
+            (Type templateSetType, out object templateKey, string slot = "")
         {
             if (templateSetType == null || m_TemplateKeys == null)
             {

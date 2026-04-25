@@ -2,7 +2,8 @@
 
 using Core;
 using Core.Capability;
-using NewGamePlay;
+using GamePlay.Util;
+using GamePlay.World;
 using UnityEngine;
 
 #endregion
@@ -13,7 +14,9 @@ namespace GamePlay.Camera
     {
         private static readonly int m_RefId = Component<Ref>.TId;
         private static readonly int m_ZoomId = Component<Zoom>.TId;
-        public override int TickGroupOrder { get; protected set; } = CapabilityOrder.PresentationCameraZoom;
+
+        public override int TickGroupOrder { get; protected set; } =
+            CapabilityOrder.PresentationCameraZoom;
 
         protected override void OnInit()
         {

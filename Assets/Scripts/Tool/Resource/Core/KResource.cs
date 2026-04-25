@@ -2,7 +2,7 @@
 
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
-using Tool.Json;
+using UnityEngine;
 using Object = UnityEngine.Object;
 
 #endregion
@@ -59,13 +59,13 @@ namespace Tool.Resource
                 T data = processor.Load<T>(address);
                 if (data == null && m_MissingPath.Add(path))
                 {
-                    Log.Warn($"加载 {typeof(T).Name} 资源失败: {path}");
+                    Debug.LogWarning($"加载 {typeof(T).Name} 资源失败: {path}");
                 }
 
                 return data;
             }
 
-            Log.Error($"加载资源失败: 找不到匹配的 Schema\n{path}");
+            Debug.LogError($"加载资源失败: 找不到匹配的 Schema\n{path}");
             return null;
         }
 
@@ -78,7 +78,7 @@ namespace Tool.Resource
                 return processor.LoadAll<T>(address);
             }
 
-            Log.Error($"加载资源失败: 找不到匹配的 Schema\n{path}");
+            Debug.LogError($"加载资源失败: 找不到匹配的 Schema\n{path}");
             return new List<T>();
         }
 

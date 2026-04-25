@@ -1,12 +1,12 @@
 ﻿#region
 
 using System;
+using Common.Contracts;
 using Core.Capability;
-using GamePlay.Strategy;
 
 #endregion
 
-namespace NewGamePlay
+namespace GamePlay.World
 {
     public class GameWorld : CapabilityWorld
     {

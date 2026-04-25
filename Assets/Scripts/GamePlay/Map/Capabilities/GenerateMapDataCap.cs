@@ -1,7 +1,8 @@
 ﻿#region
 
 using Core.Capability;
-using NewGamePlay;
+using GamePlay.Util;
+using GamePlay.World;
 using UnityEngine;
 using Random = System.Random;
 
@@ -15,7 +16,9 @@ namespace GamePlay.Map
         private static readonly int m_MapId = Component<Map>.TId;
         private static readonly int m_NoiseId = Component<Noise>.TId;
         private static readonly int m_BiomeId = Component<Biome>.TId;
-        public override int TickGroupOrder { get; protected set; } = CapabilityOrder.ScenarioMapGenerate;
+
+        public override int TickGroupOrder { get; protected set; } =
+            CapabilityOrder.ScenarioMapGenerate;
 
         protected override void OnInit()
         {

@@ -3,7 +3,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using Tool.Json;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -126,7 +125,7 @@ namespace Tool.Resource
 
             if (ValidResourceLoadPath.Count > 0)
             {
-                Log.Error($"非法路径{path}不以{ValidResourceLoadPath[0]}开头");
+                Debug.LogError($"非法路径{path}不以{ValidResourceLoadPath[0]}开头");
             }
 
             return false;
@@ -179,7 +178,7 @@ namespace Tool.Resource
             Exit0:
             if (gameObject == null)
             {
-                Log.Error("ResourceManager Load asset " + assetName + " failed!");
+                Debug.LogError("ResourceManager Load asset " + assetName + " failed!");
             }
 
             return gameObject;
@@ -291,7 +290,7 @@ namespace Tool.Resource
 
             if (result.Count == 0)
             {
-                Log.Warn($"[{typeof(T).Name}] 未读取到资源: {path}");
+                Debug.LogWarning($"[{typeof(T).Name}] 未读取到资源: {path}");
             }
 
             return result;
@@ -337,7 +336,7 @@ namespace Tool.Resource
                 Object result = AssetDatabase.LoadAssetAtPath<T>(assetName);
                 if (result == null)
                 {
-                    Log.Error($"Load asset from {assetName} result null!");
+                    Debug.LogError($"Load asset from {assetName} result null!");
                 }
 
                 asyncLoadHandle =
@@ -499,8 +498,8 @@ namespace Tool.Resource
             }
             catch (Exception e)
             {
-                Log.Error($"Write data to file [{fullPath}] exception [{e}]!");
-                Log.Exception(e);
+                Debug.LogError($"Write data to file [{fullPath}] exception [{e}]!");
+                Debug.LogException(e);
                 return false;
             }
 
@@ -521,7 +520,7 @@ namespace Tool.Resource
             }
             catch (IOException e)
             {
-                Log.Error($"Copy [{source}] to [{target}] exception {e}!");
+                Debug.LogError($"Copy [{source}] to [{target}] exception {e}!");
             }
         }
 

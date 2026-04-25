@@ -1,25 +1,15 @@
 ﻿#region
 
 using System;
+using Common.Contracts;
 using Core.Capability;
 
 #endregion
 
 namespace GamePlay.Strategy
 {
-    public enum TimeType
-    {
-        Pause,
-        Speed1,
-        Speed2,
-        Speed3,
-        Speed4,
-        Speed5
-    }
-
     public class Time : CComponent
     {
-        public DateTime StartDate;
         public TimeType NewTimeType;
         public DateTime CurrentDate;
 

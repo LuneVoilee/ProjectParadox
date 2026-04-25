@@ -4,8 +4,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using Tool.Json;
 using UnityEngine.Profiling;
+using Debug = UnityEngine.Debug;
 
 #endregion
 
@@ -90,8 +90,8 @@ namespace Tool.Resource
                 if (m_Stopwatch.ElapsedMilliseconds >
                     KResManagerConfig.ResGlobalConfig.AssetLoadTimeLogThresholdMs)
                 {
-                    Log.Info(
-                        $"[LoadCost:{m_Stopwatch.ElapsedMilliseconds:F}ms] {SampleName} Path={Path}");
+                    Debug.Log(
+                        $"[KResourceLoadingProfiler] {SampleName} {Path} {m_Stopwatch.ElapsedMilliseconds} ms");
                 }
 
                 Records.Add(new Item

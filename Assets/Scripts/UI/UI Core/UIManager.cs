@@ -36,7 +36,7 @@ namespace UI
 
         private void InitializePrefabs()
         {
-            m_UIPrefabs = KResource.LoadAll<GameObject>("UI://Panel").ToList();
+            m_UIPrefabs = KResource.LoadAll<GameObject>("UI://Panels").ToList();
             foreach (var prefab in m_UIPrefabs.Where(prefab => prefab != null))
             {
                 m_UIPrefabDict.TryAdd(prefab.name, prefab);

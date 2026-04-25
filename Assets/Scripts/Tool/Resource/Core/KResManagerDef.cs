@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using Newtonsoft.Json;
-using Tool.Json;
 using UnityEngine;
 
 #endregion
@@ -68,7 +67,7 @@ namespace Tool.Resource
             }
             catch (Exception e)
             {
-                Log.Warn($"LoadResManagerConfig failed: {e.Message}");
+                Debug.LogWarning($"LoadResManagerConfig failed: {e.Message}");
             }
 
             return result;
@@ -150,7 +149,7 @@ namespace Tool.Resource
 
         public static void SetSessionID(string sessionId)
         {
-            Log.Info($"Set SessionID: {sessionId}");
+            Debug.Log($"Set SessionID: {sessionId}");
             SessionID = sessionId;
             RefreshPersistentDataPath();
         }
@@ -174,7 +173,7 @@ namespace Tool.Resource
             }
             catch (Exception e)
             {
-                Log.Exception("更新 PersistentDataPath 时触发异常: {0}", e);
+                Debug.LogException(e);
             }
 
             if (!string.Equals(oldPath, m_PersistentDataPath, StringComparison.Ordinal))
