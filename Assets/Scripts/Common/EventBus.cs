@@ -12,5 +12,6 @@ namespace Common.Event
         public static Action<DateTime> OnTimeChangeAction;
         public static Action<TimeType> OnSpeedChangeRequest;
         public static Action<TimeType> OnSpeedChanged;
+        public static Func<DateTime?> GetCurrentTime;
     }
 }

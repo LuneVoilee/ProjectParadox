@@ -13,6 +13,7 @@ namespace GamePlay.Strategy
     public class TimeCap : CapabilityBase
     {
         private static readonly int m_TimeId = Component<Time>.TId;
+        private System.Func<System.DateTime?> m_ReadCurrentTime;
 
         protected override void OnInit()
         {
@@ -37,6 +38,8 @@ namespace GamePlay.Strategy
             }
 
             EventBus.OnSpeedChangeRequest += ChangeTimeSpeed;
+            m_ReadCurrentTime ??= ReadCurrentTime;
+            EventBus.GetCurrentTime = m_ReadCurrentTime;
             ChangeTimeSpeed(time.NewTimeType);
 
             //Day1
@@ -46,6 +49,15 @@ namespace GamePlay.Strategy
         protected override void OnDeactivated()
         {
             EventBus.OnSpeedChangeRequest -= ChangeTimeSpeed;
+            if (EventBus.GetCurrentTime == m_ReadCurrentTime)
+            {
+                EventBus.GetCurrentTime = null;
+            }
+        }
+
+        private System.DateTime? ReadCurrentTime()
+        {
+            return Owner.TryGetTime(out var time) ? time.CurrentDate : null;
         }
 
         private void ChangeTimeSpeed(TimeType timeType)

@@ -14,7 +14,10 @@ namespace UI
     {
         private void Start()
         {
-            m_TimePanel = UIManager.Instance.CreatePanel<TimePanel>();
+            if (m_TimePanel == null)
+            {
+                m_TimePanel = UIManager.Instance.CreatePanel<TimePanel>();
+            }
         }
 
         private void OnEnable()
@@ -35,10 +38,10 @@ namespace UI
 
         private void OnTimeChange(DateTime newTime)
         {
+            EnsureTimeDataBound();
             if (m_UITimeData == null)
             {
-                m_UITimeData = new UITimeData();
-                m_TimePanel.Bind(m_UITimeData);
+                return;
             }
 
             m_UITimeData.CurrentDate.Value = newTime;
@@ -46,10 +49,10 @@ namespace UI
 
         private void OnSpeedChanged(TimeType newSpeed)
         {
+            EnsureTimeDataBound();
             if (m_UITimeData == null)
             {
-                m_UITimeData = new UITimeData();
-                m_TimePanel.Bind(m_UITimeData);
+                return;
             }
 
             if (m_UITimeData.TimeSpeed.Value == newSpeed)
@@ -58,6 +61,31 @@ namespace UI
             }
 
             m_UITimeData.TimeSpeed.Value = newSpeed;
+        }
+
+        private void EnsureTimeDataBound()
+        {
+            if (m_UITimeData != null)
+            {
+                return;
+            }
+
+            if (m_TimePanel == null)
+            {
+                m_TimePanel = UIManager.Instance.CreatePanel<TimePanel>();
+            }
+
+            if (m_TimePanel == null)
+            {
+                return;
+            }
+
+            m_UITimeData = new UITimeData
+            {
+                GetCurrentTime = () => EventBus.GetCurrentTime?.Invoke()
+            };
+
+            m_TimePanel.Bind(m_UITimeData);
         }
     }
 }
