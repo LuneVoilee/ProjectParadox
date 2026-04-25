@@ -43,6 +43,44 @@ namespace Core.Json
             return AddFromTemplate<TComponent>(entity, template, templateKey?.ToString());
         }
 
+        public static TComponent AddComponentFromTemplate<TComponent>
+            (CEntity entity, object templateKey)
+            where TComponent : CComponent, new()
+        {
+            if (entity == null)
+            {
+                return null;
+            }
+
+            TemplateComponentAttribute attr = GetTemplateComponentAttribute(typeof(TComponent));
+            object template = GetTemplate(attr.TemplateType, templateKey);
+            return AddFromTemplate<TComponent>(entity, template, templateKey?.ToString());
+        }
+
+        public static TComponent ApplyTemplate<TComponent>
+            (CEntity entity, object templateKey)
+            where TComponent : CComponent, new()
+        {
+            if (entity == null)
+            {
+                return null;
+            }
+
+            TemplateComponentAttribute attr = GetTemplateComponentAttribute(typeof(TComponent));
+            object template = GetTemplate(attr.TemplateType, templateKey);
+
+            int componentId = Component<TComponent>.TId;
+            TComponent component = entity.GetComponent(componentId) as TComponent;
+            if (component == null)
+            {
+                component = entity.AddComponent<TComponent>();
+            }
+
+            ValidateTemplateMapping(typeof(TComponent), template.GetType());
+            ApplyTemplateToComponent(component, template, templateKey?.ToString());
+            return component;
+        }
+
         /// <summary>
         /// 将模板数据绑定到运行时组件（反射版本，适用于运行时动态类型）。
         /// </summary>
@@ -122,6 +160,18 @@ namespace Core.Json
         /// </summary>
         private static void ValidateTemplateMapping(Type componentType, Type actualTemplateType)
         {
+            TemplateComponentAttribute attr = GetTemplateComponentAttribute(componentType);
+
+            if (!attr.TemplateType.IsAssignableFrom(actualTemplateType))
+            {
+                throw new ArgumentException(
+                    $"Template type mismatch for {componentType.FullName}. " +
+                    $"Expected {attr.TemplateType.FullName}, actual {actualTemplateType.FullName}.");
+            }
+        }
+
+        private static TemplateComponentAttribute GetTemplateComponentAttribute(Type componentType)
+        {
             TemplateComponentAttribute attr =
                 componentType.GetCustomAttribute<TemplateComponentAttribute>(true);
             if (attr == null)
@@ -136,12 +186,36 @@ namespace Core.Json
                     $"{componentType.FullName} has invalid [TemplateComponent].");
             }
 
-            if (!attr.TemplateType.IsAssignableFrom(actualTemplateType))
+            return attr;
+        }
+
+        private static object GetTemplate(Type templateType, object templateKey)
+        {
+            if (templateKey == null)
             {
-                throw new ArgumentException(
-                    $"Template type mismatch for {componentType.FullName}. " +
-                    $"Expected {attr.TemplateType.FullName}, actual {actualTemplateType.FullName}.");
+                throw new ArgumentNullException(nameof(templateKey));
             }
+
+            Type templateSetType = JsonTemplateRegistry.GetTemplateSetType(templateType);
+            Type baseSetType = typeof(BaseTemplateSet<,>).MakeGenericType(templateSetType, templateType);
+            object setInstance = baseSetType.GetProperty("Instance",
+                    BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy)
+                ?.GetValue(null);
+
+            if (setInstance == null)
+            {
+                throw new InvalidOperationException(
+                    $"Template set instance is null: {templateSetType.FullName}.");
+            }
+
+            MethodInfo getTemplate = baseSetType.GetMethod("GetTemplate",
+                BindingFlags.Public | BindingFlags.Instance, null, new[] { typeof(object) }, null);
+            if (getTemplate == null)
+            {
+                throw new MissingMethodException(baseSetType.FullName, "GetTemplate");
+            }
+
+            return getTemplate.Invoke(setInstance, new[] { templateKey });
         }
 
         private static void ApplyTemplateToComponent

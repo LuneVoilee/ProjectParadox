@@ -1,54 +1,25 @@
-using System;
 using Core.Capability;
 
 namespace Core.Json
 {
     /// <summary>
-    /// CEntity 模板 key 配置扩展。
+    /// CEntity JSON template consumption extensions.
     /// </summary>
     public static class CEntityTemplateExtensions
     {
-        public static CEntity UseTemplateKey(this CEntity entity, object templateKey)
+        public static TComponent AddComponentFromTemplate<TComponent>
+            (this CEntity entity, object templateKey)
+            where TComponent : CComponent, new()
         {
-            if (entity == null)
-            {
-                return null;
-            }
-
-            entity.SetDefaultTemplateKey(templateKey);
-            return entity;
+            return JsonTemplateProcessor.AddComponentFromTemplate<TComponent>(entity, templateKey);
         }
 
-        public static CEntity UseTemplateKey<TTemplateSet>
-            (this CEntity entity, object templateKey, string slot = "")
+        public static TComponent ApplyTemplate<TComponent>
+            (this CEntity entity, object templateKey)
+            where TComponent : CComponent, new()
         {
-            if (entity == null)
-            {
-                return null;
-            }
-
-            entity.SetTemplateKey(typeof(TTemplateSet), templateKey, slot);
-            return entity;
+            return JsonTemplateProcessor.ApplyTemplate<TComponent>(entity, templateKey);
         }
 
-        public static CEntity UseTemplateKeys(this CEntity entity, params TemplateKeySpec[] specs)
-        {
-            if (entity == null || specs == null || specs.Length == 0)
-            {
-                return entity;
-            }
-
-            foreach (TemplateKeySpec spec in specs)
-            {
-                if (spec.TemplateSetType == null)
-                {
-                    continue;
-                }
-
-                entity.SetTemplateKey(spec.TemplateSetType, spec.TemplateKey, spec.Slot);
-            }
-
-            return entity;
-        }
     }
 }

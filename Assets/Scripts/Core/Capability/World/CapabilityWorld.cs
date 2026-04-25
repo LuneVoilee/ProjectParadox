@@ -1,9 +1,4 @@
-#region
-
 using System.Collections.Generic;
-using Core.Json;
-
-#endregion
 
 namespace Core.Capability
 {
@@ -12,12 +7,6 @@ namespace Core.Capability
         private int m_MaxCapabilityTag;
 
         private CapabilityRegistry m_CapabilityRegistry;
-
-        static CapabilityWorld()
-        {
-            // 触发 Core.Json 自动绑定器初始化（若未引入 Core.Json，不产生实际绑定行为）。
-            JsonTemplateAutoBinder.EnsureInitialized();
-        }
 
         private void InitializeEntityCapabilities(CEntity entity)
         {
