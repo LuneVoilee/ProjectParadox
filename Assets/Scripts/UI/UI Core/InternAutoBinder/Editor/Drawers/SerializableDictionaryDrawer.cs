@@ -48,7 +48,7 @@ namespace UI
         {
             if (s_CachedConfig == null)
             {
-                s_CachedConfig = Resources.Load<AutoUIConfig>("GlobalConfig");
+                s_CachedConfig = AutoUIConfig.LoadConfig();
             }
 
             return s_CachedConfig;

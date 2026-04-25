@@ -1,9 +1,14 @@
+#region
+
 using System;
 using System.IO;
 using System.Text.RegularExpressions;
+using Tool.Json;
 using UnityEngine;
 
-namespace Tool.Json
+#endregion
+
+namespace Tool.Resource
 {
     public static class KResManagerUtils
     {

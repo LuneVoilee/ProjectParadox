@@ -1,6 +1,12 @@
+#region
+
+using System.Collections.Generic;
+using Tool.Json;
 using UnityEngine;
 
-namespace Tool.Json
+#endregion
+
+namespace Tool.Resource
 {
     public class KResourceCachePool
     {
@@ -11,11 +17,11 @@ namespace Tool.Json
             public Object Asset;
         }
 
-        private readonly System.Collections.Generic.Dictionary<string, AssetInfo> m_AssetInfo =
-            new System.Collections.Generic.Dictionary<string, AssetInfo>();
+        private readonly Dictionary<string, AssetInfo> m_AssetInfo =
+            new Dictionary<string, AssetInfo>();
 
-        private readonly System.Collections.Generic.List<string> m_RemoveList =
-            new System.Collections.Generic.List<string>();
+        private readonly List<string> m_RemoveList =
+            new List<string>();
 
         public void AddAsset(string name, Object asset, int lifeTime = -1)
         {

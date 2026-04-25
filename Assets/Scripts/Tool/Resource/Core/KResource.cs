@@ -2,11 +2,12 @@
 
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using Tool.Json;
 using Object = UnityEngine.Object;
 
 #endregion
 
-namespace Tool.Json
+namespace Tool.Resource
 {
     public interface IResourceSchemaProcessor
     {
@@ -32,7 +33,7 @@ namespace Tool.Json
             RegisterPrefix("ArtBase", "Assets/Resource/ArtBase");
             RegisterPrefix("ArtSource", "Assets/Resource/ArtSource");
             RegisterPrefix("Config", "Assets/Resource/Config");
-            RegisterPrefix("CsvConfig", "Assets/Resource/CsvConfig");
+            RegisterPrefix("UI", "Assets/Resource/UI");
         }
 
         public static void RegisterPrefix(string schema, string prefix)

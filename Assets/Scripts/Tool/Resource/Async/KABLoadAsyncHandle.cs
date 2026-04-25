@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Tool.Json
+namespace Tool.Resource
 {
     public class KABLoadAsyncHandle
     {

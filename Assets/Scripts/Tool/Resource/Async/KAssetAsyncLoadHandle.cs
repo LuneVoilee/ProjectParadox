@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-namespace Tool.Json
+namespace Tool.Resource
 {
     public class KAssetAsyncLoadHandle
     {

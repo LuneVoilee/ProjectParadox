@@ -1,7 +1,9 @@
+#region
+
 using System;
 using System.Collections.Generic;
 using System.IO;
-using Tool;
+using Tool.Json;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -9,7 +11,9 @@ using Object = UnityEngine.Object;
 using UnityEditor;
 #endif
 
-namespace Tool.Json
+#endregion
+
+namespace Tool.Resource
 {
     public static class ResourceManager
     {
@@ -25,7 +29,7 @@ namespace Tool.Json
             new Dictionary<string, KAssetAsyncLoadHandle>();
 
         private static bool s_EnableCacheAsset;
-        private static int s_DefaultAssetCacheTime = 120;
+        private static readonly int s_DefaultAssetCacheTime = 120;
 
         public static void ReleaseMemory()
         {
@@ -159,7 +163,8 @@ namespace Tool.Json
                         KAssetBundleManager.AddPermanentAbName(assetBundleName, assetName);
                     }
 
-                    AssetBundle assetBundle = KAssetBundleManager.LoadAssetBundles(assetBundleName, assetName);
+                    AssetBundle assetBundle =
+                        KAssetBundleManager.LoadAssetBundles(assetBundleName, assetName);
                     if (assetBundle != null)
                     {
                         gameObject = KAssetBundleManager.LoadAssetFromAb(assetBundle, assetName);
@@ -206,7 +211,8 @@ namespace Tool.Json
                 result = AssetDatabase.LoadAssetAtPath<T>(assetName);
                 if ((s_EnableCacheAsset || preload) && result != null)
                 {
-                    resCachePool.AddAsset(assetName, result, preload ? -1 : s_DefaultAssetCacheTime);
+                    resCachePool.AddAsset(assetName, result,
+                        preload ? -1 : s_DefaultAssetCacheTime);
                 }
 #endif
             }
@@ -225,13 +231,15 @@ namespace Tool.Json
                         KAssetBundleManager.AddPermanentAbName(assetBundleName, assetName);
                     }
 
-                    AssetBundle assetBundle = KAssetBundleManager.LoadAssetBundles(assetBundleName, assetName);
+                    AssetBundle assetBundle =
+                        KAssetBundleManager.LoadAssetBundles(assetBundleName, assetName);
                     if (assetBundle != null)
                     {
                         result = KAssetBundleManager.LoadAssetFromAb<T>(assetBundle, assetName);
                         if ((s_EnableCacheAsset || preload) && result != null)
                         {
-                            resCachePool.AddAsset(assetName, result, preload ? -1 : s_DefaultAssetCacheTime);
+                            resCachePool.AddAsset(assetName, result,
+                                preload ? -1 : s_DefaultAssetCacheTime);
                         }
                     }
                 }
@@ -246,7 +254,8 @@ namespace Tool.Json
             List<string> result = KListPool<string>.Claim();
             path = KResManagerUtils.FormatAssetPath(path);
 
-            using (KResourceLoadingProfiler.AutoProfile("ResourceManager.GetFilesInDirectory", path, true))
+            using (KResourceLoadingProfiler.AutoProfile("ResourceManager.GetFilesInDirectory", path,
+                       true))
             {
                 List<ResourceKey> files = ResourceKey.GetResourceKeysInDir(path);
                 foreach (ResourceKey key in files)
@@ -288,10 +297,12 @@ namespace Tool.Json
             return result;
         }
 
-        public static KAssetAsyncLoadHandle LoadAsync<T>(
+        public static KAssetAsyncLoadHandle LoadAsync<T>
+        (
             string assetName,
             Action<KAssetAsyncLoadHandle> completeCallBack,
-            bool setAbPermanent = false) where T : Object
+            bool setAbPermanent = false
+        ) where T : Object
         {
             KAssetAsyncLoadHandle asyncLoadHandle;
 
@@ -300,7 +311,8 @@ namespace Tool.Json
             Object cached = resCachePool.GetAsset(assetName);
             if (cached != null)
             {
-                asyncLoadHandle = new KAssetAsyncLoadHandle(assetName, typeof(T), cached, completeCallBack);
+                asyncLoadHandle =
+                    new KAssetAsyncLoadHandle(assetName, typeof(T), cached, completeCallBack);
                 AssetAsyncLoadHandleDic[assetName] = asyncLoadHandle;
                 return asyncLoadHandle;
             }
@@ -328,9 +340,11 @@ namespace Tool.Json
                     Log.Error($"Load asset from {assetName} result null!");
                 }
 
-                asyncLoadHandle = new KAssetAsyncLoadHandle(assetName, typeof(T), result, completeCallBack);
+                asyncLoadHandle =
+                    new KAssetAsyncLoadHandle(assetName, typeof(T), result, completeCallBack);
 #else
-                asyncLoadHandle = new KAssetAsyncLoadHandle(assetName, typeof(T), (Object)null, completeCallBack);
+                asyncLoadHandle =
+                    new KAssetAsyncLoadHandle(assetName, typeof(T), (Object)null, completeCallBack);
 #endif
             }
             else
@@ -343,8 +357,10 @@ namespace Tool.Json
                         KAssetBundleManager.AddPermanentAbName(assetBundleName, assetName);
                     }
 
-                    KAssetBundleManager.LoadAssetBundlesAsync(assetBundleName, assetName, out KABLoadAsyncHandle mainKabLoadHandle);
-                    asyncLoadHandle = new KAssetAsyncLoadHandle(assetName, typeof(T), mainKabLoadHandle, completeCallBack);
+                    KAssetBundleManager.LoadAssetBundlesAsync(assetBundleName, assetName,
+                        out KABLoadAsyncHandle mainKabLoadHandle);
+                    asyncLoadHandle = new KAssetAsyncLoadHandle(assetName, typeof(T),
+                        mainKabLoadHandle, completeCallBack);
                 }
             }
 
@@ -352,9 +368,11 @@ namespace Tool.Json
             return asyncLoadHandle;
         }
 
-        public static KAssetAsyncLoadHandle LoadAllAsync<T>(
+        public static KAssetAsyncLoadHandle LoadAllAsync<T>
+        (
             string path,
-            Action<KAssetAsyncLoadHandle> completeCallBack) where T : Object
+            Action<KAssetAsyncLoadHandle> completeCallBack
+        ) where T : Object
         {
             KAssetAsyncLoadHandle asyncLoadHandle;
 
@@ -370,9 +388,11 @@ namespace Tool.Json
                 var objList = new List<Object>();
                 if (Directory.Exists(path))
                 {
-                    foreach (string file in Directory.GetFiles(path, "*.*", SearchOption.AllDirectories))
+                    foreach (string file in Directory.GetFiles(path, "*.*",
+                                 SearchOption.AllDirectories))
                     {
-                        if (file.Contains(".svn\\") || file.ToLowerInvariant().EndsWithOrdinal(".meta"))
+                        if (file.Contains(".svn\\") ||
+                            file.ToLowerInvariant().EndsWithOrdinal(".meta"))
                         {
                             continue;
                         }
@@ -386,27 +406,34 @@ namespace Tool.Json
                     }
                 }
 
-                asyncLoadHandle = new KAssetAsyncLoadHandle(path, typeof(T), objList, completeCallBack);
+                asyncLoadHandle =
+                    new KAssetAsyncLoadHandle(path, typeof(T), objList, completeCallBack);
 #else
-                asyncLoadHandle = new KAssetAsyncLoadHandle(path, typeof(T), new List<Object>(), completeCallBack);
+                asyncLoadHandle =
+                    new KAssetAsyncLoadHandle(path, typeof(T), new List<Object>(), completeCallBack);
 #endif
             }
             else
             {
-                using (KResourceLoadingProfiler.AutoProfile("ResourceManager.LoadAllAsync", path, true))
+                using (KResourceLoadingProfiler.AutoProfile("ResourceManager.LoadAllAsync", path,
+                           true))
                 {
                     var abLoadHandleSet = new List<KABLoadAsyncHandle>();
-                    Dictionary<string, string> abNameRecords = KAssetBundleManager.GetBundlePairs(path, string.Empty, KResManagerDef.BsonFileSuffix);
+                    Dictionary<string, string> abNameRecords =
+                        KAssetBundleManager.GetBundlePairs(path, string.Empty,
+                            KResManagerDef.BsonFileSuffix);
                     foreach (KeyValuePair<string, string> t in abNameRecords)
                     {
-                        KAssetBundleManager.LoadAssetBundlesAsync(t.Value, t.Key, out KABLoadAsyncHandle mainKabLoadHandle);
+                        KAssetBundleManager.LoadAssetBundlesAsync(t.Value, t.Key,
+                            out KABLoadAsyncHandle mainKabLoadHandle);
                         if (mainKabLoadHandle != null)
                         {
                             abLoadHandleSet.Add(mainKabLoadHandle);
                         }
                     }
 
-                    asyncLoadHandle = new KAssetAsyncLoadHandle(path, typeof(T), abLoadHandleSet, completeCallBack);
+                    asyncLoadHandle = new KAssetAsyncLoadHandle(path, typeof(T), abLoadHandleSet,
+                        completeCallBack);
                 }
             }
 
@@ -414,11 +441,13 @@ namespace Tool.Json
             return asyncLoadHandle;
         }
 
-        public static void UnloadAsset(
+        public static void UnloadAsset
+        (
             string assetName,
             bool selfOnly = false,
             bool unloadAB = false,
-            bool releaseAsset = false)
+            bool releaseAsset = false
+        )
         {
             if (!KResManagerDef.IsEditorModel && unloadAB)
             {
@@ -428,7 +457,8 @@ namespace Tool.Json
                     return;
                 }
 
-                KAssetBundleManager.UnloadAssetBundles(assetBundleName, assetName, selfOnly, releaseAsset);
+                KAssetBundleManager.UnloadAssetBundles(assetBundleName, assetName, selfOnly,
+                    releaseAsset);
             }
         }
 
@@ -445,7 +475,8 @@ namespace Tool.Json
             // 保留API，当前项目默认关闭记录
         }
 
-        public static bool WritePersistentFile(string relativePath, byte[] data, EWriteMode writeMode)
+        public static bool WritePersistentFile
+            (string relativePath, byte[] data, EWriteMode writeMode)
         {
             string persistentDir = KResManagerDef.PersistentDataPath;
             string fullPath = Path.Combine(persistentDir, relativePath);
@@ -458,7 +489,9 @@ namespace Tool.Json
                     Directory.CreateDirectory(dir);
                 }
 
-                FileMode fileMode = writeMode == EWriteMode.Overwrite ? FileMode.Create : FileMode.Append;
+                FileMode fileMode = writeMode == EWriteMode.Overwrite
+                    ? FileMode.Create
+                    : FileMode.Append;
                 using (var stream = new FileStream(fullPath, fileMode))
                 {
                     stream.Write(data, 0, data.Length);

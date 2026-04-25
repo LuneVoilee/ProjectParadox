@@ -806,7 +806,7 @@ namespace UI
                     }
 
                     // 构造旧的key和新的key
-                    string oldKey = $"{oldName.Replace(" ", "_")}_{component.GetType().Name}";
+                    string oldKey = ComponentHelper.GetNodeComponentKey(component, oldName);
                     string newKey = HierarchyManager.GetNodeComponentKey(component);
                     // 检查是否存在旧引用
                     if (nearestHandler.ComponentRefs.ContainsKey(oldKey))

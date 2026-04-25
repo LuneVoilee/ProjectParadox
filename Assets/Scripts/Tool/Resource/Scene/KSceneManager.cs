@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-namespace Tool.Json
+namespace Tool.Resource
 {
     public static class KSceneManager
     {

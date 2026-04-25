@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Tool;
+using Tool.Resource;
 using UnityEngine;
 
 #endregion
@@ -35,7 +36,7 @@ namespace UI
 
         private void InitializePrefabs()
         {
-            m_UIPrefabs = Resources.LoadAll<GameObject>("UIPanel").ToList();
+            m_UIPrefabs = KResource.LoadAll<GameObject>("UI://Panel").ToList();
             foreach (var prefab in m_UIPrefabs.Where(prefab => prefab != null))
             {
                 m_UIPrefabDict.TryAdd(prefab.name, prefab);

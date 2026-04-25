@@ -1,6 +1,12 @@
+#region
+
+using System;
 using Core.Capability;
+using GamePlay.Strategy;
 using NewGamePlay;
 using UnityEngine.Tilemaps;
+
+#endregion
 
 namespace GamePlay.Map
 {
@@ -23,7 +29,8 @@ namespace GamePlay.Map
             public TerrainSettings TerrainSettings;
         }
 
-        public static CEntity Create(GameWorld world, in Config config, string entityName = "MapEntity")
+        public static CEntity Create
+            (GameWorld world, in Config config, string entityName = "MapEntity")
         {
             if (world == null)
             {
@@ -38,6 +45,7 @@ namespace GamePlay.Map
 
             world.BindCapability<GenerateMapDataCap>(entity);
             world.BindCapability<DrawMapCap>(entity);
+            world.BindCapability<TimeCap>(entity);
 
             var biomeComp = entity.AddComponent<Biome>();
             biomeComp.SeaLevel = config.SeaLevel;
@@ -59,6 +67,10 @@ namespace GamePlay.Map
             var drawMap = entity.AddComponent<DrawMap>();
             drawMap.Tilemap = config.Tilemap;
             drawMap.TerrainSettings = config.TerrainSettings;
+
+            var time = entity.AddComponent<Time>();
+            time.StartDate = new DateTime(500, 1, 1);
+            time.NewTimeType = TimeType.Speed1;
 
             world.RegisterPrimaryMapEntity(entity);
             return entity;

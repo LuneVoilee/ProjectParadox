@@ -1,9 +1,14 @@
+#region
+
+using System;
 using System.Collections.Generic;
+
+#endregion
 
 namespace UI
 {
     /// <summary>
-    /// 命名策略工厂
+    ///     命名策略工厂
     /// </summary>
     public static class NamingStrategyFactory
     {
@@ -11,7 +16,7 @@ namespace UI
             = new Dictionary<NamingConvention, INamingStrategy>();
 
         /// <summary>
-        /// 根据命名规则创建策略
+        ///     根据命名规则创建策略
         /// </summary>
         public static INamingStrategy CreateStrategy(NamingConvention convention)
         {
@@ -36,7 +41,7 @@ namespace UI
                 case NamingConvention.PascalCase:
                     strategy = new PascalCaseStrategy();
                     break;
-                case NamingConvention.m_PascalCase:
+                case NamingConvention.PrivatePascalCase:
                     strategy = new PrivateFieldPascalCaseStrategy();
                     break;
                 case NamingConvention.CamelCase:
@@ -52,13 +57,14 @@ namespace UI
         }
 
         /// <summary>
-        /// 获取所有策略的预览示例
+        ///     获取所有策略的预览示例
         /// </summary>
-        public static Dictionary<NamingConvention, string> GetAllExamples(string nodeName, string componentType)
+        public static Dictionary<NamingConvention, string> GetAllExamples
+            (string nodeName, string componentType)
         {
             var examples = new Dictionary<NamingConvention, string>();
 
-            foreach (NamingConvention convention in System.Enum.GetValues(typeof(NamingConvention)))
+            foreach (NamingConvention convention in Enum.GetValues(typeof(NamingConvention)))
             {
                 var strategy = CreateStrategy(convention);
                 examples[convention] = strategy.GetExample(nodeName, componentType);
@@ -68,7 +74,7 @@ namespace UI
         }
 
         /// <summary>
-        /// 清理策略缓存
+        ///     清理策略缓存
         /// </summary>
         public static void ClearCache()
         {

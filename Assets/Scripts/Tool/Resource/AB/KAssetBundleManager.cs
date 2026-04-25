@@ -1,12 +1,19 @@
+#region
+
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using Tool;
+using Tool.Json;
 using UnityEngine;
 using UnityEngine.Profiling;
+using Debug = UnityEngine.Debug;
+using Object = UnityEngine.Object;
 
-namespace Tool.Json
+#endregion
+
+namespace Tool.Resource
 {
     internal class AssetBundleInfo
     {
@@ -19,12 +26,14 @@ namespace Tool.Json
         private static AssetBundle s_GlobalManifestAb;
         private static AssetBundleManifest s_GlobalAssetBundleManifest;
 
-        private static readonly System.Diagnostics.Stopwatch s_Stopwatch = new System.Diagnostics.Stopwatch();
+        private static readonly Stopwatch s_Stopwatch = new Stopwatch();
         private static readonly List<string> s_PermanentAbName = new List<string>();
         private static readonly float s_MaxAbLoadWaitSeconds = 2f;
 
         private static int ABLoadOffset =>
-            KResManagerDef.EnableEncryptABOffest ? DataEncryptUtil.EncryptedEncryptFlagBytes.Length : 0;
+            KResManagerDef.EnableEncryptABOffest
+                ? DataEncryptUtil.EncryptedEncryptFlagBytes.Length
+                : 0;
 
         private static readonly Dictionary<string, AssetBundleInfo> MLoadedAssetBundles =
             new Dictionary<string, AssetBundleInfo>(StringComparer.InvariantCultureIgnoreCase);
@@ -57,7 +66,8 @@ namespace Tool.Json
 
             foreach (string abName in dependenceAbNames)
             {
-                if ((MLoadedAssetBundles.ContainsKey(abName) && MLoadedAssetBundles[abName].MAssetBundle != null) ||
+                if ((MLoadedAssetBundles.ContainsKey(abName) &&
+                     MLoadedAssetBundles[abName].MAssetBundle != null) ||
                     ABLoadingDic.ContainsKey(abName))
                 {
                     continue;
@@ -89,7 +99,8 @@ namespace Tool.Json
             }
             else
             {
-                string abRealPath = Path.Combine(KResManagerDef.MAssetBundleRootPath, assetBundleName);
+                string abRealPath =
+                    Path.Combine(KResManagerDef.MAssetBundleRootPath, assetBundleName);
 
                 AssetBundle abSelf;
                 if (ABLoadingDic.TryGetValue(assetBundleName, out KABLoadAsyncHandle loadingHandle))
@@ -106,7 +117,8 @@ namespace Tool.Json
 
                         if (timeTrans.TotalSeconds > s_MaxAbLoadWaitSeconds)
                         {
-                            Log.Warn($"Load ab while wait seconds {timeTrans.TotalSeconds}, over max, break!");
+                            Log.Warn(
+                                $"Load ab while wait seconds {timeTrans.TotalSeconds}, over max, break!");
                             abSelf = null;
                             break;
                         }
@@ -162,17 +174,20 @@ namespace Tool.Json
             return null;
         }
 
-        public static void LoadAssetBundlesAsync(
+        public static void LoadAssetBundlesAsync
+        (
             string assetBundleName,
             string assetPath,
-            out KABLoadAsyncHandle mainKabLoadHandle)
+            out KABLoadAsyncHandle mainKabLoadHandle
+        )
         {
             List<string> dependenceAbNames = GetDependAb(assetBundleName, assetPath);
             var dependABLoadHandleSet = new List<KABLoadAsyncHandle>();
 
             foreach (string abName in dependenceAbNames)
             {
-                if (MLoadedAssetBundles.TryGetValue(abName, out AssetBundleInfo info) && info.MAssetBundle != null)
+                if (MLoadedAssetBundles.TryGetValue(abName, out AssetBundleInfo info) &&
+                    info.MAssetBundle != null)
                 {
                     continue;
                 }
@@ -195,16 +210,19 @@ namespace Tool.Json
             if (MLoadedAssetBundles.TryGetValue(assetBundleName, out AssetBundleInfo mainInfo) &&
                 mainInfo.MAssetBundle != null)
             {
-                mainKabLoadHandle = new KABLoadAsyncHandle(assetBundleName, null, dependABLoadHandleSet)
-                {
-                    AssetBundle = mainInfo.MAssetBundle
-                };
+                mainKabLoadHandle =
+                    new KABLoadAsyncHandle(assetBundleName, null, dependABLoadHandleSet)
+                    {
+                        AssetBundle = mainInfo.MAssetBundle
+                    };
                 return;
             }
 
-            string mainAbRealPath = Path.Combine(KResManagerDef.MAssetBundleRootPath, assetBundleName);
+            string mainAbRealPath =
+                Path.Combine(KResManagerDef.MAssetBundleRootPath, assetBundleName);
             AssetBundleCreateRequest mainRequest = LoadAbAsync(mainAbRealPath);
-            mainKabLoadHandle = new KABLoadAsyncHandle(assetBundleName, mainRequest, dependABLoadHandleSet);
+            mainKabLoadHandle =
+                new KABLoadAsyncHandle(assetBundleName, mainRequest, dependABLoadHandleSet);
             ResourceManager.RecordLoadingAB(assetPath, mainAbRealPath);
         }
 
@@ -239,9 +257,11 @@ namespace Tool.Json
                 s_Stopwatch.Stop();
                 Profiler.EndSample();
 
-                if (s_Stopwatch.ElapsedMilliseconds >= KResManagerConfig.ResGlobalConfig.BundleLoadTimeLogThresholdMs)
+                if (s_Stopwatch.ElapsedMilliseconds >=
+                    KResManagerConfig.ResGlobalConfig.BundleLoadTimeLogThresholdMs)
                 {
-                    Log.Info($"End LoadAssetBundle : {abName} in {s_Stopwatch.ElapsedMilliseconds}(ms).");
+                    Log.Info(
+                        $"End LoadAssetBundle : {abName} in {s_Stopwatch.ElapsedMilliseconds}(ms).");
                 }
 
                 return ab1;
@@ -267,7 +287,8 @@ namespace Tool.Json
             var removeKeyList = new List<string>();
             foreach (KeyValuePair<string, AssetBundleInfo> bundlePair in MLoadedAssetBundles)
             {
-                if (bundlePair.Value?.MAssetBundle == null || s_PermanentAbName.Contains(bundlePair.Key))
+                if (bundlePair.Value?.MAssetBundle == null ||
+                    s_PermanentAbName.Contains(bundlePair.Key))
                 {
                     continue;
                 }
@@ -284,7 +305,8 @@ namespace Tool.Json
             Profiler.EndSample();
         }
 
-        public static void AddPermanentAbName(string bundleName, string assetPath, bool includeDependence = true)
+        public static void AddPermanentAbName
+            (string bundleName, string assetPath, bool includeDependence = true)
         {
             if (includeDependence)
             {
@@ -308,7 +330,8 @@ namespace Tool.Json
 
         public static void LoadRecordFileOtherPlatform()
         {
-            string recordFilePath = Path.Combine(KResManagerDef.MAssetBundleRootPath, KResManagerDef.MAssetBundleRecordFile);
+            string recordFilePath = Path.Combine(KResManagerDef.MAssetBundleRootPath,
+                KResManagerDef.MAssetBundleRecordFile);
             if (!File.Exists(recordFilePath))
             {
                 return;
@@ -426,7 +449,8 @@ namespace Tool.Json
             return new KeyValuePair<string, string>(string.Empty, string.Empty);
         }
 
-        public static List<string> GetBundleNames(string assetPath, string includeSuffix = "", string excludeSuffix = "")
+        public static List<string> GetBundleNames
+            (string assetPath, string includeSuffix = "", string excludeSuffix = "")
         {
             var dstBundleNames = new List<string>();
             if (assetPath.Length == 0)
@@ -442,12 +466,14 @@ namespace Tool.Json
 
             foreach (KeyValuePair<string, string> kvRecord in MAbNameRecords)
             {
-                if (includeSuffix != string.Empty && !kvRecord.Key.EndsWithOrdinalIgnoreCase(includeSuffix))
+                if (includeSuffix != string.Empty &&
+                    !kvRecord.Key.EndsWithOrdinalIgnoreCase(includeSuffix))
                 {
                     continue;
                 }
 
-                if (excludeSuffix != string.Empty && kvRecord.Key.EndsWithOrdinalIgnoreCase(excludeSuffix))
+                if (excludeSuffix != string.Empty &&
+                    kvRecord.Key.EndsWithOrdinalIgnoreCase(excludeSuffix))
                 {
                     continue;
                 }
@@ -467,11 +493,13 @@ namespace Tool.Json
             return dstBundleNames;
         }
 
-        public static Dictionary<string, string> GetBundlePairs(
+        public static Dictionary<string, string> GetBundlePairs
+        (
             string assetDirPath,
             string includeSuffix = "",
             string excludeSuffix = "",
-            string excludeDir = "")
+            string excludeDir = ""
+        )
         {
             var dstBundleRecords = new Dictionary<string, string>();
             if (string.IsNullOrEmpty(assetDirPath))
@@ -487,12 +515,14 @@ namespace Tool.Json
 
             foreach (KeyValuePair<string, string> kvRecord in MAbNameRecords)
             {
-                if (!string.IsNullOrEmpty(includeSuffix) && !kvRecord.Key.EndsWithOrdinalIgnoreCase(includeSuffix))
+                if (!string.IsNullOrEmpty(includeSuffix) &&
+                    !kvRecord.Key.EndsWithOrdinalIgnoreCase(includeSuffix))
                 {
                     continue;
                 }
 
-                if (!string.IsNullOrEmpty(excludeSuffix) && kvRecord.Key.EndsWithOrdinalIgnoreCase(excludeSuffix))
+                if (!string.IsNullOrEmpty(excludeSuffix) &&
+                    kvRecord.Key.EndsWithOrdinalIgnoreCase(excludeSuffix))
                 {
                     continue;
                 }
@@ -502,7 +532,8 @@ namespace Tool.Json
                     continue;
                 }
 
-                if (!string.IsNullOrEmpty(excludeDir) && kvRecord.Key.StartsWithOrdinalIgnoreCase(excludeDir))
+                if (!string.IsNullOrEmpty(excludeDir) &&
+                    kvRecord.Key.StartsWithOrdinalIgnoreCase(excludeDir))
                 {
                     continue;
                 }
@@ -516,11 +547,13 @@ namespace Tool.Json
             return dstBundleRecords;
         }
 
-        public static void UnloadAssetBundles(
+        public static void UnloadAssetBundles
+        (
             string assetBundleName,
             string assetPath,
             bool selfOnly,
-            bool destroyAsset = false)
+            bool destroyAsset = false
+        )
         {
             if (s_PermanentAbName.Contains(assetBundleName))
             {
@@ -578,7 +611,8 @@ namespace Tool.Json
             return gameObject;
         }
 
-        public static T LoadAssetFromAb<T>(AssetBundle assetBundle, string assetName) where T : UnityEngine.Object
+        public static T LoadAssetFromAb<T>
+            (AssetBundle assetBundle, string assetName) where T : Object
         {
             T result = null;
             if (KResManagerConfig.ResGlobalConfig.Verbose)
@@ -602,10 +636,12 @@ namespace Tool.Json
             return result;
         }
 
-        public static T[] LoadAllAssetFromAb<T>(
+        public static T[] LoadAllAssetFromAb<T>
+        (
             AssetBundle assetBundle,
             string assetPathPrefix,
-            string includeSuffix = "") where T : UnityEngine.Object
+            string includeSuffix = ""
+        ) where T : Object
         {
             if (KResManagerConfig.ResGlobalConfig.Verbose)
             {
@@ -618,12 +654,14 @@ namespace Tool.Json
 
             foreach (string assetName in assetNames)
             {
-                if (includeSuffix != string.Empty && !assetName.EndsWithOrdinalIgnoreCase(includeSuffix))
+                if (includeSuffix != string.Empty &&
+                    !assetName.EndsWithOrdinalIgnoreCase(includeSuffix))
                 {
                     continue;
                 }
 
-                if (assetName.StartsWithOrdinalIgnoreCase(lowerPrefix) && !assetName.EndsWithOrdinalIgnoreCase(".meta"))
+                if (assetName.StartsWithOrdinalIgnoreCase(lowerPrefix) &&
+                    !assetName.EndsWithOrdinalIgnoreCase(".meta"))
                 {
                     result.Add(assetBundle.LoadAsset<T>(assetName));
                 }
@@ -632,10 +670,12 @@ namespace Tool.Json
             return result.ToArray();
         }
 
-        public static Dictionary<string, T> LoadAllAssetFromAbWithPath<T>(
+        public static Dictionary<string, T> LoadAllAssetFromAbWithPath<T>
+        (
             AssetBundle assetBundle,
             string assetPathPrefix,
-            string includeSuffix = "") where T : UnityEngine.Object
+            string includeSuffix = ""
+        ) where T : Object
         {
             var result = new Dictionary<string, T>();
             string[] assetNames = assetBundle.GetAllAssetNames();
@@ -673,20 +713,24 @@ namespace Tool.Json
             return GetDependenceAbNames(s_GlobalManifestAb, assetBundleName);
         }
 
-        public static List<string> GetDependenceAbNames(AssetBundle manifestAb, string assetBundleName)
+        public static List<string> GetDependenceAbNames
+            (AssetBundle manifestAb, string assetBundleName)
         {
             var dependenceAbNames = new List<string>();
             if (manifestAb != null && s_GlobalAssetBundleManifest == null)
             {
-                s_GlobalAssetBundleManifest = manifestAb.LoadAsset("AssetBundleManifest") as AssetBundleManifest;
+                s_GlobalAssetBundleManifest =
+                    manifestAb.LoadAsset("AssetBundleManifest") as AssetBundleManifest;
             }
 
             if (s_GlobalAssetBundleManifest != null)
             {
-                string[] dependenceAb = s_GlobalAssetBundleManifest.GetAllDependencies(assetBundleName);
-                if (KResManagerConfig.ResGlobalConfig.Verbose && UnityEngine.Debug.isDebugBuild)
+                string[] dependenceAb =
+                    s_GlobalAssetBundleManifest.GetAllDependencies(assetBundleName);
+                if (KResManagerConfig.ResGlobalConfig.Verbose && Debug.isDebugBuild)
                 {
-                    Log.Error($"[ResourceManager] GetDependenceAbNames: {assetBundleName}, dependencies: {dependenceAb.Length}.");
+                    Log.Error(
+                        $"[ResourceManager] GetDependenceAbNames: {assetBundleName}, dependencies: {dependenceAb.Length}.");
                 }
 
                 dependenceAbNames = dependenceAb.ToList();

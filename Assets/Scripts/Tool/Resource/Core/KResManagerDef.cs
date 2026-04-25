@@ -4,11 +4,12 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using Newtonsoft.Json;
+using Tool.Json;
 using UnityEngine;
 
 #endregion
 
-namespace Tool.Json
+namespace Tool.Resource
 {
     public class ResGlobalConfig
     {

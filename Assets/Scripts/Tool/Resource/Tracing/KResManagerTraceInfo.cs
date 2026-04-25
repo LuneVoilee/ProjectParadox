@@ -1,6 +1,6 @@
 using System;
 
-namespace Tool.Json
+namespace Tool.Resource
 {
     public class KResManagerTraceInfo
     {

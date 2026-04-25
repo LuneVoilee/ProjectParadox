@@ -1,10 +1,15 @@
+#region
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using Tool.Json;
 using UnityEngine.Profiling;
 
-namespace Tool.Json
+#endregion
+
+namespace Tool.Resource
 {
     public static class KResourceLoadingProfiler
     {
@@ -82,9 +87,11 @@ namespace Tool.Json
                 }
 
                 m_Stopwatch.Stop();
-                if (m_Stopwatch.ElapsedMilliseconds > KResManagerConfig.ResGlobalConfig.AssetLoadTimeLogThresholdMs)
+                if (m_Stopwatch.ElapsedMilliseconds >
+                    KResManagerConfig.ResGlobalConfig.AssetLoadTimeLogThresholdMs)
                 {
-                    Log.Info($"[LoadCost:{m_Stopwatch.ElapsedMilliseconds:F}ms] {SampleName} Path={Path}");
+                    Log.Info(
+                        $"[LoadCost:{m_Stopwatch.ElapsedMilliseconds:F}ms] {SampleName} Path={Path}");
                 }
 
                 Records.Add(new Item

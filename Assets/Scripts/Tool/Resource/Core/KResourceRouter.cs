@@ -4,7 +4,7 @@ using Tool;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-namespace Tool.Json
+namespace Tool.Resource
 {
     public class KResourceRouter : IResourceSchemaProcessor
     {

@@ -1,7 +1,6 @@
 #region
 
 using System;
-using Core.Data;
 using UnityEngine;
 
 #endregion
@@ -66,5 +65,9 @@ namespace UI
             Unbind();
             base.OnDestroy();
         }
+    }
+
+    public abstract class BasePanelData
+    {
     }
 }

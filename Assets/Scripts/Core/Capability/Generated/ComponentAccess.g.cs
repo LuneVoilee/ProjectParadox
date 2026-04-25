@@ -21,9 +21,10 @@ namespace Core.Capability
         public static readonly int NoiseId = Component<GamePlay.Map.Noise>.TId;
         public static readonly int ChangedHexsId = Component<GamePlay.Strategy.ChangedHexs>.TId;
         public static readonly int NationId = Component<GamePlay.Strategy.Nation>.TId;
+        public static readonly int TimeId = Component<GamePlay.Strategy.Time>.TId;
         public static readonly int UnitId = Component<GamePlay.Strategy.Unit>.TId;
 
-        public static int Count => 15;
+        public static int Count => 16;
 
         public static bool HasCComponent(this CEntity entity)
         {
@@ -470,6 +471,38 @@ namespace Core.Capability
             }
 
             entity.RemoveComponent(NationId);
+            return true;
+        }
+
+        public static bool HasTime(this CEntity entity)
+        {
+            return entity != null && entity.HasComponent(TimeId);
+        }
+
+        public static bool TryGetTime(this CEntity entity, out GamePlay.Strategy.Time component)
+        {
+            component = null;
+            return entity != null && entity.TryGetComponent(TimeId, out component);
+        }
+
+        public static GamePlay.Strategy.Time GetTimeOrNull(this CEntity entity)
+        {
+            return entity != null ? entity.GetComponent(TimeId) as GamePlay.Strategy.Time : null;
+        }
+
+        public static GamePlay.Strategy.Time AddTime(this CEntity entity)
+        {
+            return entity != null ? entity.AddComponent<GamePlay.Strategy.Time>() : null;
+        }
+
+        public static bool RemoveTime(this CEntity entity)
+        {
+            if (entity == null || !entity.HasComponent(TimeId))
+            {
+                return false;
+            }
+
+            entity.RemoveComponent(TimeId);
             return true;
         }
 

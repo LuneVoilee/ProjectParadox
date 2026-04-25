@@ -30,7 +30,7 @@ namespace UI
 #if UNITY_EDITOR
             if (m_CachedConfig == null)
             {
-                m_CachedConfig = Resources.Load<AutoUIConfig>("GlobalConfig");
+                m_CachedConfig = AutoUIConfig.LoadConfig();
             }
 
             if (m_CachedConfig != null)
@@ -201,6 +201,18 @@ namespace UI
             string nodeName = component.gameObject.name;
             string componentType = component.GetType().Name;
 
+            return strategy.GenerateKey(nodeName, componentType);
+        }
+
+        /// <summary>
+        ///     使用当前策略和指定节点名称生成Key。
+        /// </summary>
+        public static string GetNodeComponentKey(Component component, string nodeName)
+        {
+            if (component == null) return string.Empty;
+
+            string componentType = component.GetType().Name;
+            var strategy = GetCurrentStrategy();
             return strategy.GenerateKey(nodeName, componentType);
         }
 

@@ -1,13 +1,15 @@
+#region
+
 using System.Collections.Generic;
 using System.IO;
-using Tool;
+using Tool.Json;
 using UnityEngine;
-
 #if UNITY_EDITOR
-using UnityEditor;
 #endif
 
-namespace Tool.Json
+#endregion
+
+namespace Tool.Resource
 {
     public struct ResourceKey
     {
@@ -43,7 +45,8 @@ namespace Tool.Json
 #if UNITY_EDITOR && !BUNDLE
                 if (Directory.Exists(dir))
                 {
-                    foreach (string file in Directory.GetFiles(dir, "*.*", SearchOption.AllDirectories))
+                    foreach (string file in Directory.GetFiles(dir, "*.*",
+                                 SearchOption.AllDirectories))
                     {
                         if (file.Contains(".svn\\"))
                         {
@@ -67,7 +70,8 @@ namespace Tool.Json
             }
             else
             {
-                Dictionary<string, string> abNameRecords = KAssetBundleManager.GetBundlePairs(dir, string.Empty,
+                Dictionary<string, string> abNameRecords = KAssetBundleManager.GetBundlePairs(dir,
+                    string.Empty,
                     KResManagerDef.BsonFileSuffix);
                 foreach (KeyValuePair<string, string> t in abNameRecords)
                 {

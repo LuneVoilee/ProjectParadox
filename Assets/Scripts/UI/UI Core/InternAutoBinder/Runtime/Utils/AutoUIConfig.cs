@@ -13,6 +13,9 @@ namespace UI
     [CreateAssetMenu(fileName = "UIPathConfig", menuName = "AutoUIBinder/Create UI Path Config")]
     public class AutoUIConfig : ScriptableObject
     {
+        public const string DefaultAssetPath =
+            "Assets/Resource/UI/AutoUIConfig/UIPathConfig.asset";
+
         [Header("代码生成路径")] [SerializeField, ReadOnly]
         private string m_Paths = "Assets/Scripts/";
 
@@ -51,6 +54,18 @@ namespace UI
         public INamingStrategy GetCurrentStrategy()
         {
             return NamingStrategyFactory.CreateStrategy(m_NamingConvention);
+        }
+
+        /// <summary>
+        ///     获取AutoUIBinder配置。该配置不在Resources目录下，编辑器中需要通过AssetDatabase读取。
+        /// </summary>
+        public static AutoUIConfig LoadConfig()
+        {
+#if UNITY_EDITOR
+            return AssetDatabase.LoadAssetAtPath<AutoUIConfig>(DefaultAssetPath);
+#else
+            return null;
+#endif
         }
 
 #if UNITY_EDITOR

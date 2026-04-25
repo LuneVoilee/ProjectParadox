@@ -1,8 +1,13 @@
+#region
+
 using System;
+using Tool.Json;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-namespace Tool.Json
+#endregion
+
+namespace Tool.Resource
 {
     public class KSceneAsyncLoadHandle
     {
@@ -16,12 +21,14 @@ namespace Tool.Json
         public Action<AsyncOperation> AbLoadedCallBack;
         public Action<KSceneAsyncLoadHandle> SceneLoadedCallBack;
 
-        public KSceneAsyncLoadHandle(
+        public KSceneAsyncLoadHandle
+        (
             string sceneName,
             KABLoadAsyncHandle sceneAbLoadHandle,
             LoadSceneMode sceneMode = LoadSceneMode.Single,
             int priority = 0,
-            Action<AsyncOperation> abLoadedCallBack = null)
+            Action<AsyncOperation> abLoadedCallBack = null
+        )
         {
             Mode = sceneMode;
             SceneName = sceneName;
@@ -31,13 +38,15 @@ namespace Tool.Json
             AbLoadedCallBack = abLoadedCallBack;
         }
 
-        public KSceneAsyncLoadHandle(
+        public KSceneAsyncLoadHandle
+        (
             string sceneName,
             KABLoadAsyncHandle sceneAbLoadHandle,
             AsyncOperation sceneAsyncOpt,
             LoadSceneMode sceneMode = LoadSceneMode.Single,
             int priority = 0,
-            Action<AsyncOperation> abLoadedCallBack = null)
+            Action<AsyncOperation> abLoadedCallBack = null
+        )
         {
             Mode = sceneMode;
             SceneName = sceneName;
@@ -104,7 +113,8 @@ namespace Tool.Json
                     }
                     else
                     {
-                        Log.Error($"[SceneManager] [{scene.name}] is not loaded when try unload async!");
+                        Log.Error(
+                            $"[SceneManager] [{scene.name}] is not loaded when try unload async!");
                     }
                 }
             }

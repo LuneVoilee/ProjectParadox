@@ -1,7 +1,7 @@
 namespace UI
 {
     /// <summary>
-    /// 命名策略基类
+    ///     命名策略基类
     /// </summary>
     public abstract class NamingStrategyBase : INamingStrategy
     {
@@ -15,20 +15,20 @@ namespace UI
         }
 
         /// <summary>
-        /// 清理节点名称中的无效字符
+        ///     清理节点名称中的无效字符
         /// </summary>
         protected string CleanNodeName(string nodeName)
         {
             if (string.IsNullOrEmpty(nodeName)) return string.Empty;
 
             return nodeName.Replace(" ", "_")
-                          .Replace("(", "")
-                          .Replace(")", "")
-                          .Replace("-", "_");
+                .Replace("(", "")
+                .Replace(")", "")
+                .Replace("-", "_");
         }
 
         /// <summary>
-        /// 转换为大驼峰命名
+        ///     转换为大驼峰命名
         /// </summary>
         protected string ToPascalCase(string text)
         {
@@ -36,10 +36,10 @@ namespace UI
 
             // 先清理特殊字符
             string cleaned = text.Replace(" ", "")
-                                .Replace("_", "")
-                                .Replace("(", "")
-                                .Replace(")", "")
-                                .Replace("-", "");
+                .Replace("_", "")
+                .Replace("(", "")
+                .Replace(")", "")
+                .Replace("-", "");
 
             if (cleaned.Length == 0) return string.Empty;
 
@@ -47,17 +47,17 @@ namespace UI
         }
 
         /// <summary>
-        /// 转换为小驼峰命名
+        ///     转换为小驼峰命名
         /// </summary>
         protected string ToCamelCase(string text)
         {
             if (string.IsNullOrEmpty(text)) return string.Empty;
 
             string cleaned = text.Replace(" ", "")
-                                .Replace("_", "")
-                                .Replace("(", "")
-                                .Replace(")", "")
-                                .Replace("-", "");
+                .Replace("_", "")
+                .Replace("(", "")
+                .Replace(")", "")
+                .Replace("-", "");
 
             if (cleaned.Length == 0) return string.Empty;
 
@@ -66,7 +66,7 @@ namespace UI
     }
 
     /// <summary>
-    /// 节点名_组件类型策略 (默认)
+    ///     节点名_组件类型策略 (默认)
     /// </summary>
     public class NodeNameComponentTypeStrategy : NamingStrategyBase
     {
@@ -80,7 +80,7 @@ namespace UI
     }
 
     /// <summary>
-    /// 组件类型_节点名策略
+    ///     组件类型_节点名策略
     /// </summary>
     public class ComponentTypeNodeNameStrategy : NamingStrategyBase
     {
@@ -94,7 +94,7 @@ namespace UI
     }
 
     /// <summary>
-    /// 仅节点名策略
+    ///     仅节点名策略
     /// </summary>
     public class NodeNameOnlyStrategy : NamingStrategyBase
     {
@@ -107,7 +107,7 @@ namespace UI
     }
 
     /// <summary>
-    /// 大驼峰策略 (PascalCase)
+    ///     大驼峰策略 (PascalCase)
     /// </summary>
     public class PascalCaseStrategy : NamingStrategyBase
     {
@@ -120,7 +120,7 @@ namespace UI
     }
 
     /// <summary>
-    /// m_大驼峰策略 (私有字段命名)
+    ///     m_大驼峰策略 (私有字段命名)
     /// </summary>
     public class PrivateFieldPascalCaseStrategy : NamingStrategyBase
     {
@@ -128,12 +128,17 @@ namespace UI
 
         public override string GenerateKey(string nodeName, string componentTypeName)
         {
+            if (componentTypeName.Equals("TextMeshProUGUI") || componentTypeName.Equals("TMP_Text"))
+            {
+                componentTypeName = "Text";
+            }
+
             return "m_" + ToPascalCase(nodeName) + componentTypeName;
         }
     }
 
     /// <summary>
-    /// 小驼峰策略 (camelCase)
+    ///     小驼峰策略 (camelCase)
     /// </summary>
     public class CamelCaseStrategy : NamingStrategyBase
     {

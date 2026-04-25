@@ -1,12 +1,10 @@
 #region
 
 using System;
-using System.CodeDom;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using Microsoft.CSharp;
 using UnityEditor;
 using UnityEngine;
 
@@ -19,8 +17,6 @@ namespace UI
     /// </summary>
     public class CodeGenerator
     {
-        private readonly AutoUIConfig m_Config = Resources.Load<AutoUIConfig>("GlobalConfig");
-
         /// <summary>
         ///     生成UI代码
         /// </summary>
@@ -35,15 +31,16 @@ namespace UI
                 EnsurePartialClass(target);
 
                 // 2. 获取生成路径配置
-                var globalConfig = Resources.Load<AutoUIConfig>("GlobalConfig");
+                var globalConfig = AutoUIConfig.LoadConfig();
                 if (globalConfig == null)
                 {
-                    Debug.LogError("[AutoUIBinder] 未找到GlobalConfig配置文件");
+                    Debug.LogError(
+                        $"[AutoUIBinder] 未找到配置文件: {AutoUIConfig.DefaultAssetPath}");
                     return;
                 }
 
                 // 3. 创建生成目录
-                string genFolderPath = Path.Combine(globalConfig.Paths, "Gen");
+                string genFolderPath = Path.Combine(globalConfig.Paths, "Generated");
                 string classGenFolderPath = Path.Combine(genFolderPath, className);
 
                 if (!Directory.Exists(classGenFolderPath))
@@ -55,7 +52,7 @@ namespace UI
                 string genFilePath = Path.Combine(classGenFolderPath, $"{className}Gen.cs");
                 string absoluteFilePath = Path.GetFullPath(genFilePath);
 
-                GenerateUICodeFile(target, absoluteFilePath);
+                GenerateUICodeFile(target, absoluteFilePath, globalConfig);
 
                 // 5. 刷新资源
                 AssetDatabase.Refresh();
@@ -94,7 +91,8 @@ namespace UI
         /// <summary>
         ///     生成UI代码文件
         /// </summary>
-        private void GenerateUICodeFile(AutoUIBinderBase target, string filePath)
+        private void GenerateUICodeFile
+            (AutoUIBinderBase target, string filePath, AutoUIConfig config)
         {
             string className = target.GetType().Name;
             var script = MonoScript.FromMonoBehaviour(target);
@@ -130,12 +128,20 @@ namespace UI
 
             codeBuilder.AppendLine();
 
-            codeBuilder.AppendLine($"namespace {m_Config?.NameSpace} ");
-            codeBuilder.AppendLine("{");
+            if (!string.IsNullOrWhiteSpace(config.NameSpace))
+            {
+                codeBuilder.AppendLine($"namespace {config.NameSpace}");
+                codeBuilder.AppendLine("{");
+            }
 
             // 生成partial类定义
-            codeBuilder.AppendLine($"   public partial class {className}");
-            codeBuilder.AppendLine("    {");
+            string indent = string.IsNullOrWhiteSpace(config.NameSpace) ? "" : "    ";
+            codeBuilder.AppendLine($"{indent}public partial class {className}");
+            codeBuilder.AppendLine($"{indent}{{");
+
+            string memberIndent = indent + "    ";
+            string blockIndent = memberIndent + "    ";
+            string getIndent = blockIndent + "    ";
 
             // 为每个组件生成属性
             foreach (var kvp in target.ComponentRefs)
@@ -144,24 +150,29 @@ namespace UI
                 {
                     string componentTypeName = kvp.Value.GetType().Name;
                     string propertyName = kvp.Key;
-                    codeBuilder.AppendLine("       /// <summary>");
-                    codeBuilder.AppendLine($"       /// 获取{componentTypeName}组件: {propertyName}");
-                    codeBuilder.AppendLine("       /// </summary>");
-                    codeBuilder.AppendLine($"       public {componentTypeName} {propertyName}");
-                    codeBuilder.AppendLine("        {");
-                    codeBuilder.AppendLine("            get");
-                    codeBuilder.AppendLine("            {");
+                    codeBuilder.AppendLine($"{memberIndent}/// <summary>");
                     codeBuilder.AppendLine(
-                        $"              return this.GetComponentRef<{componentTypeName}>(\"{kvp.Key}\");");
-                    codeBuilder.AppendLine("            }");
-                    codeBuilder.AppendLine("        }");
+                        $"{memberIndent}/// 获取{componentTypeName}组件: {propertyName}");
+                    codeBuilder.AppendLine($"{memberIndent}/// </summary>");
+                    codeBuilder.AppendLine(
+                        $"{memberIndent}public {componentTypeName} {propertyName}");
+                    codeBuilder.AppendLine($"{memberIndent}{{");
+                    codeBuilder.AppendLine($"{blockIndent}get");
+                    codeBuilder.AppendLine($"{blockIndent}{{");
+                    codeBuilder.AppendLine(
+                        $"{getIndent}return this.GetComponentRef<{componentTypeName}>(\"{kvp.Key}\");");
+                    codeBuilder.AppendLine($"{blockIndent}}}");
+                    codeBuilder.AppendLine($"{memberIndent}}}");
                     codeBuilder.AppendLine();
                 }
             }
 
-            codeBuilder.AppendLine("    }");
+            codeBuilder.AppendLine($"{indent}}}");
 
-            codeBuilder.AppendLine("}");
+            if (!string.IsNullOrWhiteSpace(config.NameSpace))
+            {
+                codeBuilder.AppendLine("}");
+            }
 
             // 写入文件
             File.WriteAllText(filePath, codeBuilder.ToString(), Encoding.UTF8);
