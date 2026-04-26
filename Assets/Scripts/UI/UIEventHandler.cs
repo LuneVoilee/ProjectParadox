@@ -1,6 +1,7 @@
 ﻿#region
 
 using System;
+using System.Collections.Generic;
 using Common.Contracts;
 using Common.Event;
 using Tool;
@@ -25,6 +26,7 @@ namespace UI
             EventBus.GP_OnTimeChange += OnTimeChange;
             EventBus.GP_OnSpeedChange += OnSpeedChanged;
             EventBus.GP_OnCreateSelectionIndictor += OnCreateSelectionIndictor;
+            EventBus.GP_OnDestroySelectionIndictor += OnDestroySelectionIndictor;
         }
 
 
@@ -33,6 +35,7 @@ namespace UI
             EventBus.GP_OnTimeChange -= OnTimeChange;
             EventBus.GP_OnSpeedChange -= OnSpeedChanged;
             EventBus.GP_OnCreateSelectionIndictor -= OnCreateSelectionIndictor;
+            EventBus.GP_OnDestroySelectionIndictor -= OnDestroySelectionIndictor;
         }
 
         private TimePanel m_TimePanel;
@@ -97,10 +100,35 @@ namespace UI
 
         #region SelectionIndictorPanel
 
-        private void OnCreateSelectionIndictor()
+        private readonly List<SelectionIndictorPanel> SIList = new();
+
+        private int OnCreateSelectionIndictor()
         {
-            m_SelectionIndictorPanel =
+            var panel =
                 UIManager.Instance.CreatePanel<SelectionIndictorPanel>(UICanvasType.World, false);
+            if (panel == null)
+            {
+                // 返回 -1 表示失败，让调用方处理
+                return -1;
+            }
+
+            SIList.Add(panel);
+            return SIList.Count - 1;
+        }
+
+        private void OnDestroySelectionIndictor(int index)
+        {
+            if (index < 0 || index >= SIList.Count) return;
+
+            var panel = SIList[index];
+
+            // 先把元素移出列表，保证索引干净
+            SIList.RemoveAt(index);
+
+            if (panel != null)
+            {
+                UIManager.Instance.RemovePanel(panel);
+            }
         }
 
         #endregion

@@ -14,7 +14,9 @@ namespace Common.Event
         public static Action<DateTime> GP_OnTimeChange;
         public static Action<TimeType> UI_OnSpeedChange;
         public static Action<TimeType> GP_OnSpeedChange;
-        public static Action GP_OnCreateSelectionIndictor;
+
+        public static Func<int> GP_OnCreateSelectionIndictor;
+        public static Action<int> GP_OnDestroySelectionIndictor;
 
         public static Func<DateTime?> UI_GetCurrentTime;
     }

@@ -114,7 +114,7 @@ namespace UI
                 return null;
             }
 
-            //NOTICE: ShowPanel会创建新的
+            //NOTICE: 会创建新的
             var panelGO = Instantiate(prefab, parent);
             panelGO.name = panelName;
 
