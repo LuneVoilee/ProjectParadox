@@ -1,7 +1,5 @@
 #region
 
-using System.Collections.Generic;
-using Common.Event;
 using Sirenix.OdinInspector;
 using Tool;
 using UnityEngine;
@@ -22,18 +20,6 @@ namespace GamePlay.World
             World.OnInitialize(MaxComponentCount);
         }
 
-        private void Start()
-        {
-            EventBus.GP_OnCreatePathIndicator?.Invoke(new List<Vector3>
-            {
-                new Vector3(20f, 50f, 70f),
-                new Vector3(30f, 50f, 70f),
-                new Vector3(40f, 60f, 70f),
-                new Vector3(50f, 70f, 70f),
-            });
-
-            EventBus.GP_OnCreateSelectionIndicator?.Invoke();
-        }
 
         private void Update()
         {
