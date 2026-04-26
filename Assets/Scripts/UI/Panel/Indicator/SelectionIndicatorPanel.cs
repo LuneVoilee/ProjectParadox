@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace UI.Panel
 {
-    public partial class SelectionIndictorPanel : BasePanel
+    public partial class SelectionIndicatorPanel : BasePanel
     {
         [Header("Animation Settings")] [Tooltip("角标向外扩张的距离（基于Canvas单位）")]
         public float expandOffset = 20f;

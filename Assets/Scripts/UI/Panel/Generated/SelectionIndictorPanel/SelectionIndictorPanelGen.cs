@@ -18,7 +18,7 @@ using UnityEngine;
 
 namespace UI.Panel
 {
-    public partial class SelectionIndictorPanel
+    public partial class SelectionIndicatorPanel
     {
         /// <summary>
         /// 获取RectTransform组件: m_TopLeft

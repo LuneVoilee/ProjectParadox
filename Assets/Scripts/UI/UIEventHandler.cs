@@ -6,6 +6,7 @@ using Common.Contracts;
 using Common.Event;
 using Tool;
 using UI.Panel;
+using UnityEngine;
 
 #endregion
 
@@ -25,8 +26,10 @@ namespace UI
         {
             EventBus.GP_OnTimeChange += OnTimeChange;
             EventBus.GP_OnSpeedChange += OnSpeedChanged;
-            EventBus.GP_OnCreateSelectionIndictor += OnCreateSelectionIndictor;
-            EventBus.GP_OnDestroySelectionIndictor += OnDestroySelectionIndictor;
+            EventBus.GP_OnCreateSelectionIndicator += OnCreateSelectionIndicator;
+            EventBus.GP_OnDestroySelectionIndicator += OnDestroySelectionIndicator;
+            EventBus.GP_OnCreatePathIndicator += OnCreatePathIndicator;
+            EventBus.GP_OnDestroyPathIndicator += OnDestroyPathIndictor;
         }
 
 
@@ -34,12 +37,14 @@ namespace UI
         {
             EventBus.GP_OnTimeChange -= OnTimeChange;
             EventBus.GP_OnSpeedChange -= OnSpeedChanged;
-            EventBus.GP_OnCreateSelectionIndictor -= OnCreateSelectionIndictor;
-            EventBus.GP_OnDestroySelectionIndictor -= OnDestroySelectionIndictor;
+            EventBus.GP_OnCreateSelectionIndicator -= OnCreateSelectionIndicator;
+            EventBus.GP_OnDestroySelectionIndicator -= OnDestroySelectionIndicator;
+            EventBus.GP_OnCreatePathIndicator -= OnCreatePathIndicator;
+            EventBus.GP_OnDestroyPathIndicator -= OnDestroyPathIndictor;
         }
 
         private TimePanel m_TimePanel;
-        private SelectionIndictorPanel m_SelectionIndictorPanel;
+        private SelectionIndicatorPanel m_SelectionIndicatorPanel;
         private UITimeData m_UITimeData;
 
         #region TimePanel
@@ -98,14 +103,13 @@ namespace UI
 
         #endregion
 
-        #region SelectionIndictorPanel
+        #region SelectionIndicatorPanel
 
-        private readonly List<SelectionIndictorPanel> SIList = new();
+        private readonly List<SelectionIndicatorPanel> SIList = new();
 
-        private int OnCreateSelectionIndictor()
+        private int OnCreateSelectionIndicator()
         {
-            var panel =
-                UIManager.Instance.CreatePanel<SelectionIndictorPanel>(UICanvasType.World, false);
+            var panel = UIManager.Instance.CreatePanel<SelectionIndicatorPanel>(UICanvasType.World);
             if (panel == null)
             {
                 // 返回 -1 表示失败，让调用方处理
@@ -116,7 +120,7 @@ namespace UI
             return SIList.Count - 1;
         }
 
-        private void OnDestroySelectionIndictor(int index)
+        private void OnDestroySelectionIndicator(int index)
         {
             if (index < 0 || index >= SIList.Count) return;
 
@@ -124,6 +128,53 @@ namespace UI
 
             // 先把元素移出列表，保证索引干净
             SIList.RemoveAt(index);
+
+            if (panel != null)
+            {
+                UIManager.Instance.RemovePanel(panel);
+            }
+        }
+
+        #endregion
+
+        #region PathIndicatorPanel
+
+        private readonly List<PathIndicatorPanel> PIList = new();
+
+        private int OnCreatePathIndicator(IReadOnlyList<Vector3> unitPathWorldPoints)
+        {
+            var panel =
+                UIManager.Instance.CreatePanel<PathIndicatorPanel>(UICanvasType.World, false);
+
+            if (panel == null)
+            {
+                // 返回 -1 表示失败，让调用方处理
+                return -1;
+            }
+
+            panel.SetWorldPath(unitPathWorldPoints);
+
+            /*
+            如果你已经自己算好了 UI 本地坐标，就用：
+            pathIndicatorPanel.SetLocalPath(localPathPoints);
+
+            改配色用：
+            pathIndicatorPanel.SetPalette(main, rim, shadow, highlight);
+            */
+            UIManager.Instance.ShowPanel(panel);
+
+            PIList.Add(panel);
+            return PIList.Count - 1;
+        }
+
+        private void OnDestroyPathIndictor(int index)
+        {
+            if (index < 0 || index >= PIList.Count) return;
+
+            var panel = PIList[index];
+
+            // 先把元素移出列表，保证索引干净
+            PIList.RemoveAt(index);
 
             if (panel != null)
             {
