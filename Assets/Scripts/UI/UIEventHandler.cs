@@ -22,19 +22,24 @@ namespace UI
 
         private void OnEnable()
         {
-            EventBus.OnTimeChangeAction += OnTimeChange;
-            EventBus.OnSpeedChanged += OnSpeedChanged;
+            EventBus.GP_OnTimeChange += OnTimeChange;
+            EventBus.GP_OnSpeedChange += OnSpeedChanged;
+            EventBus.GP_OnCreateSelectionIndictor += OnCreateSelectionIndictor;
         }
 
 
         private void OnDisable()
         {
-            EventBus.OnTimeChangeAction -= OnTimeChange;
-            EventBus.OnSpeedChanged -= OnSpeedChanged;
+            EventBus.GP_OnTimeChange -= OnTimeChange;
+            EventBus.GP_OnSpeedChange -= OnSpeedChanged;
+            EventBus.GP_OnCreateSelectionIndictor -= OnCreateSelectionIndictor;
         }
 
         private TimePanel m_TimePanel;
+        private SelectionIndictorPanel m_SelectionIndictorPanel;
         private UITimeData m_UITimeData;
+
+        #region TimePanel
 
         private void OnTimeChange(DateTime newTime)
         {
@@ -82,10 +87,22 @@ namespace UI
 
             m_UITimeData = new UITimeData
             {
-                GetCurrentTime = () => EventBus.GetCurrentTime?.Invoke()
+                GetCurrentTime = () => EventBus.UI_GetCurrentTime?.Invoke()
             };
 
             m_TimePanel.Bind(m_UITimeData);
         }
+
+        #endregion
+
+        #region SelectionIndictorPanel
+
+        private void OnCreateSelectionIndictor()
+        {
+            m_SelectionIndictorPanel =
+                UIManager.Instance.CreatePanel<SelectionIndictorPanel>(UICanvasType.World, false);
+        }
+
+        #endregion
     }
 }

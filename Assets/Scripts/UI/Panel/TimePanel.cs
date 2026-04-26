@@ -80,7 +80,7 @@ namespace UI.Panel
 
         private void WhenSpeedChanged(TimeType _, TimeType newSpeed)
         {
-            EventBus.OnSpeedChangeRequest?.Invoke(newSpeed);
+            EventBus.UI_OnSpeedChange?.Invoke(newSpeed);
         }
 
         private void WhenDateChanged(DateTime _, DateTime newDate)

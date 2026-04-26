@@ -1,7 +1,8 @@
 ﻿#region
 
-using Common.Event;
+using System;
 using Common.Contracts;
+using Common.Event;
 using Core.Capability;
 using GamePlay.Util;
 using GamePlay.World;
@@ -13,7 +14,7 @@ namespace GamePlay.Strategy
     public class TimeCap : CapabilityBase
     {
         private static readonly int m_TimeId = Component<Time>.TId;
-        private System.Func<System.DateTime?> m_ReadCurrentTime;
+        private Func<DateTime?> m_ReadCurrentTime;
 
         protected override void OnInit()
         {
@@ -37,25 +38,25 @@ namespace GamePlay.Strategy
                 return;
             }
 
-            EventBus.OnSpeedChangeRequest += ChangeTimeSpeed;
+            EventBus.UI_OnSpeedChange += ChangeTimeSpeed;
             m_ReadCurrentTime ??= ReadCurrentTime;
-            EventBus.GetCurrentTime = m_ReadCurrentTime;
+            EventBus.UI_GetCurrentTime = m_ReadCurrentTime;
             ChangeTimeSpeed(time.NewTimeType);
 
             //Day1
-            EventBus.OnTimeChangeAction?.Invoke(time.CurrentDate);
+            EventBus.GP_OnTimeChange?.Invoke(time.CurrentDate);
         }
 
         protected override void OnDeactivated()
         {
-            EventBus.OnSpeedChangeRequest -= ChangeTimeSpeed;
-            if (EventBus.GetCurrentTime == m_ReadCurrentTime)
+            EventBus.UI_OnSpeedChange -= ChangeTimeSpeed;
+            if (EventBus.UI_GetCurrentTime == m_ReadCurrentTime)
             {
-                EventBus.GetCurrentTime = null;
+                EventBus.UI_GetCurrentTime = null;
             }
         }
 
-        private System.DateTime? ReadCurrentTime()
+        private DateTime? ReadCurrentTime()
         {
             return Owner.TryGetTime(out var time) ? time.CurrentDate : null;
         }
@@ -73,7 +74,7 @@ namespace GamePlay.Strategy
             }
 
             gameWorld.ChangeGameSpeed(timeType);
-            EventBus.OnSpeedChanged?.Invoke(timeType);
+            EventBus.GP_OnSpeedChange?.Invoke(timeType);
         }
 
         public override void TickActive(float deltaTime, float realElapsedSeconds)
@@ -106,7 +107,7 @@ namespace GamePlay.Strategy
             //NOTICE: 跨天逻辑触发
             if (time.CurrentDate.Day != oldDay)
             {
-                EventBus.OnTimeChangeAction?.Invoke(time.CurrentDate);
+                EventBus.GP_OnTimeChange?.Invoke(time.CurrentDate);
             }
         }
     }

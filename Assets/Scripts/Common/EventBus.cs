@@ -9,9 +9,13 @@ namespace Common.Event
 {
     public static class EventBus
     {
-        public static Action<DateTime> OnTimeChangeAction;
-        public static Action<TimeType> OnSpeedChangeRequest;
-        public static Action<TimeType> OnSpeedChanged;
-        public static Func<DateTime?> GetCurrentTime;
+        //命名规则：
+        //事件的发起方作为前缀 : GamePlay层前缀GP；UI层前缀UI
+        public static Action<DateTime> GP_OnTimeChange;
+        public static Action<TimeType> UI_OnSpeedChange;
+        public static Action<TimeType> GP_OnSpeedChange;
+        public static Action GP_OnCreateSelectionIndictor;
+
+        public static Func<DateTime?> UI_GetCurrentTime;
     }
 }
