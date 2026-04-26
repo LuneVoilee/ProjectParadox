@@ -11,15 +11,17 @@ namespace Core.Capability
 
         private static int Order()
         {
-            var orderTid = CapabilityId<GamePlay.Strategy.Capabilities.OccupyCap, IUpdateSystem>.TId;
-            orderTid = CapabilityId<GamePlay.Strategy.TimeCap, IUpdateSystem>.TId;
+            var orderTid = CapabilityId<GamePlay.Strategy.TimeCap, IUpdateSystem>.TId;
             orderTid = CapabilityId<GamePlay.Map.GenerateMapDataCap, IUpdateSystem>.TId;
+            orderTid = CapabilityId<GamePlay.Strategy.NationRegistryCap, IUpdateSystem>.TId;
+            orderTid = CapabilityId<GamePlay.Strategy.OccupyCap, IUpdateSystem>.TId;
+            orderTid = CapabilityId<GamePlay.Map.ApplyTerritoryChangesCap, IUpdateSystem>.TId;
             orderTid = CapabilityId<GamePlay.Camera.ZoomCap, IUpdateSystem>.TId;
             orderTid = CapabilityId<GamePlay.Camera.MoveCap, IUpdateSystem>.TId;
             orderTid = CapabilityId<GamePlay.Camera.BoundsCap, IUpdateSystem>.TId;
             orderTid = CapabilityId<GamePlay.Map.DrawMapCap, IUpdateSystem>.TId;
             orderTid = CapabilityId<Core.Capability.DestroyCapability, IUpdateSystem>.TId;
-            return 8;
+            return 10;
         }
     }
 }

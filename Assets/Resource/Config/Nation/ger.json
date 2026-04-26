@@ -1,0 +1,11 @@
+﻿{
+  "Tag": "GER",
+  "Name": "Germany",
+  "NationalColor": {
+    "r": 0.18,
+    "g": 0.18,
+    "b": 0.22,
+    "a": 1.0
+  },
+  "Money": 1000.0
+}

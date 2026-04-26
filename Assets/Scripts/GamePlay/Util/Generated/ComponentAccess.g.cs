@@ -20,12 +20,16 @@ namespace GamePlay.Util
         public static readonly int GridId = Component<GamePlay.Map.Grid>.TId;
         public static readonly int MapId = Component<GamePlay.Map.Map>.TId;
         public static readonly int NoiseId = Component<GamePlay.Map.Noise>.TId;
+        public static readonly int TerritoryOwnershipBufferId = Component<GamePlay.Map.TerritoryOwnershipBuffer>.TId;
+        public static readonly int TerritoryPaintStateId = Component<GamePlay.Map.TerritoryPaintState>.TId;
         public static readonly int ChangedHexsId = Component<GamePlay.Strategy.ChangedHexs>.TId;
         public static readonly int NationId = Component<GamePlay.Strategy.Nation>.TId;
+        public static readonly int NationBootstrapId = Component<GamePlay.Strategy.NationBootstrap>.TId;
+        public static readonly int NationIndexId = Component<GamePlay.Strategy.NationIndex>.TId;
         public static readonly int TimeId = Component<GamePlay.Strategy.Time>.TId;
         public static readonly int UnitId = Component<GamePlay.Strategy.Unit>.TId;
 
-        public static int Count => 16;
+        public static int Count => 20;
 
         public static bool HasCComponent(this CEntity entity)
         {
@@ -411,6 +415,70 @@ namespace GamePlay.Util
             return true;
         }
 
+        public static bool HasTerritoryOwnershipBuffer(this CEntity entity)
+        {
+            return entity != null && entity.HasComponent(TerritoryOwnershipBufferId);
+        }
+
+        public static bool TryGetTerritoryOwnershipBuffer(this CEntity entity, out GamePlay.Map.TerritoryOwnershipBuffer component)
+        {
+            component = null;
+            return entity != null && entity.TryGetComponent(TerritoryOwnershipBufferId, out component);
+        }
+
+        public static GamePlay.Map.TerritoryOwnershipBuffer GetTerritoryOwnershipBufferOrNull(this CEntity entity)
+        {
+            return entity != null ? entity.GetComponent(TerritoryOwnershipBufferId) as GamePlay.Map.TerritoryOwnershipBuffer : null;
+        }
+
+        public static GamePlay.Map.TerritoryOwnershipBuffer AddTerritoryOwnershipBuffer(this CEntity entity)
+        {
+            return entity != null ? entity.AddComponent<GamePlay.Map.TerritoryOwnershipBuffer>() : null;
+        }
+
+        public static bool RemoveTerritoryOwnershipBuffer(this CEntity entity)
+        {
+            if (entity == null || !entity.HasComponent(TerritoryOwnershipBufferId))
+            {
+                return false;
+            }
+
+            entity.RemoveComponent(TerritoryOwnershipBufferId);
+            return true;
+        }
+
+        public static bool HasTerritoryPaintState(this CEntity entity)
+        {
+            return entity != null && entity.HasComponent(TerritoryPaintStateId);
+        }
+
+        public static bool TryGetTerritoryPaintState(this CEntity entity, out GamePlay.Map.TerritoryPaintState component)
+        {
+            component = null;
+            return entity != null && entity.TryGetComponent(TerritoryPaintStateId, out component);
+        }
+
+        public static GamePlay.Map.TerritoryPaintState GetTerritoryPaintStateOrNull(this CEntity entity)
+        {
+            return entity != null ? entity.GetComponent(TerritoryPaintStateId) as GamePlay.Map.TerritoryPaintState : null;
+        }
+
+        public static GamePlay.Map.TerritoryPaintState AddTerritoryPaintState(this CEntity entity)
+        {
+            return entity != null ? entity.AddComponent<GamePlay.Map.TerritoryPaintState>() : null;
+        }
+
+        public static bool RemoveTerritoryPaintState(this CEntity entity)
+        {
+            if (entity == null || !entity.HasComponent(TerritoryPaintStateId))
+            {
+                return false;
+            }
+
+            entity.RemoveComponent(TerritoryPaintStateId);
+            return true;
+        }
+
         public static bool HasChangedHexs(this CEntity entity)
         {
             return entity != null && entity.HasComponent(ChangedHexsId);
@@ -472,6 +540,70 @@ namespace GamePlay.Util
             }
 
             entity.RemoveComponent(NationId);
+            return true;
+        }
+
+        public static bool HasNationBootstrap(this CEntity entity)
+        {
+            return entity != null && entity.HasComponent(NationBootstrapId);
+        }
+
+        public static bool TryGetNationBootstrap(this CEntity entity, out GamePlay.Strategy.NationBootstrap component)
+        {
+            component = null;
+            return entity != null && entity.TryGetComponent(NationBootstrapId, out component);
+        }
+
+        public static GamePlay.Strategy.NationBootstrap GetNationBootstrapOrNull(this CEntity entity)
+        {
+            return entity != null ? entity.GetComponent(NationBootstrapId) as GamePlay.Strategy.NationBootstrap : null;
+        }
+
+        public static GamePlay.Strategy.NationBootstrap AddNationBootstrap(this CEntity entity)
+        {
+            return entity != null ? entity.AddComponent<GamePlay.Strategy.NationBootstrap>() : null;
+        }
+
+        public static bool RemoveNationBootstrap(this CEntity entity)
+        {
+            if (entity == null || !entity.HasComponent(NationBootstrapId))
+            {
+                return false;
+            }
+
+            entity.RemoveComponent(NationBootstrapId);
+            return true;
+        }
+
+        public static bool HasNationIndex(this CEntity entity)
+        {
+            return entity != null && entity.HasComponent(NationIndexId);
+        }
+
+        public static bool TryGetNationIndex(this CEntity entity, out GamePlay.Strategy.NationIndex component)
+        {
+            component = null;
+            return entity != null && entity.TryGetComponent(NationIndexId, out component);
+        }
+
+        public static GamePlay.Strategy.NationIndex GetNationIndexOrNull(this CEntity entity)
+        {
+            return entity != null ? entity.GetComponent(NationIndexId) as GamePlay.Strategy.NationIndex : null;
+        }
+
+        public static GamePlay.Strategy.NationIndex AddNationIndex(this CEntity entity)
+        {
+            return entity != null ? entity.AddComponent<GamePlay.Strategy.NationIndex>() : null;
+        }
+
+        public static bool RemoveNationIndex(this CEntity entity)
+        {
+            if (entity == null || !entity.HasComponent(NationIndexId))
+            {
+                return false;
+            }
+
+            entity.RemoveComponent(NationIndexId);
             return true;
         }
 
