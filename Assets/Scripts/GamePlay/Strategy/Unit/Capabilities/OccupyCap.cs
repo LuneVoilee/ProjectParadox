@@ -1,8 +1,8 @@
 ﻿#region
 
+using System.Collections.Generic;
 using Core.Capability;
 using GamePlay.Map;
-using GamePlay.Strategy;
 using GamePlay.Util;
 using GamePlay.World;
 using UnityEngine;
@@ -21,7 +21,7 @@ namespace GamePlay.Strategy
 
         // 占领请求属于规则结算阶段，后续 ApplyTerritoryChangesCap 会在同阶段稍晚顺序消费。
         public override int TickGroupOrder { get; protected set; } =
-            CapabilityOrder.StageResolve;
+            CapabilityOrder.ResolveUnitOccupy;
 
         protected override void OnInit()
         {
@@ -54,8 +54,8 @@ namespace GamePlay.Strategy
             }
 
             // ChangedHexs 是其它玩法逻辑产出的控制区快照；为空时本帧没有占领请求。
-            HexCoordinates[] hexes = changedHexs.Hexs;
-            if (hexes == null || hexes.Length == 0)
+            List<HexCoordinates> hexes = changedHexs.Hexs;
+            if (hexes == null || hexes.Count == 0)
             {
                 return;
             }
@@ -76,22 +76,25 @@ namespace GamePlay.Strategy
             }
 
             // Hex 坐标转 offset 后映射到 Grid.Cells 的线性 index；越界格跳过。
-            for (int i = 0; i < hexes.Length; i++)
+            for (int i = 0; i < hexes.Count; i++)
             {
                 HexCoordinates hex = hexes[i];
                 Vector2Int offset = hex.ToOffset();
                 int col = offset.x;
                 int row = offset.y;
-                
-                /*if ((uint)col >= (uint)width || (uint)row >= (uint)height)
+
+                if ((uint)col >= (uint)width || (uint)row >= (uint)height)
                 {
                     continue;
-                }*/
+                }
 
                 // 同一格被多个来源写入时，缓冲字典保留本帧最后一次写入，统一交给应用阶段处理。
                 int cellIndex = row * width + col;
                 ownershipBuffer.LatestOwnerByCell[cellIndex] = ownerId;
             }
+
+            // ChangedHexs 是本帧占领请求快照，消费后清空，避免旧路径格被重复提交。
+            changedHexs.Hexs.Clear();
         }
     }
 }

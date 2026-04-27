@@ -1,5 +1,6 @@
 ﻿#region
 
+using System.Collections.Generic;
 using Core.Capability;
 using GamePlay.Map;
 
@@ -9,7 +10,7 @@ namespace GamePlay.Strategy
 {
     public class ChangedHexs : CComponent
     {
-        public HexCoordinates[] Hexs;
+        public List<HexCoordinates> Hexs;
 
         public override void Dispose()
         {

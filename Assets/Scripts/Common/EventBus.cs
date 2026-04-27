@@ -17,10 +17,12 @@ namespace Common.Event
         public static Action<TimeType> UI_OnSpeedChange;
         public static Action<TimeType> GP_OnSpeedChange;
 
-        public static Func<int> GP_OnCreateSelectionIndicator;
+        public static Func<Vector3, int> GP_OnCreateSelectionIndicator;
+        public static Action<int, Vector3> GP_OnUpdateSelectionIndicator;
         public static Action<int> GP_OnDestroySelectionIndicator;
 
         public static Func<IReadOnlyList<Vector3>, int> GP_OnCreatePathIndicator;
+        public static Action<int, IReadOnlyList<Vector3>> GP_OnUpdatePathIndicator;
         public static Action<int> GP_OnDestroyPathIndicator;
 
         public static Func<DateTime?> UI_GetCurrentTime;

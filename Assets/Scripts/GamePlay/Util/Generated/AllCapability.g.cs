@@ -14,6 +14,8 @@ namespace Core.Capability
             var orderTid = CapabilityId<GamePlay.Strategy.TimeCap, IUpdateSystem>.TId;
             orderTid = CapabilityId<GamePlay.Map.GenerateMapDataCap, IUpdateSystem>.TId;
             orderTid = CapabilityId<GamePlay.Strategy.NationRegistryCap, IUpdateSystem>.TId;
+            orderTid = CapabilityId<GamePlay.Strategy.SelectAndSetDestinationCap, IUpdateSystem>.TId;
+            orderTid = CapabilityId<GamePlay.Strategy.MoveAlongHexPathCap, IUpdateSystem>.TId;
             orderTid = CapabilityId<GamePlay.Strategy.OccupyCap, IUpdateSystem>.TId;
             orderTid = CapabilityId<GamePlay.Map.ApplyTerritoryChangesCap, IUpdateSystem>.TId;
             orderTid = CapabilityId<GamePlay.Camera.ZoomCap, IUpdateSystem>.TId;
@@ -21,7 +23,7 @@ namespace Core.Capability
             orderTid = CapabilityId<GamePlay.Camera.BoundsCap, IUpdateSystem>.TId;
             orderTid = CapabilityId<GamePlay.Map.DrawMapCap, IUpdateSystem>.TId;
             orderTid = CapabilityId<Core.Capability.DestroyCapability, IUpdateSystem>.TId;
-            return 10;
+            return 12;
         }
     }
 }

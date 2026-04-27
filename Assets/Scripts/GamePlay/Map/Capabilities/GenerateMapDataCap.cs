@@ -62,6 +62,8 @@ namespace GamePlay.Map
             grid.Cells = new Cell[width * height];
             grid.Width = width;
             grid.Height = height;
+            grid.EnableSeamlessX = map.EnableSeamlessX;
+            grid.EnableSeamlessY = map.EnableSeamlessY;
 
             var random = new Random(noise.Seed);
 
@@ -186,7 +188,10 @@ namespace GamePlay.Map
     {
         // 同时依赖格子、请求缓冲、绘制脏状态和国家索引，缺任一项都不应进入结算。
         private static readonly int m_GridId = Component<Grid>.TId;
-        private static readonly int m_TerritoryOwnershipBufferId = Component<TerritoryOwnershipBuffer>.TId;
+
+        private static readonly int m_TerritoryOwnershipBufferId =
+            Component<TerritoryOwnershipBuffer>.TId;
+
         private static readonly int m_TerritoryPaintStateId = Component<TerritoryPaintState>.TId;
         private static readonly int m_NationIndexId = Component<NationIndex>.TId;
 
@@ -196,7 +201,8 @@ namespace GamePlay.Map
 
         protected override void OnInit()
         {
-            Filter(m_GridId, m_TerritoryOwnershipBufferId, m_TerritoryPaintStateId, m_NationIndexId);
+            Filter(m_GridId, m_TerritoryOwnershipBufferId, m_TerritoryPaintStateId,
+                m_NationIndexId);
         }
 
         public override bool ShouldActivate()

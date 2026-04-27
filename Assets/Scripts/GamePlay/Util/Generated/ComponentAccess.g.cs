@@ -22,14 +22,18 @@ namespace GamePlay.Util
         public static readonly int NoiseId = Component<GamePlay.Map.Noise>.TId;
         public static readonly int TerritoryOwnershipBufferId = Component<GamePlay.Map.TerritoryOwnershipBuffer>.TId;
         public static readonly int TerritoryPaintStateId = Component<GamePlay.Map.TerritoryPaintState>.TId;
+        public static readonly int UnitOccupancyIndexId = Component<GamePlay.Map.UnitOccupancyIndex>.TId;
         public static readonly int ChangedHexsId = Component<GamePlay.Strategy.ChangedHexs>.TId;
         public static readonly int NationId = Component<GamePlay.Strategy.Nation>.TId;
         public static readonly int NationBootstrapId = Component<GamePlay.Strategy.NationBootstrap>.TId;
         public static readonly int NationIndexId = Component<GamePlay.Strategy.NationIndex>.TId;
         public static readonly int TimeId = Component<GamePlay.Strategy.Time>.TId;
         public static readonly int UnitId = Component<GamePlay.Strategy.Unit>.TId;
+        public static readonly int UnitMotorId = Component<GamePlay.Strategy.UnitMotor>.TId;
+        public static readonly int UnitMoveTargetId = Component<GamePlay.Strategy.UnitMoveTarget>.TId;
+        public static readonly int UnitPositionId = Component<GamePlay.Strategy.UnitPosition>.TId;
 
-        public static int Count => 20;
+        public static int Count => 24;
 
         public static bool HasCComponent(this CEntity entity)
         {
@@ -670,5 +674,134 @@ namespace GamePlay.Util
             entity.RemoveComponent(UnitId);
             return true;
         }
+
+        public static bool HasUnitOccupancyIndex(this CEntity entity)
+        {
+            return entity != null && entity.HasComponent(UnitOccupancyIndexId);
+        }
+
+        public static bool TryGetUnitOccupancyIndex(this CEntity entity, out GamePlay.Map.UnitOccupancyIndex component)
+        {
+            component = null;
+            return entity != null && entity.TryGetComponent(UnitOccupancyIndexId, out component);
+        }
+
+        public static GamePlay.Map.UnitOccupancyIndex GetUnitOccupancyIndexOrNull(this CEntity entity)
+        {
+            return entity != null ? entity.GetComponent(UnitOccupancyIndexId) as GamePlay.Map.UnitOccupancyIndex : null;
+        }
+
+        public static GamePlay.Map.UnitOccupancyIndex AddUnitOccupancyIndex(this CEntity entity)
+        {
+            return entity != null ? entity.AddComponent<GamePlay.Map.UnitOccupancyIndex>() : null;
+        }
+
+        public static bool RemoveUnitOccupancyIndex(this CEntity entity)
+        {
+            if (entity == null || !entity.HasComponent(UnitOccupancyIndexId))
+            {
+                return false;
+            }
+
+            entity.RemoveComponent(UnitOccupancyIndexId);
+            return true;
+        }
+
+        public static bool HasUnitMotor(this CEntity entity)
+        {
+            return entity != null && entity.HasComponent(UnitMotorId);
+        }
+
+        public static bool TryGetUnitMotor(this CEntity entity, out GamePlay.Strategy.UnitMotor component)
+        {
+            component = null;
+            return entity != null && entity.TryGetComponent(UnitMotorId, out component);
+        }
+
+        public static GamePlay.Strategy.UnitMotor GetUnitMotorOrNull(this CEntity entity)
+        {
+            return entity != null ? entity.GetComponent(UnitMotorId) as GamePlay.Strategy.UnitMotor : null;
+        }
+
+        public static GamePlay.Strategy.UnitMotor AddUnitMotor(this CEntity entity)
+        {
+            return entity != null ? entity.AddComponent<GamePlay.Strategy.UnitMotor>() : null;
+        }
+
+        public static bool RemoveUnitMotor(this CEntity entity)
+        {
+            if (entity == null || !entity.HasComponent(UnitMotorId))
+            {
+                return false;
+            }
+
+            entity.RemoveComponent(UnitMotorId);
+            return true;
+        }
+
+        public static bool HasUnitMoveTarget(this CEntity entity)
+        {
+            return entity != null && entity.HasComponent(UnitMoveTargetId);
+        }
+
+        public static bool TryGetUnitMoveTarget(this CEntity entity, out GamePlay.Strategy.UnitMoveTarget component)
+        {
+            component = null;
+            return entity != null && entity.TryGetComponent(UnitMoveTargetId, out component);
+        }
+
+        public static GamePlay.Strategy.UnitMoveTarget GetUnitMoveTargetOrNull(this CEntity entity)
+        {
+            return entity != null ? entity.GetComponent(UnitMoveTargetId) as GamePlay.Strategy.UnitMoveTarget : null;
+        }
+
+        public static GamePlay.Strategy.UnitMoveTarget AddUnitMoveTarget(this CEntity entity)
+        {
+            return entity != null ? entity.AddComponent<GamePlay.Strategy.UnitMoveTarget>() : null;
+        }
+
+        public static bool RemoveUnitMoveTarget(this CEntity entity)
+        {
+            if (entity == null || !entity.HasComponent(UnitMoveTargetId))
+            {
+                return false;
+            }
+
+            entity.RemoveComponent(UnitMoveTargetId);
+            return true;
+        }
+
+        public static bool HasUnitPosition(this CEntity entity)
+        {
+            return entity != null && entity.HasComponent(UnitPositionId);
+        }
+
+        public static bool TryGetUnitPosition(this CEntity entity, out GamePlay.Strategy.UnitPosition component)
+        {
+            component = null;
+            return entity != null && entity.TryGetComponent(UnitPositionId, out component);
+        }
+
+        public static GamePlay.Strategy.UnitPosition GetUnitPositionOrNull(this CEntity entity)
+        {
+            return entity != null ? entity.GetComponent(UnitPositionId) as GamePlay.Strategy.UnitPosition : null;
+        }
+
+        public static GamePlay.Strategy.UnitPosition AddUnitPosition(this CEntity entity)
+        {
+            return entity != null ? entity.AddComponent<GamePlay.Strategy.UnitPosition>() : null;
+        }
+
+        public static bool RemoveUnitPosition(this CEntity entity)
+        {
+            if (entity == null || !entity.HasComponent(UnitPositionId))
+            {
+                return false;
+            }
+
+            entity.RemoveComponent(UnitPositionId);
+            return true;
+        }
+
     }
 }

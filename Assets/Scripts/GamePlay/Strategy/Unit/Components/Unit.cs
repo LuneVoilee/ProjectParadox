@@ -14,5 +14,8 @@ namespace GamePlay.Strategy
 
         // JSON 国家主键，不依赖运行时 id 分配顺序，适合做静态数据查询。
         public NationTag Tag;
+
+        // 单位在地图上的移动速度，MoveAlongHexPathCap 使用项目时间缩放后的 deltaTime 消耗它。
+        public float MoveSpeed = 3f;
     }
 }

@@ -1,9 +1,9 @@
 #region
 
 using System;
+using System.Collections.Generic;
 using Core.Capability;
 using GamePlay.Map;
-using GamePlay.Strategy;
 using GamePlay.Util;
 using GamePlay.World;
 using UnityEngine;
@@ -105,7 +105,7 @@ namespace GamePlay.Strategy
         {
             // 每次启动注册前重建索引，避免编辑器热重载或重复创建地图时残留旧国家数据。
             EnsureArrays(nationIndex);
-            nationIndex.IdByTag ??= new System.Collections.Generic.Dictionary<string, byte>
+            nationIndex.IdByTag ??= new Dictionary<string, byte>
                 (StringComparer.OrdinalIgnoreCase);
 
             Array.Fill(nationIndex.TagById, null);
@@ -157,7 +157,8 @@ namespace GamePlay.Strategy
             {
                 if (nextId == 0)
                 {
-                    Debug.LogWarning("[NationRegistryCap] Nation capacity exceeded; extra templates were ignored.");
+                    Debug.LogWarning(
+                        "[NationRegistryCap] Nation capacity exceeded; extra templates were ignored.");
                     return;
                 }
 

@@ -27,6 +27,10 @@ namespace Core
         public Action OnClickAction;
         public Action OnRightClickAction;
         public Action OnESCClickAction;
+        private bool m_GameplayClickThisFrame;
+        private bool m_GameplayClickConsumed;
+        private int m_GameplayClickFrame = -1;
+        private Vector2 m_GameplayClickScreenPosition;
 
         protected override void Awake()
         {
@@ -47,6 +51,13 @@ namespace Core
 
         private void LateUpdate()
         {
+            if (!m_GameplayClickThisFrame || Time.frameCount <= m_GameplayClickFrame)
+            {
+                return;
+            }
+
+            m_GameplayClickThisFrame = false;
+            m_GameplayClickConsumed = false;
         }
 
         protected override void OnDestroy()
@@ -67,6 +78,20 @@ namespace Core
 
         public bool IsMouseLeftClick => Mouse.current.leftButton.wasReleasedThisFrame;
 
+        public bool HasGameplayClickThisFrame => m_GameplayClickThisFrame && !m_GameplayClickConsumed;
+
+        public bool TryConsumeGameplayClick(out Vector2 screenPosition)
+        {
+            screenPosition = m_GameplayClickScreenPosition;
+            if (!HasGameplayClickThisFrame)
+            {
+                return false;
+            }
+
+            m_GameplayClickConsumed = true;
+            return true;
+        }
+
         #region Player Actions
 
         public void OnMove(InputAction.CallbackContext context)
@@ -76,6 +101,11 @@ namespace Core
 
         public void OnClick(InputAction.CallbackContext context)
         {
+            if (!context.canceled)
+            {
+                return;
+            }
+
             StartCoroutine(OnClickDelay());
         }
 
@@ -89,7 +119,17 @@ namespace Core
                 yield break;
             }
 
+            RegisterGameplayClick(MousePosition);
             OnClickAction?.Invoke();
+        }
+
+        private void RegisterGameplayClick(Vector2 screenPosition)
+        {
+            // Gameplay 点击由 InputManager 统一过滤 UI 和输入细节，Capability 只消费这一层语义。
+            m_GameplayClickThisFrame = true;
+            m_GameplayClickConsumed = false;
+            m_GameplayClickFrame = Time.frameCount;
+            m_GameplayClickScreenPosition = screenPosition;
         }
 
         public void OnRightClick(InputAction.CallbackContext context)

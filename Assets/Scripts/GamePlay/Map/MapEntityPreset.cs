@@ -50,6 +50,7 @@ namespace GamePlay.Map
 
             // 绑定运行时流程：生成地图 -> 注册国家 -> 应用领土变更 -> 表现绘制。
             world.BindCapability<GenerateMapDataCap>(entity);
+            world.BindCapability<SelectAndSetDestinationCap>(entity);
             world.BindCapability<ApplyTerritoryChangesCap>(entity);
             world.BindCapability<DrawMapCap>(entity);
             world.BindCapability<NationRegistryCap>(entity);
@@ -81,6 +82,7 @@ namespace GamePlay.Map
             entity.AddComponent<NationIndex>();
             entity.AddComponent<TerritoryOwnershipBuffer>();
             entity.AddComponent<TerritoryPaintState>();
+            entity.AddComponent<UnitOccupancyIndex>();
             entity.AddComponent<NationBootstrap>();
 
             // 时间组件仍由地图实体承载，保持现有 TimeCap 绑定方式。

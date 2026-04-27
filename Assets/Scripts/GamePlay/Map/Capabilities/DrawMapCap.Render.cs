@@ -20,7 +20,8 @@ namespace GamePlay.Map
             var tilemap = drawMap.Tilemap;
             var terrainSettings = drawMap.TerrainSettings;
             var cells = grid.Cells;
-            if (tilemap == null || terrainSettings == null || cells == null || nationIndex == null || paintState == null)
+            if (tilemap is null || terrainSettings is null || cells == null ||
+                nationIndex == null || paintState == null)
             {
                 return false;
             }
@@ -110,8 +111,20 @@ namespace GamePlay.Map
             {
                 return;
             }
+            /*
+            你执行代码解锁：SetTileFlags(None) -> 实例数据的 Flags 被成功清空。
 
-            // Tile 默认可能锁定颜色，先清除 flags 再写颜色。
+            你执行代码染色：SetColor(Blue) -> 实例数据的颜色被成功设置为蓝色。
+
+            （暗箱操作发生）网格重建触发：因为你修改了 Tilemap，Unity 的内部机制在这一帧稍后或下一帧触发了网格刷新。
+
+            资产夺回控制权：Tilemap 调用该位置 Tile 资产的 GetTileData 方法。因为该 .asset 文件的 Lock Color 是勾选状态，Unity 官方默认的 Tile 类会在这个方法内部强行执行类似这样的逻辑：
+            tileData.flags = TileFlags.LockColor;
+
+            实例数据被洗刷：Tilemap 拿到资产返回的 tileData 后，用它覆盖了该坐标原本的实例数据。你的 None 被重新改写为 LockColor，随后计算顶点色时，你的 Blue 被丢弃，退回默认纯白。
+            */
+
+            //已解决，要在编辑器里直接设置对应tile asset的flag才行
             hexTilemap.SetTileFlags(cellPosition, TileFlags.None);
             hexTilemap.SetColor(cellPosition, color);
         }
@@ -135,7 +148,8 @@ namespace GamePlay.Map
             int count = Mathf.Min(cells.Length, paintState.CellColorCache?.Length ?? 0);
             for (int index = 0; index < count; index++)
             {
-                Color32 color = NationRegistryCap.GetColorOrNeutral(nationIndex, cells[index].OwnerId);
+                Color32 color =
+                    NationRegistryCap.GetColorOrNeutral(nationIndex, cells[index].OwnerId);
                 paintState.CellColorCache[index] = color;
             }
 
@@ -152,7 +166,8 @@ namespace GamePlay.Map
                         continue;
                     }
 
-                    SetHexColor(drawMap, new Vector3Int(col, row, 0), paintState.CellColorCache[cellIndex]);
+                    SetHexColor(drawMap, new Vector3Int(col, row, 0),
+                        paintState.CellColorCache[cellIndex]);
                 }
             }
 
@@ -193,7 +208,8 @@ namespace GamePlay.Map
                 int baseCol = cellIndex - row * width;
 
                 // 从权威 OwnerId 重新取颜色，写回缓存后再刷 tilemap。
-                Color32 color = NationRegistryCap.GetColorOrNeutral(nationIndex, cells[cellIndex].OwnerId);
+                Color32 color =
+                    NationRegistryCap.GetColorOrNeutral(nationIndex, cells[cellIndex].OwnerId);
                 paintState.CellColorCache[cellIndex] = color;
 
                 // 计算当前真实列在 ghost column 范围内的所有镜像列。
