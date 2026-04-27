@@ -148,25 +148,7 @@ namespace GamePlay.Strategy
 
                 Vector2Int offset = nextHex.ToOffset();
                 position.Cell = new Vector3Int(offset.x, offset.y, 0);
-                EmitOccupyRequest(nextHex);
             }
-        }
-
-        // 向 ChangedHexs 数组追加一个 Hex，OccupyCap 会在同帧稍后消费它。
-        private void EmitOccupyRequest(HexCoordinates hex)
-        {
-            if (!Owner.TryGetChangedHexs(out ChangedHexs changedHexs))
-            {
-                changedHexs = Owner.AddComponent<ChangedHexs>();
-            }
-
-            if (changedHexs.Hexs == null)
-            {
-                changedHexs.Hexs = new List<HexCoordinates> { hex };
-                return;
-            }
-
-            changedHexs.Hexs.Add(hex);
         }
 
         private void FinishMove(UnitMoveTarget target)

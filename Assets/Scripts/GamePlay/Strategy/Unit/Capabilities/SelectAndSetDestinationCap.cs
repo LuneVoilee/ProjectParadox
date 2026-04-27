@@ -35,9 +35,12 @@ namespace GamePlay.Strategy
 
         public override bool ShouldDeactivate()
         {
-            return m_SelectionKind == SelectionKind.None &&
-                   (InputManager.Instance == null ||
-                    !InputManager.Instance.HasGameplayClickThisFrame);
+            if (m_SelectionKind != SelectionKind.None) return false;
+
+            InputManager inputManager = InputManager.Instance;
+            if (inputManager == null) return true;
+            if (!inputManager.HasGameplayClickThisFrame) return true;
+            return false;
         }
 
         public override void TickActive(float deltaTime, float realElapsedSeconds)

@@ -20,11 +20,11 @@ namespace GamePlay.Map
             var tilemap = drawMap.Tilemap;
             var terrainSettings = drawMap.TerrainSettings;
             var cells = grid.Cells;
-            if (tilemap is null || terrainSettings is null || cells == null ||
-                nationIndex == null || paintState == null)
-            {
-                return false;
-            }
+            if (tilemap is null) return false;
+            if (terrainSettings is null) return false;
+            if (cells == null) return false;
+            if (nationIndex == null) return false;
+            if (paintState == null) return false;
 
             var width = grid.Width;
             var height = grid.Height;
@@ -139,10 +139,9 @@ namespace GamePlay.Map
             Cell[] cells = grid.Cells;
             int width = grid.Width;
             int height = grid.Height;
-            if (cells == null || width <= 0 || height <= 0)
-            {
-                return;
-            }
+            if (cells == null) return;
+            if (width <= 0) return;
+            if (height <= 0) return;
 
             // 先按真实 Cells 顺序重建颜色缓存，后续绘制 ghost columns 时复用缓存值。
             int count = Mathf.Min(cells.Length, paintState.CellColorCache?.Length ?? 0);
@@ -184,10 +183,10 @@ namespace GamePlay.Map
             Cell[] cells = grid.Cells;
             int width = grid.Width;
             int height = grid.Height;
-            if (cells == null || width <= 0 || height <= 0 || paintState.CellColorCache == null)
-            {
-                return;
-            }
+            if (cells == null) return;
+            if (width <= 0) return;
+            if (height <= 0) return;
+            if (paintState.CellColorCache == null) return;
 
             int maxCount = Mathf.Min(cells.Length, paintState.CellColorCache.Length);
             for (int i = 0; i < paintState.DirtyCellIndices.Count; i++)

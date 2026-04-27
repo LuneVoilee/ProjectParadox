@@ -1,6 +1,5 @@
 #region
 
-using System.Collections.Generic;
 using Core.Capability;
 using GamePlay.Map;
 using GamePlay.Util;
@@ -59,9 +58,6 @@ namespace GamePlay.Strategy
             UnitMotor motor = entity.AddComponent<UnitMotor>();
             motor.Transform = config.Transform;
             motor.ArriveDistance = Mathf.Max(0.001f, config.ArriveDistance);
-
-            ChangedHexs changedHexs = entity.AddComponent<ChangedHexs>();
-            changedHexs.Hexs = new List<HexCoordinates> { config.StartHex };
 
             occupancyIndex.Set(config.StartHex, entity.Id);
 

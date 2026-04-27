@@ -23,7 +23,6 @@ namespace GamePlay.Util
         public static readonly int TerritoryOwnershipBufferId = Component<GamePlay.Map.TerritoryOwnershipBuffer>.TId;
         public static readonly int TerritoryPaintStateId = Component<GamePlay.Map.TerritoryPaintState>.TId;
         public static readonly int UnitOccupancyIndexId = Component<GamePlay.Map.UnitOccupancyIndex>.TId;
-        public static readonly int ChangedHexsId = Component<GamePlay.Strategy.ChangedHexs>.TId;
         public static readonly int NationId = Component<GamePlay.Strategy.Nation>.TId;
         public static readonly int NationBootstrapId = Component<GamePlay.Strategy.NationBootstrap>.TId;
         public static readonly int NationIndexId = Component<GamePlay.Strategy.NationIndex>.TId;
@@ -480,38 +479,6 @@ namespace GamePlay.Util
             }
 
             entity.RemoveComponent(TerritoryPaintStateId);
-            return true;
-        }
-
-        public static bool HasChangedHexs(this CEntity entity)
-        {
-            return entity != null && entity.HasComponent(ChangedHexsId);
-        }
-
-        public static bool TryGetChangedHexs(this CEntity entity, out GamePlay.Strategy.ChangedHexs component)
-        {
-            component = null;
-            return entity != null && entity.TryGetComponent(ChangedHexsId, out component);
-        }
-
-        public static GamePlay.Strategy.ChangedHexs GetChangedHexsOrNull(this CEntity entity)
-        {
-            return entity != null ? entity.GetComponent(ChangedHexsId) as GamePlay.Strategy.ChangedHexs : null;
-        }
-
-        public static GamePlay.Strategy.ChangedHexs AddChangedHexs(this CEntity entity)
-        {
-            return entity != null ? entity.AddComponent<GamePlay.Strategy.ChangedHexs>() : null;
-        }
-
-        public static bool RemoveChangedHexs(this CEntity entity)
-        {
-            if (entity == null || !entity.HasComponent(ChangedHexsId))
-            {
-                return false;
-            }
-
-            entity.RemoveComponent(ChangedHexsId);
             return true;
         }
 

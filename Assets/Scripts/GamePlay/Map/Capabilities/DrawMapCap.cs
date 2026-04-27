@@ -77,13 +77,10 @@ namespace GamePlay.Map
         public override void TickActive(float deltaTime, float realElapsedSeconds)
         {
             // 组件可被运行时移除，因此每帧取最新引用并做空保护。
-            if (!Owner.TryGetDrawMap(out var drawMap) ||
-                !Owner.TryGetGrid(out var grid) ||
-                !Owner.TryGetNationIndex(out var nationIndex) ||
-                !Owner.TryGetTerritoryPaintState(out var paintState))
-            {
-                return;
-            }
+            if (!Owner.TryGetDrawMap(out var drawMap)) return;
+            if (!Owner.TryGetGrid(out var grid)) return;
+            if (!Owner.TryGetNationIndex(out var nationIndex)) return;
+            if (!Owner.TryGetTerritoryPaintState(out var paintState)) return;
 
             // terrainDirty 控制底图 tile 重建；colorDirty 控制国家颜色 pass。
             bool terrainDirty = drawMap.IsDirty;
