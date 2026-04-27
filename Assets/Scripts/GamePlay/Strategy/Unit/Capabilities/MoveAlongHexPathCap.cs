@@ -24,6 +24,13 @@ namespace GamePlay.Strategy
 
         private readonly List<Vector3> m_WorldPathBuffer = new List<Vector3>(64);
 
+        // HOI4 式步进移动：时间累积到 timePerHex 后推进一格，表现层独立插值。
+        private float m_StepTimer;
+        private Vector3 m_VisualLerpStart;
+        private Vector3 m_VisualLerpTarget;
+        private float m_VisualLerpProgress = 1f;
+        private const float VisualMoveDuration = 0.15f;
+
         public override int TickGroupOrder { get; protected set; } =
             CapabilityOrder.ResolveUnitMovement;
 
@@ -68,9 +75,14 @@ namespace GamePlay.Strategy
             base.Dispose();
         }
 
+        protected override void OnActivated()
+        {
+            m_StepTimer = 0f;
+            m_VisualLerpProgress = 1f;
+        }
+
         public override void TickActive(float deltaTime, float realElapsedSeconds)
         {
-            // 逐条守卫：任意前置条件不满足就本帧不做移动推进，避免多层条件叠在一起难以调试。
             if (deltaTime <= 0f) return;
             if (!Owner.TryGetUnit(out Unit unit)) return;
             if (!Owner.TryGetUnitPosition(out UnitPosition position)) return;
@@ -85,43 +97,51 @@ namespace GamePlay.Strategy
             Tilemap tilemap = drawMap.Tilemap;
             EnsurePathIndicator(target, grid, tilemap, motor.Transform.position);
 
-            // 逐帧推进：用本帧可移动距离沿路径消耗，跨格时自动进入下一格并更新占位。
-            float remainingDistance = Mathf.Max(0.01f, unit.MoveSpeed) * deltaTime;
-            while (remainingDistance > 0f && target.NextPathIndex < target.Path.Length)
+            // 逻辑阶段：时间累积到 timePerHex 则推进到路径下一格。
+            m_StepTimer += deltaTime;
+            float timePerHex = 1f / Mathf.Max(0.01f, unit.MoveSpeed);
+
+            while (m_StepTimer >= timePerHex && target.NextPathIndex < target.Path.Length)
             {
-                Vector3 nextWorldPosition = HexMapUtility.GetNearestMirroredWorldPosition(
-                    tilemap, grid, target.Path[target.NextPathIndex], motor.Transform.position);
-                Vector3 toTarget = nextWorldPosition - motor.Transform.position;
-                float distance = toTarget.magnitude;
-                float arriveDistance = Mathf.Max(0.001f, motor.ArriveDistance);
+                Vector3 oldWorldPos = HexMapUtility.GetNearestMirroredWorldPosition(
+                    tilemap, grid, position.Hex, motor.Transform.position);
 
-                if (distance <= arriveDistance)
+                EnterPathHex(target, position, occupancyIndex, grid, target.NextPathIndex);
+                target.NextPathIndex++;
+                m_StepTimer -= timePerHex;
+
+                Vector3 newWorldPos = HexMapUtility.GetNearestMirroredWorldPosition(
+                    tilemap, grid, position.Hex, oldWorldPos);
+
+                m_VisualLerpStart = oldWorldPos;
+                m_VisualLerpTarget = newWorldPos;
+                m_VisualLerpProgress = 0f;
+            }
+
+            // 表现阶段：推进视觉插值（在逻辑阶段之后，确保最后一格的插值也能拿到 deltaTime）。
+            if (m_VisualLerpProgress < 1f)
+            {
+                m_VisualLerpProgress += deltaTime / VisualMoveDuration;
+                if (m_VisualLerpProgress >= 1f)
                 {
-                    EnterPathHex(target, position, occupancyIndex, grid, target.NextPathIndex);
-                    target.NextPathIndex++;
-                    continue;
-                }
-
-                float step = Mathf.Min(remainingDistance, distance);
-                motor.Transform.position += toTarget / distance * step;
-                remainingDistance -= step;
-
-                if (distance - step <= arriveDistance)
-                {
-                    motor.Transform.position = nextWorldPosition;
-                    EnterPathHex(target, position, occupancyIndex, grid, target.NextPathIndex);
-                    target.NextPathIndex++;
+                    motor.Transform.position = m_VisualLerpTarget;
                 }
                 else
                 {
-                    break;
+                    motor.Transform.position =
+                        Vector3.Lerp(m_VisualLerpStart, m_VisualLerpTarget, m_VisualLerpProgress);
                 }
             }
 
-            // 到达路径终点：销毁指示器、移除 MoveTarget 组件以触发 ShouldDeactivate。
-            if (target.NextPathIndex >= target.Path.Length)
+            bool logicDone = target.NextPathIndex >= target.Path.Length;
+            if (logicDone)
             {
-                FinishMove(target);
+                DestroyPathIndicator(target);
+                if (m_VisualLerpProgress >= 1f)
+                {
+                    Owner.RemoveComponent(m_TargetId);
+                }
+
                 return;
             }
 

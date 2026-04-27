@@ -32,6 +32,11 @@ namespace Core
         private int m_GameplayClickFrame = -1;
         private Vector2 m_GameplayClickScreenPosition;
 
+        private bool m_GameplayRightClickThisFrame;
+        private bool m_GameplayRightClickConsumed;
+        private int m_GameplayRightClickFrame = -1;
+        private Vector2 m_GameplayRightClickScreenPosition;
+
         protected override void Awake()
         {
             base.Awake();
@@ -51,13 +56,17 @@ namespace Core
 
         private void LateUpdate()
         {
-            if (!m_GameplayClickThisFrame || Time.frameCount <= m_GameplayClickFrame)
+            if (m_GameplayClickThisFrame && Time.frameCount > m_GameplayClickFrame)
             {
-                return;
+                m_GameplayClickThisFrame = false;
+                m_GameplayClickConsumed = false;
             }
 
-            m_GameplayClickThisFrame = false;
-            m_GameplayClickConsumed = false;
+            if (m_GameplayRightClickThisFrame && Time.frameCount > m_GameplayRightClickFrame)
+            {
+                m_GameplayRightClickThisFrame = false;
+                m_GameplayRightClickConsumed = false;
+            }
         }
 
         protected override void OnDestroy()
@@ -89,6 +98,20 @@ namespace Core
             }
 
             m_GameplayClickConsumed = true;
+            return true;
+        }
+
+        public bool HasGameplayRightClickThisFrame => m_GameplayRightClickThisFrame && !m_GameplayRightClickConsumed;
+
+        public bool TryConsumeGameplayRightClick(out Vector2 screenPosition)
+        {
+            screenPosition = m_GameplayRightClickScreenPosition;
+            if (!HasGameplayRightClickThisFrame)
+            {
+                return false;
+            }
+
+            m_GameplayRightClickConsumed = true;
             return true;
         }
 
@@ -134,7 +157,21 @@ namespace Core
 
         public void OnRightClick(InputAction.CallbackContext context)
         {
+            if (!context.canceled)
+            {
+                return;
+            }
+
+            RegisterGameplayRightClick(MousePosition);
             OnRightClickAction?.Invoke();
+        }
+
+        private void RegisterGameplayRightClick(Vector2 screenPosition)
+        {
+            m_GameplayRightClickThisFrame = true;
+            m_GameplayRightClickConsumed = false;
+            m_GameplayRightClickFrame = Time.frameCount;
+            m_GameplayRightClickScreenPosition = screenPosition;
         }
 
 

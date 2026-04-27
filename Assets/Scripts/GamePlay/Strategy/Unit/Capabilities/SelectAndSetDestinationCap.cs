@@ -30,7 +30,10 @@ namespace GamePlay.Strategy
         public override bool ShouldActivate()
         {
             InputManager inputManager = InputManager.Instance;
-            return inputManager != null && inputManager.HasGameplayClickThisFrame;
+            if (inputManager == null) return false;
+            if (inputManager.HasGameplayClickThisFrame) return true;
+            if (inputManager.HasGameplayRightClickThisFrame) return true;
+            return false;
         }
 
         public override bool ShouldDeactivate()
@@ -39,29 +42,43 @@ namespace GamePlay.Strategy
 
             InputManager inputManager = InputManager.Instance;
             if (inputManager == null) return true;
-            if (!inputManager.HasGameplayClickThisFrame) return true;
-            return false;
+            if (inputManager.HasGameplayClickThisFrame) return false;
+            if (inputManager.HasGameplayRightClickThisFrame) return false;
+            return true;
         }
 
         public override void TickActive(float deltaTime, float realElapsedSeconds)
         {
-            // 处理本帧点击（如果有）
             InputManager inputManager = InputManager.Instance;
+
+            // 左键：选择逻辑
             if (inputManager != null &&
                 inputManager.TryConsumeGameplayClick(out Vector2 screenPosition))
             {
                 HandleGameplayClick(screenPosition);
             }
 
-            // 选中存在时每帧刷新指示器世界位置：
-            // 鬼列数量随相机缩放动态增减，缩放后原鬼列可能消失，需将指示器移到最近可见的镜像位置。
+            // 右键：移动指令（仅当已选中单位时生效）
+            if (inputManager != null &&
+                inputManager.TryConsumeGameplayRightClick(out Vector2 rightClickPosition))
+            {
+                HandleRightClick(rightClickPosition);
+            }
+
+            // 选中单位时，持续同步 m_SelectedHex 以跟随单位当前位置。
+            if (m_SelectionKind == SelectionKind.Unit)
+            {
+                TrySyncSelectedHexToUnit();
+            }
+
+            // 选中存在时每帧刷新指示器世界位置。
             if (m_SelectionIndicatorId >= 0)
             {
                 RefreshIndicatorPosition();
             }
         }
 
-        // 处理一次 gameplay 点击：解析格坐标 → 空选 / 同格 / 移动 / 新选 分支。
+        // 处理一次左键点击：解析格坐标 → 空选 / 同格 / 切换选择 分支。
         private void HandleGameplayClick(Vector2 screenPosition)
         {
             if (!TryResolveMapContext(out Grid grid, out DrawMap drawMap,
@@ -86,17 +103,7 @@ namespace GamePlay.Strategy
                 return;
             }
 
-            if (m_SelectionKind == SelectionKind.Unit &&
-                TryGetSelectedUnit(out CEntity selectedUnit))
-            {
-                if (TryIssueMove(selectedUnit, clickedHex, grid, occupancyIndex))
-                {
-                    ClearSelection();
-                }
-
-                return;
-            }
-
+            // 左键点不同格：切换选择（该格有单位则选单位，否则选格子），不触发移动。
             Select(clickedHex, indicatorPosition, hasUnit ? clickedUnit.Id : -1,
                 hasUnit ? SelectionKind.Unit : SelectionKind.Cell);
         }
@@ -128,6 +135,28 @@ namespace GamePlay.Strategy
         {
             ClearSelection();
             base.Dispose();
+        }
+
+        // 右键下达移动指令：仅当已选中单位时对右键点击的 Hex 发起寻路并写入 UnitMoveTarget。
+        private void HandleRightClick(Vector2 screenPosition)
+        {
+            if (m_SelectionKind != SelectionKind.Unit) return;
+            if (!TryGetSelectedUnit(out CEntity selectedUnit)) return;
+            if (!TryResolveMapContext(out Grid grid, out DrawMap drawMap,
+                    out UnitOccupancyIndex occupancyIndex, out UnityEngine.Camera camera)) return;
+            if (!HexMapUtility.TryGetClickedHex(camera, drawMap.Tilemap, grid, screenPosition,
+                    out HexCoordinates clickedHex, out _, out _)) return;
+
+            TryIssueMove(selectedUnit, clickedHex, grid, occupancyIndex);
+        }
+
+        // 将 m_SelectedHex 同步为所选单位的当前 Hex，使指示器跟随单位移动。
+        private void TrySyncSelectedHexToUnit()
+        {
+            if (!TryGetSelectedUnit(out CEntity unit)) return;
+            if (!unit.TryGetUnitPosition(out UnitPosition position)) return;
+            if (position.Hex.Equals(m_SelectedHex)) return;
+            m_SelectedHex = position.Hex;
         }
 
         private void HandleSameHexClick
@@ -174,7 +203,7 @@ namespace GamePlay.Strategy
                 EventBus.GP_OnDestroyPathIndicator?.Invoke(target.PathIndicatorId);
             }
 
-            target.DestinationHex = m_PathBuffer[m_PathBuffer.Count - 1];
+            target.DestinationHex = m_PathBuffer[^1];
             target.Path = m_PathBuffer.ToArray();
             target.NextPathIndex = 1;
             target.RequestVersion = ++m_RequestVersion;
