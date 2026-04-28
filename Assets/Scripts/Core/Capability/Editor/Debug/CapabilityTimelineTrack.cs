@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using UnityEngine;
 
 namespace Core.Capability.Editor
 {
@@ -20,53 +19,48 @@ namespace Core.Capability.Editor
 
     internal sealed class CapabilityTimelineTrack
     {
-        private readonly int[] m_States;
+        private readonly List<int> m_States = new List<int>(1024);
 
         private readonly List<CapabilityTimelineSegment> m_Segments = new List<CapabilityTimelineSegment>(32);
 
-        private int m_WriteIndex;
-
-        private int m_Count;
-
         public string Name { get; }
 
-        public int LastSampleIndex { get; private set; } = -1;
+        public int Count => m_States.Count;
 
-        public CapabilityTimelineTrack(int frameSize, string name)
+        public CapabilityTimelineTrack(string name)
         {
-            m_States = new int[Mathf.Max(1, frameSize)];
             Name = name;
         }
 
-        public void Push(CapabilityRuntimeState state, int sampleIndex)
+        public void Push(CapabilityRuntimeState state)
         {
-            m_States[m_WriteIndex] = (int)state;
-            m_WriteIndex = (m_WriteIndex + 1) % m_States.Length;
-            m_Count = Mathf.Min(m_Count + 1, m_States.Length);
-            LastSampleIndex = sampleIndex;
+            m_States.Add((int)state);
+        }
+
+        public CapabilityRuntimeState GetState(int frameIndex)
+        {
+            if (frameIndex < 0 || frameIndex >= m_States.Count)
+            {
+                return CapabilityRuntimeState.None;
+            }
+
+            return (CapabilityRuntimeState)m_States[frameIndex];
         }
 
         public List<CapabilityTimelineSegment> BuildSegments()
         {
             m_Segments.Clear();
-            if (m_Count == 0)
+            if (m_States.Count == 0)
             {
                 return m_Segments;
             }
 
-            int startIndex = m_WriteIndex - m_Count;
-            if (startIndex < 0)
-            {
-                startIndex += m_States.Length;
-            }
-
-            CapabilityRuntimeState previousState = (CapabilityRuntimeState)m_States[startIndex];
+            CapabilityRuntimeState previousState = (CapabilityRuntimeState)m_States[0];
             int segmentCount = 1;
 
-            for (int i = 1; i < m_Count; i++)
+            for (int i = 1; i < m_States.Count; i++)
             {
-                int index = (startIndex + i) % m_States.Length;
-                CapabilityRuntimeState currentState = (CapabilityRuntimeState)m_States[index];
+                CapabilityRuntimeState currentState = (CapabilityRuntimeState)m_States[i];
                 if (currentState == previousState)
                 {
                     segmentCount++;

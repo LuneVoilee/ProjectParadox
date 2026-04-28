@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace GamePlay.Camera
 {
-    public class CameraInstaller : MonoBehaviour
+    public class CameraInstaller : EntityInstaller<CEntity>
     {
         [SerializeField] private float m_MoveSpeed = 10f;
         [SerializeField] private Transform m_Target;
@@ -27,7 +27,6 @@ namespace GamePlay.Camera
         [Header("Map")] [SerializeField] private int m_MapEntityId = -1;
 
         private GameWorld m_World;
-        private CEntity m_CameraEntity;
 
         private void Awake()
         {
@@ -36,7 +35,7 @@ namespace GamePlay.Camera
 
         private void Start()
         {
-            if (m_CameraEntity != null)
+            if (Entity != null)
             {
                 return;
             }
@@ -75,17 +74,17 @@ namespace GamePlay.Camera
                 ClampY = m_ClampY
             };
 
-            m_CameraEntity = CameraEntityPreset.Create(m_World, config);
+            Entity = CameraEntityPreset.Create(m_World, config);
         }
 
         private void OnDestroy()
         {
-            if (m_World != null && m_World.Children != null && m_CameraEntity != null)
+            if (m_World != null && m_World.Children != null && Entity != null)
             {
-                m_World.RemoveChild(m_CameraEntity);
+                m_World.RemoveChild(Entity);
             }
 
-            m_CameraEntity = null;
+            Entity = null;
             m_World = null;
         }
 

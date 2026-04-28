@@ -10,10 +10,9 @@ using UnityEngine.Tilemaps;
 
 namespace GamePlay.Map
 {
-    public class MapInstaller : MonoBehaviour
+    public class MapInstaller : EntityInstaller<CEntity>
     {
         private GameWorld m_World;
-        private CEntity m_MapEntity;
 
         [BoxGroup("Biome参数")] public float SeaLevel = 0.3f;
         [BoxGroup("Biome参数")] public float MountainLevel = 0.8f;
@@ -37,7 +36,7 @@ namespace GamePlay.Map
 
         private void Start()
         {
-            if (m_MapEntity != null)
+            if (Entity != null)
             {
                 return;
             }
@@ -71,17 +70,17 @@ namespace GamePlay.Map
                 TerrainSettings = ParamTerrainSettings
             };
 
-            m_MapEntity = MapEntityPreset.Create(m_World, config);
+            Entity = MapEntityPreset.Create(m_World, config);
         }
 
         private void OnDestroy()
         {
-            if (m_World != null && m_World.Children != null && m_MapEntity != null)
+            if (m_World != null && m_World.Children != null && Entity != null)
             {
-                m_World.RemoveChild(m_MapEntity);
+                m_World.RemoveChild(Entity);
             }
 
-            m_MapEntity = null;
+            Entity = null;
             m_World = null;
         }
     }

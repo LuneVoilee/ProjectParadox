@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python Tools/generate_component_access.py)",
+      "Bash(python Tools/generate_all_capability.py)",
+      "Bash(python -c ' *)"
+    ]
+  }
+}
