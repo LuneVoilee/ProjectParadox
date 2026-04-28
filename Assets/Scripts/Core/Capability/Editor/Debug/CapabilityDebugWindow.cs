@@ -682,12 +682,12 @@ namespace Core.Capability.Editor
         private void DrawTimelineControls()
         {
             EditorGUILayout.BeginHorizontal();
-            GUI.enabled = m_Session.HasFrames;
             if (GUILayout.Button("播放", GUILayout.Width(54f)))
             {
                 PlayTool();
             }
 
+            GUI.enabled = m_Session.HasFrames;
             if (GUILayout.Button("暂停", GUILayout.Width(54f)))
             {
                 PauseToolAndUnity();
@@ -994,12 +994,20 @@ namespace Core.Capability.Editor
 
         private void PlayTool()
         {
+            m_IsToolPlaying = true;
+
             if (!m_Session.HasFrames)
             {
+                // 无帧数据时只解除 Unity 暂停，让 OnEditorUpdate 自然开始采样。
+                if (m_WasEditorPausedByDebugger)
+                {
+                    EditorApplication.isPaused = false;
+                    m_WasEditorPausedByDebugger = false;
+                }
+
                 return;
             }
 
-            m_IsToolPlaying = true;
             if (!m_Session.IsAtLatestFrame)
             {
                 m_Session.SetCurrentFrameIndex(m_Session.Frames.Count - 1);
@@ -1036,6 +1044,16 @@ namespace Core.Capability.Editor
 
         private void ClearSession()
         {
+            // 如果正在查看历史帧，先把场景恢复到最新帧状态再清除数据。
+            if (m_Session.HasFrames && !m_Session.IsAtLatestFrame)
+            {
+                m_Session.SetCurrentFrameIndex(m_Session.Frames.Count - 1);
+                SyncFrameInput();
+                ApplyCurrentFrameToScene();
+            }
+
+            bool wasPaused = !m_IsToolPlaying;
+
             m_Session.Clear();
             m_TimelineTracks.Clear();
             m_SelectedWorldKey = null;
@@ -1045,14 +1063,23 @@ namespace Core.Capability.Editor
             m_LastAppliedFrameIndex = -1;
             m_LastSampledUnityFrameCount = -1;
             m_FrameInput = "0";
-            m_IsToolPlaying = true;
             m_ExpandedFoldouts.Clear();
-            if (m_WasEditorPausedByDebugger && EditorApplication.isPaused)
-            {
-                EditorApplication.isPaused = false;
-            }
 
-            m_WasEditorPausedByDebugger = false;
+            if (wasPaused)
+            {
+                // 清除前是暂停状态 → 保持暂停，不解锁 Unity，不自动开始采样。
+                m_IsToolPlaying = false;
+            }
+            else
+            {
+                m_IsToolPlaying = true;
+                if (m_WasEditorPausedByDebugger && EditorApplication.isPaused)
+                {
+                    EditorApplication.isPaused = false;
+                }
+
+                m_WasEditorPausedByDebugger = false;
+            }
 #if UNITY_EDITOR
             CapabilityDebugLogBridge.Clear();
 #endif
