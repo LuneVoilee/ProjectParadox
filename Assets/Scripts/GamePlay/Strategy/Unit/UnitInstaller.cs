@@ -13,7 +13,7 @@ using Grid = GamePlay.Map.Grid;
 namespace GamePlay.Strategy
 {
     // 场景单位安装器：挂在士兵 GameObject 上，把 Transform 注册为 Capability 单位实体。
-    public class UnitInstaller : MonoBehaviour
+    public class UnitInstaller : EntityInstaller<CEntity>
     {
         [BoxGroup("Unit参数")] public byte NationId = 1;
         [BoxGroup("Unit参数")] public string NationTag;
@@ -22,7 +22,6 @@ namespace GamePlay.Strategy
         [BoxGroup("Unit参数")] public bool SnapToCellCenter = true;
 
         private GameWorld m_World;
-        private CEntity m_UnitEntity;
 
         private void Update()
         {
@@ -31,7 +30,7 @@ namespace GamePlay.Strategy
 
         private void TryCreateEntity()
         {
-            if (m_UnitEntity != null)
+            if (Entity != null)
             {
                 return;
             }
@@ -79,8 +78,8 @@ namespace GamePlay.Strategy
                 ArriveDistance = ArriveDistance
             };
 
-            m_UnitEntity = UnitEntityPreset.Create(m_World, mapEntity, config, gameObject.name);
-            enabled = m_UnitEntity == null;
+            Entity = UnitEntityPreset.Create(m_World, mapEntity, config, gameObject.name);
+            enabled = Entity == null;
         }
 
         private void OnDestroy()
@@ -88,21 +87,21 @@ namespace GamePlay.Strategy
             // 销毁 GameObject 时清理 Capability 世界中的单位实体和占位记录。
             if (m_World == null) return;
             if (m_World.Children == null) return;
-            if (m_UnitEntity == null) return;
+            if (Entity == null) return;
 
             if (m_World.TryGetPrimaryMapEntity(out CEntity mapEntity))
             {
                 if (mapEntity.TryGetUnitOccupancyIndex(out UnitOccupancyIndex occupancyIndex))
                 {
-                    if (m_UnitEntity.TryGetUnitPosition(out UnitPosition position))
+                    if (Entity.TryGetUnitPosition(out UnitPosition position))
                     {
-                        occupancyIndex.Remove(position.Hex, m_UnitEntity.Id);
+                        occupancyIndex.Remove(position.Hex, Entity.Id);
                     }
                 }
             }
 
-            m_World.RemoveChild(m_UnitEntity);
-            m_UnitEntity = null;
+            m_World.RemoveChild(Entity);
+            Entity = null;
             m_World = null;
         }
     }
