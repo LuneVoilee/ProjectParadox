@@ -32,14 +32,12 @@ namespace GamePlay.Strategy
         public bool IsHostile(byte nationA, byte nationB)
         {
             // 中立国不参与敌对判断。
-            if (nationA == NationIndex.NeutralId || nationB == NationIndex.NeutralId) return false;
             return GetRelation(nationA, nationB) == DiplomacyStatus.War;
         }
 
         // 判断 A 与 B 是否为盟友关系。
         public bool IsAllied(byte nationA, byte nationB)
         {
-            if (nationA == NationIndex.NeutralId || nationB == NationIndex.NeutralId) return false;
             return GetRelation(nationA, nationB) == DiplomacyStatus.Alliance;
         }
     }

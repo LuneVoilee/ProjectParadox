@@ -4,7 +4,9 @@
     {
         public static void Log(this CapabilityBase cap, string message)
         {
+#if UNITY_EDITOR
             CapabilityDebugLogBridge.Add(cap, message);
+#endif
         }
     }
 }

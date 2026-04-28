@@ -83,6 +83,7 @@ namespace GamePlay.Strategy
             if (!mapEntity.TryGetDiplomacyIndex(out DiplomacyIndex diplomacyIndex)) return;
             if (!mapEntity.TryGetUnitOccupancyIndex(out UnitOccupancyIndex occupancyIndex)) return;
             if (!mapEntity.TryGetGrid(out Grid grid)) return;
+            if (!mapEntity.TryGetNationIndex(out NationIndex nationIndex)) return;
 
             // 获取对手实体和战斗组件。
             CEntity opponentEntity = gameWorld.GetChild(combatState.OpponentEntityId);
@@ -104,8 +105,12 @@ namespace GamePlay.Strategy
                 return;
             }
 
+            // 将双方 Tag 解析为运行时 id，后续外交查询和格子归属比较都使用解析后的 id。
+            byte myId = NationRegistryCap.GetIdOrDefault(nationIndex, unit.Tag);
+            byte opponentId = NationRegistryCap.GetIdOrDefault(nationIndex, opponentUnit.Tag);
+
             // 若外交关系已变为非敌对，解除交战状态。
-            if (!diplomacyIndex.IsHostile(unit.NationId, opponentUnit.NationId))
+            if (!diplomacyIndex.IsHostile(myId, opponentId))
             {
                 EndCombat();
                 opponentEntity.RemoveComponent(m_CombatStateId);
@@ -165,10 +170,10 @@ namespace GamePlay.Strategy
 
                 // 中立格和本国格允许撤退。
                 if (ownerId == NationIndex.NeutralId) goto occupyRetreatHex;
-                if (ownerId == unit.NationId) goto occupyRetreatHex;
+                if (ownerId == myId) goto occupyRetreatHex;
 
                 // 仅允许撤退到联盟国格子上，盟友格子也视为安全。
-                if (diplomacyIndex.IsAllied(unit.NationId, ownerId)) goto occupyRetreatHex;
+                if (diplomacyIndex.IsAllied(myId, ownerId)) goto occupyRetreatHex;
 
                 // 其余国家（敌对、和平）均不允许撤退。
                 continue;

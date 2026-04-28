@@ -11,8 +11,11 @@ namespace GamePlay.Strategy
     [Serializable]
     public readonly struct NationTag : IEquatable<NationTag>
     {
-        // 空 Tag 表示未指定国家；运行时占领逻辑仍应使用 NationId 的 NeutralId。
+        // 空 Tag 表示未指定国家；运行时占领逻辑仍应使用 NationIndex 的 NeutralId。
         public static readonly NationTag None = new(string.Empty);
+
+        // 快速判空，避免重复 Hash == 0 检查。
+        public bool IsNone => Hash == 0;
 
         // Hash 用于快速比较；Name 保存标准化后的大写 Tag，便于调试和反查配置。
         public int Hash { get; }

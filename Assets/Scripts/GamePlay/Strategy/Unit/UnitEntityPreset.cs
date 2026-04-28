@@ -18,7 +18,6 @@ namespace GamePlay.Strategy
             public Transform Transform;
             public HexCoordinates StartHex;
             public Vector3Int StartCell;
-            public byte NationId;
             public NationTag Tag;
             public float MoveSpeed;
             public float ArriveDistance;
@@ -55,7 +54,6 @@ namespace GamePlay.Strategy
             world.BindCapability<CombatRecoveryCap>(entity);
 
             Unit unit = entity.AddComponent<Unit>();
-            unit.NationId = config.NationId;
             unit.Tag = config.Tag;
             unit.MoveSpeed = Mathf.Max(0.01f, config.MoveSpeed);
 

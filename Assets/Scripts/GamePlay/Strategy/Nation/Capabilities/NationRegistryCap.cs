@@ -92,21 +92,31 @@ namespace GamePlay.Strategy
         }
 
         // 保留通过 Tag 查询运行时 byte id 的入口，后续 UI/指令/配置引用可以走这个路径。
-        public static bool TryGetIdByTag(NationIndex nationIndex, string tag, out byte id)
+        public static bool TryGetIdByTag(NationIndex nationIndex, NationTag tag, out byte id)
         {
             id = NationIndex.NeutralId;
-            string normalizedTag = NormalizeTag(tag);
-            return !string.IsNullOrEmpty(normalizedTag) &&
+            return !tag.IsNone &&
                    nationIndex?.IdByTag != null &&
-                   nationIndex.IdByTag.TryGetValue(normalizedTag, out id);
+                   nationIndex.IdByTag.TryGetValue(tag, out id);
+        }
+
+        // 一站式 Tag→byte id 解析：空/无效/未注册 Tag 统一返回 NeutralId，调用方无需重复判空。
+        public static byte GetIdOrDefault(NationIndex nationIndex, NationTag tag)
+        {
+            if (tag.IsNone) return NationIndex.NeutralId;
+            if (nationIndex?.IdByTag != null &&
+                nationIndex.IdByTag.TryGetValue(tag, out byte id))
+            {
+                return id;
+            }
+            return NationIndex.NeutralId;
         }
 
         private static void ResetIndex(NationIndex nationIndex)
         {
             // 每次启动注册前重建索引，避免编辑器热重载或重复创建地图时残留旧国家数据。
             EnsureArrays(nationIndex);
-            nationIndex.IdByTag ??= new Dictionary<string, byte>
-                (StringComparer.OrdinalIgnoreCase);
+            nationIndex.IdByTag ??= new Dictionary<NationTag, byte>();
 
             Array.Fill(nationIndex.TagById, null);
             Array.Fill(nationIndex.NationEntityIdById, -1);
@@ -196,7 +206,7 @@ namespace GamePlay.Strategy
             // Nation 组件保存运行时 id 与 JSON 静态字段的快照；Tag 继续作为后续查配置的 key。
             Nation nation = nationEntity.AddComponent<Nation>();
             nation.Id = nationId;
-            nation.Tag = tag;
+            nation.Tag = new NationTag(tag);
             nation.Name = string.IsNullOrWhiteSpace(template.Name) ? tag : template.Name;
             nation.NationalColor = template.NationalColor;
             nation.Money = template.Money;

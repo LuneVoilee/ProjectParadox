@@ -56,6 +56,7 @@ namespace GamePlay.Strategy
             if (!mapEntity.TryGetUnitOccupancyIndex(out UnitOccupancyIndex occupancyIndex)) return;
             if (!mapEntity.TryGetGrid(out Grid grid)) return;
             if (!mapEntity.TryGetDiplomacyIndex(out DiplomacyIndex diplomacyIndex)) return;
+            if (!mapEntity.TryGetNationIndex(out NationIndex nationIndex)) return;
 
             // 获取路径下一格的坐标和占据情况。
             HexCoordinates nextHex = target.Path[target.NextPathIndex];
@@ -70,7 +71,9 @@ namespace GamePlay.Strategy
             if (!otherEntity.TryGetUnitCombat(out _)) return;
 
             // 通过外交索引判断是否敌对。
-            if (!diplomacyIndex.IsHostile(unit.NationId, otherUnit.NationId)) return;
+            byte myId = NationRegistryCap.GetIdOrDefault(nationIndex, unit.Tag);
+            byte otherId = NationRegistryCap.GetIdOrDefault(nationIndex, otherUnit.Tag);
+            if (!diplomacyIndex.IsHostile(myId, otherId)) return;
 
             // 若对方已在战斗中，不再重复添加 CombatState。
             if (otherEntity.HasCombatState()) return;

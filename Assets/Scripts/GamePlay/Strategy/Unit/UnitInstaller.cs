@@ -15,7 +15,6 @@ namespace GamePlay.Strategy
     // 场景单位安装器：挂在士兵 GameObject 上，把 Transform 注册为 Capability 单位实体。
     public class UnitInstaller : EntityInstaller<CEntity>
     {
-        [BoxGroup("Unit参数")] public byte NationId = 1;
         [BoxGroup("Unit参数")] public string NationTag;
         [BoxGroup("Unit参数")] public float MoveSpeed = 3f;
         [BoxGroup("Unit参数")] public float ArriveDistance = 0.03f;
@@ -77,7 +76,6 @@ namespace GamePlay.Strategy
                 Transform = transform,
                 StartHex = hex,
                 StartCell = cell,
-                NationId = NationId,
                 Tag = new NationTag(NationTag),
                 MoveSpeed = MoveSpeed,
                 ArriveDistance = ArriveDistance,

@@ -1,6 +1,5 @@
 #region
 
-using System;
 using System.Collections.Generic;
 using Core.Capability;
 using UnityEngine;
@@ -28,7 +27,7 @@ namespace GamePlay.Strategy
         public Color32[] ColorById = new Color32[Capacity];
 
         // Tag -> id，用于命令、UI、配置引用等以 Tag 为输入的路径快速转成运行时 byte id。
-        public Dictionary<string, byte> IdByTag = new Dictionary<string, byte>(StringComparer.OrdinalIgnoreCase);
+        public Dictionary<NationTag, byte> IdByTag = new Dictionary<NationTag, byte>();
 
         // 标记索引是否已经由 NationRegistryCap 完成初始化，便于其它逻辑做保护性判断。
         public bool IsInitialized;
