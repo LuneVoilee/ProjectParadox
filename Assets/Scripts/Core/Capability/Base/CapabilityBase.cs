@@ -55,14 +55,6 @@ namespace Core.Capability
         {
         }
 
-        protected void DebugLog(string message)
-        {
-#if UNITY_EDITOR
-            // Debugger 会在采样帧消费这些日志，并补上帧号后显示在 Inspector。
-            CapabilityDebugLogBridge.Add(this, message);
-#endif
-        }
-
         protected void Filter(params int[] componentIds)
         {
             if (componentIds == null)

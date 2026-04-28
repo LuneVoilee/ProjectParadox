@@ -13,21 +13,19 @@ namespace GamePlay.Strategy
     {
         public const int Capacity = 256;
 
-        private readonly DiplomacyStatus[,] m_Relations = new DiplomacyStatus[Capacity, Capacity];
+        private readonly DiplomacyStatus[] m_Relations = new DiplomacyStatus[Capacity * Capacity];
 
         // 查询两国间外交状态。
         public DiplomacyStatus GetRelation(byte nationA, byte nationB)
         {
-            if (nationA >= Capacity || nationB >= Capacity) return DiplomacyStatus.Peace;
-            return m_Relations[nationA, nationB];
+            return m_Relations[nationA * Capacity + nationB];
         }
 
         // 设置两国间外交状态，同时写入对称位置。
         public void SetRelation(byte nationA, byte nationB, DiplomacyStatus status)
         {
-            if (nationA >= Capacity || nationB >= Capacity) return;
-            m_Relations[nationA, nationB] = status;
-            m_Relations[nationB, nationA] = status;
+            m_Relations[nationA * Capacity + nationB] = status;
+            m_Relations[nationB * Capacity + nationA] = status;
         }
 
         // 判断 A 对 B 是否为敌对关系。
@@ -43,11 +41,6 @@ namespace GamePlay.Strategy
         {
             if (nationA == NationIndex.NeutralId || nationB == NationIndex.NeutralId) return false;
             return GetRelation(nationA, nationB) == DiplomacyStatus.Alliance;
-        }
-
-        public override void Dispose()
-        {
-            base.Dispose();
         }
     }
 }
