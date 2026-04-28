@@ -26,6 +26,7 @@ namespace GamePlay.Util
         public static readonly int NationIndexId = Component<GamePlay.Strategy.NationIndex>.TId;
         public static readonly int NoiseId = Component<GamePlay.Map.Noise>.TId;
         public static readonly int RefId = Component<GamePlay.Camera.Ref>.TId;
+        public static readonly int SignalRecoverId = Component<GamePlay.Strategy.SignalRecover>.TId;
         public static readonly int TerritoryOwnershipBufferId = Component<GamePlay.Map.TerritoryOwnershipBuffer>.TId;
         public static readonly int TerritoryPaintStateId = Component<GamePlay.Map.TerritoryPaintState>.TId;
         public static readonly int TimeId = Component<GamePlay.Strategy.Time>.TId;
@@ -37,7 +38,7 @@ namespace GamePlay.Util
         public static readonly int UnitPositionId = Component<GamePlay.Strategy.UnitPosition>.TId;
         public static readonly int ZoomId = Component<GamePlay.Camera.Zoom>.TId;
 
-        public static int Count => 27;
+        public static int Count => 28;
 
         public static bool HasBiome(this CEntity entity)
         {
@@ -580,6 +581,38 @@ namespace GamePlay.Util
             }
 
             entity.RemoveComponent(RefId);
+            return true;
+        }
+
+        public static bool HasSignalRecover(this CEntity entity)
+        {
+            return entity != null && entity.HasComponent(SignalRecoverId);
+        }
+
+        public static bool TryGetSignalRecover(this CEntity entity, out GamePlay.Strategy.SignalRecover component)
+        {
+            component = null;
+            return entity != null && entity.TryGetComponent(SignalRecoverId, out component);
+        }
+
+        public static GamePlay.Strategy.SignalRecover GetSignalRecoverOrNull(this CEntity entity)
+        {
+            return entity != null ? entity.GetComponent(SignalRecoverId) as GamePlay.Strategy.SignalRecover : null;
+        }
+
+        public static GamePlay.Strategy.SignalRecover AddSignalRecover(this CEntity entity)
+        {
+            return entity != null ? entity.AddComponent<GamePlay.Strategy.SignalRecover>() : null;
+        }
+
+        public static bool RemoveSignalRecover(this CEntity entity)
+        {
+            if (entity == null || !entity.HasComponent(SignalRecoverId))
+            {
+                return false;
+            }
+
+            entity.RemoveComponent(SignalRecoverId);
             return true;
         }
 

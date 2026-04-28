@@ -59,60 +59,7 @@ namespace GamePlay.Strategy
             Owner.RemoveComponent(m_NationBootstrapId);
         }
 
-        // Tag 是 JSON 与人类可读配置的稳定 key，进入运行时索引前统一大写去空白。
-        public static string NormalizeTag(string tag)
-        {
-            return string.IsNullOrWhiteSpace(tag)
-                ? string.Empty
-                : tag.Trim().ToUpperInvariant();
-        }
-
-        // 用于热路径保护：未知 id 不直接参与占领/绘制，而是降级成 Neutral。
-        public static bool IsValidNationId(NationIndex nationIndex, byte nationId)
-        {
-            return nationId == NationIndex.NeutralId ||
-                   nationIndex?.TagById != null &&
-                   nationId < nationIndex.TagById.Length &&
-                   !string.IsNullOrEmpty(nationIndex.TagById[nationId]);
-        }
-
-        // 地图绘制只关心颜色；任何缺失、越界或未注册 id 都统一返回 NeutralColor。
-        public static Color32 GetColorOrNeutral(NationIndex nationIndex, byte nationId)
-        {
-            if (nationIndex?.TagById == null ||
-                nationIndex.ColorById == null ||
-                nationId >= nationIndex.TagById.Length ||
-                nationId >= nationIndex.ColorById.Length ||
-                string.IsNullOrEmpty(nationIndex.TagById[nationId]))
-            {
-                return NationIndex.NeutralColor;
-            }
-
-            return nationIndex.ColorById[nationId];
-        }
-
-        // 保留通过 Tag 查询运行时 byte id 的入口，后续 UI/指令/配置引用可以走这个路径。
-        public static bool TryGetIdByTag(NationIndex nationIndex, NationTag tag, out byte id)
-        {
-            id = NationIndex.NeutralId;
-            return !tag.IsNone &&
-                   nationIndex?.IdByTag != null &&
-                   nationIndex.IdByTag.TryGetValue(tag, out id);
-        }
-
-        // 一站式 Tag→byte id 解析：空/无效/未注册 Tag 统一返回 NeutralId，调用方无需重复判空。
-        public static byte GetIdOrDefault(NationIndex nationIndex, NationTag tag)
-        {
-            if (tag.IsNone) return NationIndex.NeutralId;
-            if (nationIndex?.IdByTag != null &&
-                nationIndex.IdByTag.TryGetValue(tag, out byte id))
-            {
-                return id;
-            }
-            return NationIndex.NeutralId;
-        }
-
-        private static void ResetIndex(NationIndex nationIndex)
+        private void ResetIndex(NationIndex nationIndex)
         {
             // 每次启动注册前重建索引，避免编辑器热重载或重复创建地图时残留旧国家数据。
             EnsureArrays(nationIndex);
@@ -129,7 +76,7 @@ namespace GamePlay.Strategy
             nationIndex.IsInitialized = true;
         }
 
-        private static void EnsureArrays(NationIndex nationIndex)
+        private void EnsureArrays(NationIndex nationIndex)
         {
             // NationIndex 是纯数据组件，数组容量修复由 Cap 负责，保证 Dispose/反序列化后仍可恢复。
             nationIndex.TagById ??= new string[NationIndex.Capacity];
@@ -152,7 +99,7 @@ namespace GamePlay.Strategy
             }
         }
 
-        private static void RegisterTemplates(GameWorld gameWorld, NationIndex nationIndex)
+        private void RegisterTemplates(GameWorld gameWorld, NationIndex nationIndex)
         {
             // JsonTemplateSet 会通过 Config://Nation 读取所有国家 JSON，每个模板分配一个运行期 byte id。
             var templates = NationTemplateSet.Instance.AllTemplates;
@@ -183,14 +130,14 @@ namespace GamePlay.Strategy
             }
         }
 
-        private static bool TryRegisterTemplate
+        private bool TryRegisterTemplate
         (
             GameWorld gameWorld, NationIndex nationIndex,
             NationTemplate template, byte nationId
         )
         {
             // 模板 Tag 是国家身份的源头：空 Tag 或重复 Tag 都跳过，防止运行时 id 指向不明确。
-            string tag = NormalizeTag(template.Tag);
+            string tag = NationUtility.NormalizeTag(template.Tag);
             if (string.IsNullOrEmpty(tag) || nationIndex.IdByTag.ContainsKey(tag))
             {
                 return false;
@@ -219,7 +166,7 @@ namespace GamePlay.Strategy
             return true;
         }
 
-        private static void MarkTerritoryColorsDirty(CEntity mapEntity)
+        private void MarkTerritoryColorsDirty(CEntity mapEntity)
         {
             // 国家颜色表初始化后，已有地图格子的颜色缓存都需要重新计算。
             if (!mapEntity.TryGetTerritoryPaintState(out TerritoryPaintState paintState))

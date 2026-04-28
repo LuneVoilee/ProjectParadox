@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using Common.Event;
 using Core;
 using Core.Capability;
+using Core.Capability.Editor;
 using GamePlay.Map;
 using GamePlay.Util;
 using GamePlay.World;
@@ -140,12 +141,31 @@ namespace GamePlay.Strategy
         // 右键下达移动指令：仅当已选中单位时对右键点击的 Hex 发起寻路并写入 UnitMoveTarget。
         private void HandleRightClick(Vector2 screenPosition)
         {
-            if (m_SelectionKind != SelectionKind.Unit) return;
-            if (!TryGetSelectedUnit(out CEntity selectedUnit)) return;
+            if (m_SelectionKind != SelectionKind.Unit)
+            {
+                this.Log("No selected unit.");
+                return;
+            }
+
+            if (!TryGetSelectedUnit(out CEntity selectedUnit))
+            {
+                this.Log("No selected unit.");
+                return;
+            }
+
             if (!TryResolveMapContext(out Grid grid, out DrawMap drawMap,
-                    out UnitOccupancyIndex occupancyIndex, out UnityEngine.Camera camera)) return;
+                    out UnitOccupancyIndex occupancyIndex, out UnityEngine.Camera camera))
+            {
+                this.Log("No map context.");
+                return;
+            }
+
             if (!HexMapUtility.TryGetClickedHex(camera, drawMap.Tilemap, grid, screenPosition,
-                    out HexCoordinates clickedHex, out _, out _)) return;
+                    out HexCoordinates clickedHex, out _, out _))
+            {
+                this.Log("No clicked hex.");
+                return;
+            }
 
             TryIssueMove(selectedUnit, clickedHex, grid, occupancyIndex);
         }
@@ -187,10 +207,18 @@ namespace GamePlay.Strategy
             if (selectedUnit == null) return false;
             if (!selectedUnit.TryGetUnitPosition(out UnitPosition position)) return false;
             if (position.Hex.Equals(destinationHex)) return false;
-            if (occupancyIndex != null &&
-                occupancyIndex.IsOccupiedByOther(destinationHex, selectedUnit.Id)) return false;
+
+            if (World is not GameWorld gameWorld) return false;
+            if (!gameWorld.TryGetPrimaryMapEntity(out CEntity mapEntity)) return false;
+            if (!mapEntity.TryGetNationIndex(out NationIndex nationIndex)) return false;
+            if (!mapEntity.TryGetDiplomacyIndex(out DiplomacyIndex diplomacyIndex)) return false;
+            if (!selectedUnit.TryGetUnit(out Unit unit)) return false;
+
+            byte myNationId = NationUtility.GetIdOrDefault(nationIndex, unit.Tag);
+
             if (!HexMapUtility.TryFindPath(grid, occupancyIndex, position.Hex, destinationHex,
-                    selectedUnit.Id, m_PathBuffer)) return false;
+                    selectedUnit.Id, m_PathBuffer,
+                    gameWorld, nationIndex, diplomacyIndex, myNationId)) return false;
             if (m_PathBuffer.Count < 2) return false;
 
             if (!selectedUnit.TryGetUnitMoveTarget(out UnitMoveTarget target))

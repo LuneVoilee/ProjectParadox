@@ -43,16 +43,22 @@ namespace GamePlay.Strategy
             if (!mapEntity.TryGetDiplomacyIndex(out DiplomacyIndex diplomacyIndex)) return;
             if (!mapEntity.TryGetNationIndex(out NationIndex nationIndex)) return;
 
-            // 初始化所有国家间关系为 Peace（默认值已经是 Peace，这里显式设一遍确保安全）。
-            // NationIndex 中的有效国家 id 从 1 开始，0 为 Neutral 不参与外交。
+            // NationIndex 中的有效国家 id 从 1 开始，
+            // 临时让所有国家互相敌对
             for (int a = 1; a < NationIndex.Capacity; a++)
             {
                 if (string.IsNullOrEmpty(nationIndex.TagById[a])) continue;
                 for (int b = a + 1; b < NationIndex.Capacity; b++)
                 {
                     if (string.IsNullOrEmpty(nationIndex.TagById[b])) continue;
-                    diplomacyIndex.SetRelation((byte)a, (byte)b, DiplomacyStatus.Peace);
+                    diplomacyIndex.SetRelation((byte)a, (byte)b, DiplomacyStatus.War);
                 }
+            }
+
+            // 0 为 Neutral 没有外交状态，固定与所有人为敌。
+            for (int a = 1; a < NationIndex.Capacity; a++)
+            {
+                diplomacyIndex.SetRelation((byte)a, 0, DiplomacyStatus.War);
             }
 
             // 移除标记，该能力退回非激活状态。

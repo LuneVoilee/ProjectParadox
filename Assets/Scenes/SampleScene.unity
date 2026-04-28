@@ -253,7 +253,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 22a0579b57368b04cac9d0c6a471f1df, type: 3}
   m_Name: 
   m_EditorClassIdentifier: GamePlay::GamePlay.Strategy.UnitInstaller
-  NationId: 1
   NationTag: GER
   MoveSpeed: 3
   ArriveDistance: 0.03
@@ -272,7 +271,7 @@ Transform:
   m_GameObject: {fileID: 398043809}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 28.14, y: 10.5, z: 0}
+  m_LocalPosition: {x: 31.11, y: 10.5, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -502,7 +501,7 @@ Transform:
   m_GameObject: {fileID: 519420028}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: -10}
+  m_LocalPosition: {x: 25.628197, y: 13.049042, z: -10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -814,14 +813,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 22a0579b57368b04cac9d0c6a471f1df, type: 3}
   m_Name: 
   m_EditorClassIdentifier: GamePlay::GamePlay.Strategy.UnitInstaller
-  NationId: 1
   NationTag: FRA
   MoveSpeed: 3
   ArriveDistance: 0.03
   SnapToCellCenter: 1
   MaxMorale: 100
   MaxHealth: 100
-  Attack: 10
+  Attack: 50
   Defense: 5
   MoraleRecovery: 5
 --- !u!4 &602039918
@@ -833,7 +831,7 @@ Transform:
   m_GameObject: {fileID: 602039916}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 22.51538, y: 10.5, z: 0}
+  m_LocalPosition: {x: 26.845274, y: 10.5, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:

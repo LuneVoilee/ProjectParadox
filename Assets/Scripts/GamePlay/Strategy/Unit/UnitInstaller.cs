@@ -86,7 +86,7 @@ namespace GamePlay.Strategy
                 MoraleRecovery = MoraleRecovery
             };
 
-            Entity = UnitEntityPreset.Create(m_World, mapEntity, config, gameObject.name);
+            Entity = UnitEntityPreset.Create(m_World, mapEntity, config, gameObject);
             enabled = Entity == null;
         }
 

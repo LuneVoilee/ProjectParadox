@@ -31,8 +31,12 @@ namespace GamePlay.Strategy
         // 判断 A 对 B 是否为敌对关系。
         public bool IsHostile(byte nationA, byte nationB)
         {
-            // 中立国不参与敌对判断。
             return GetRelation(nationA, nationB) == DiplomacyStatus.War;
+        }
+
+        public bool IsPeace(byte nationA, byte nationB)
+        {
+            return GetRelation(nationA, nationB) == DiplomacyStatus.Peace;
         }
 
         // 判断 A 与 B 是否为盟友关系。

@@ -6,7 +6,7 @@ using Core.Capability;
 
 namespace GamePlay.Strategy
 {
-    // 单位所属国家数据。Tag 是唯一的国家身份标识，需要 byte id 时通过 NationRegistryCap.GetIdOrDefault 转换。
+    // 单位所属国家数据。Tag 是唯一的国家身份标识，需要 byte id 时通过 NationUtility.GetIdOrDefault 转换。
     public class Unit : CComponent
     {
         // 标准化后的国家 Tag，不依赖运行时 id 分配顺序，跨存档和配置引用都稳定。

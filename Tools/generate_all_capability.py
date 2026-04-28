@@ -129,28 +129,71 @@ def parse_tick_group_order(class_text: str, order_map: dict[str, int]) -> int:
         return 0  # 默认 CapabilityBase.TickGroupOrder = 0
 
     expr = m.group(1).strip()
+
     # 尝试直接在 order_map 中查找
     if expr in order_map:
         return order_map[expr]
 
     # 尝试解析 CapabilityOrder.Xxx 形式
     if expr.startswith("CapabilityOrder."):
+        # 简单常量引用：CapabilityOrder.StageResolve
         const_name = expr[len("CapabilityOrder."):].strip()
         if const_name in order_map:
             return order_map[const_name]
 
-    # StageResolve + 30 等形式
-    # 替换已知常量
+        # 算术表达式：CapabilityOrder.StageResolve + 20
+        # 先把所有 CapabilityOrder. 前缀去掉，再用已知常量替换
+        naked = expr.replace("CapabilityOrder.", "")
+        resolved = _replace_constants(naked, order_map)
+        val = _safe_eval(resolved)
+        if val is not None:
+            return val
+
+    # int.MaxValue 特殊处理
+    if expr == "int.MaxValue":
+        return 2147483647
+
+    # 其他可能的常量组合表达式
+    resolved = _replace_constants(expr, order_map)
+    val = _safe_eval(resolved)
+    if val is not None:
+        return val
+
+    return 0
+
+
+def _replace_constants(expr: str, order_map: dict[str, int]) -> str:
+    """将表达式中的 CapabilityOrder 常量名替换为数值，长名优先避免部分匹配。"""
     resolved = expr
     for name, val in sorted(order_map.items(), key=lambda x: -len(x[0])):
         resolved = resolved.replace(name, str(val))
+    return resolved
+
+
+def _safe_eval(expr: str) -> int | None:
+    """安全求值纯整数算术表达式，允许 + - * / () 和十进制数字。"""
+    import ast
+    import operator
+    try:
+        node = ast.parse(expr.strip(), mode="eval")
+    except SyntaxError:
+        return None
+
+    allowed_nodes = (ast.Expression, ast.Constant,
+                     ast.BinOp, ast.UnaryOp, ast.Add, ast.Sub,
+                     ast.Mult, ast.Div, ast.USub, ast.UAdd)
+
+    for n in ast.walk(node):
+        if isinstance(n, ast.Constant):
+            if not isinstance(n.value, (int, float)):
+                return None
+        elif not isinstance(n, allowed_nodes):
+            return None
 
     try:
-        return eval(resolved, {"__builtins__": {}}, {})
+        return int(eval(compile(node, "<expr>", "eval"), {"__builtins__": {}}, {}))
     except Exception:
-        pass
-
-    return 0
+        return None
 
 
 def find_cs_files(scripts_dir: str) -> list[str]:

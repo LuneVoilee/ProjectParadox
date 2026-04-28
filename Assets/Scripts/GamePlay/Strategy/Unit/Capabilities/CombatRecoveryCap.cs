@@ -3,6 +3,7 @@
 using System;
 using Common.Event;
 using Core.Capability;
+using Core.Capability.Editor;
 using GamePlay.Util;
 using GamePlay.World;
 using UnityEngine;
@@ -16,7 +17,7 @@ namespace GamePlay.Strategy
     {
         private static readonly int m_UnitId = Component<Unit>.TId;
         private static readonly int m_UnitCombatId = Component<UnitCombat>.TId;
-
+        private static readonly int m_SignalRecoverId = Component<SignalRecover>.TId;
         private Action<DateTime> m_OnTimeChange;
         private int m_LastRecoveryDay = -1;
 
@@ -26,16 +27,31 @@ namespace GamePlay.Strategy
 
         protected override void OnInit()
         {
-            Filter(m_UnitId, m_UnitCombatId);
+            Filter(m_UnitId, m_UnitCombatId, m_SignalRecoverId);
         }
 
         public override bool ShouldActivate()
         {
-            if (!Owner.HasComponent(m_UnitId)) return false;
+            if (!Owner.HasComponent(m_UnitId))
+            {
+                this.Log("m_UnitId");
+                return false;
+            }
 
-            if (!Owner.TryGetComponent(m_UnitCombatId, out UnitCombat combat)) return false;
+            if (!Owner.TryGetComponent(m_UnitCombatId, out UnitCombat combat))
+            {
+                this.Log("m_UnitCombatId");
 
-            return combat.Morale < combat.MaxMorale;
+                return false;
+            }
+
+            if (combat.Morale >= combat.MaxMorale)
+            {
+                this.Log("bigger");
+                return false;
+            }
+
+            return true;
         }
 
         public override bool ShouldDeactivate()
@@ -57,6 +73,8 @@ namespace GamePlay.Strategy
                 EventBus.GP_OnTimeChange -= m_OnTimeChange;
                 m_OnTimeChange = null;
             }
+
+            Owner.RemoveComponent(m_SignalRecoverId);
         }
 
         private void OnDayChanged(DateTime currentDate)

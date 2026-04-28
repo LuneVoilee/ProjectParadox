@@ -80,7 +80,7 @@ namespace GamePlay.Map
 
                 byte ownerId = change.NewOwnerId;
                 // 未注册国家 id 不允许写进权威格子，统一回退到 Neutral。
-                if (!NationRegistryCap.IsValidNationId(nationIndex, ownerId))
+                if (!NationUtility.IsValidNationId(nationIndex, ownerId))
                 {
                     ownerId = NationIndex.NeutralId;
                 }

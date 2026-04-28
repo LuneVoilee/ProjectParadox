@@ -29,7 +29,10 @@ namespace GamePlay.Strategy
         }
 
         public static CEntity Create
-            (GameWorld world, CEntity mapEntity, in Config config, string entityName = "UnitEntity")
+        (
+            GameWorld world, CEntity mapEntity, in Config config,
+            GameObject go, string entityName = "UnitEntity"
+        )
         {
             // 前置校验：世界、地图实体、场景 Transform 缺一不可。
             if (world == null) return null;
@@ -47,9 +50,10 @@ namespace GamePlay.Strategy
                 return null;
             }
 
+            entity.Go = go;
+
             world.BindCapability<MoveAlongHexPathCap>(entity);
             world.BindCapability<OccupyCap>(entity);
-            world.BindCapability<CombatEngageCap>(entity);
             world.BindCapability<CombatResolveCap>(entity);
             world.BindCapability<CombatRecoveryCap>(entity);
 

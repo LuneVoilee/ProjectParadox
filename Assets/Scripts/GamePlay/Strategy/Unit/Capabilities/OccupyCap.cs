@@ -64,7 +64,7 @@ namespace GamePlay.Strategy
             int row = offset.y;
             if ((uint)col >= (uint)width || (uint)row >= (uint)height) return;
 
-            byte ownerId = NationRegistryCap.GetIdOrDefault(nationIndex, unit.Tag);
+            byte ownerId = NationUtility.GetIdOrDefault(nationIndex, unit.Tag);
 
             int cellIndex = row * width + col;
             ownershipBuffer.LatestOwnerByCell[cellIndex] = ownerId;

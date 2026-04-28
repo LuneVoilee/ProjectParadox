@@ -149,7 +149,7 @@ namespace GamePlay.Map
             for (int index = 0; index < count; index++)
             {
                 Color32 color =
-                    NationRegistryCap.GetColorOrNeutral(nationIndex, cells[index].OwnerId);
+                    NationUtility.GetColorOrNeutral(nationIndex, cells[index].OwnerId);
                 paintState.CellColorCache[index] = color;
             }
 
@@ -209,7 +209,7 @@ namespace GamePlay.Map
 
                 // 从权威 OwnerId 重新取颜色，写回缓存后再刷 tilemap。
                 Color32 color =
-                    NationRegistryCap.GetColorOrNeutral(nationIndex, cells[cellIndex].OwnerId);
+                    NationUtility.GetColorOrNeutral(nationIndex, cells[cellIndex].OwnerId);
 
                 this.Log("Color:" + color);
 

@@ -1,6 +1,10 @@
 #region
 
 using System.Collections.Generic;
+using Core.Capability;
+using GamePlay.Strategy;
+using GamePlay.Util;
+using GamePlay.World;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
@@ -147,7 +151,9 @@ namespace GamePlay.Map
         public static bool TryFindPath
         (
             Grid grid, UnitOccupancyIndex occupancyIndex, HexCoordinates start,
-            HexCoordinates destination, int selfEntityId, List<HexCoordinates> result
+            HexCoordinates destination, int selfEntityId, List<HexCoordinates> result,
+            GameWorld gameWorld, NationIndex nationIndex, DiplomacyIndex diplomacyIndex,
+            byte myNationId
         )
         {
             result?.Clear();
@@ -163,9 +169,7 @@ namespace GamePlay.Map
                 return true;
             }
 
-            if (!IsPassable(grid, normalizedDestination) ||
-                occupancyIndex != null &&
-                occupancyIndex.IsOccupiedByOther(normalizedDestination, selfEntityId))
+            if (!IsPassable(grid, normalizedDestination))
             {
                 return false;
             }
@@ -184,8 +188,33 @@ namespace GamePlay.Map
                     if (!TryNormalizeHex(grid, next, out next)) continue;
                     if (cameFrom.ContainsKey(next)) continue;
                     if (!IsPassable(grid, next)) continue;
-                    if (occupancyIndex != null &&
-                        occupancyIndex.IsOccupiedByOther(next, selfEntityId)) continue;
+
+                    // 获取格子归属信息，用于外交判定。
+                    if (!TryGetCellIndex(grid, next, out int cellIndex)) continue;
+                    byte hexOwnerId = grid.Cells[cellIndex].OwnerId;
+
+                    // 不允许进入非己方的和平领土。
+                    if (myNationId != hexOwnerId && diplomacyIndex.IsPeace(myNationId, hexOwnerId))
+                        continue;
+
+                    // 如果有其他单位占据该格，检查是否可通行。
+                    if (occupancyIndex.TryGetUnit(next, out int occupantEntityId) &&
+                        occupantEntityId != selfEntityId)
+                    {
+                        CEntity occupantEntity = gameWorld.GetChild(occupantEntityId);
+                        if (occupantEntity == null ||
+                            !occupantEntity.TryGetUnit(out Unit occupantUnit))
+                        {
+                            // 实体不存在或没有 Unit 组件，当作不可通行。
+                            continue;
+                        }
+
+                        // 仅允许朝敌人移动（进攻），不允许朝盟友或己方移动。
+                        byte occupantNationId =
+                            NationUtility.GetIdOrDefault(nationIndex, occupantUnit.Tag);
+                        if (!diplomacyIndex.IsHostile(myNationId, occupantNationId))
+                            continue;
+                    }
 
                     cameFrom[next] = current;
                     if (next.Equals(normalizedDestination))
@@ -200,6 +229,7 @@ namespace GamePlay.Map
 
             return false;
         }
+
 
         public static Vector3 GetNearestMirroredWorldPosition
         (

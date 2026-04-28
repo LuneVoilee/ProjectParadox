@@ -92,7 +92,8 @@ namespace GamePlay.Strategy
             if (target.Path == null) return;
             if (target.Path.Length < 2) return;
             if (!TryResolveMapContext(out Grid grid, out DrawMap drawMap,
-                    out UnitOccupancyIndex occupancyIndex)) return;
+                    out UnitOccupancyIndex occupancyIndex,
+                    out NationIndex nationIndex, out DiplomacyIndex diplomacyIndex)) return;
 
             Tilemap tilemap = drawMap.Tilemap;
             EnsurePathIndicator(target, grid, tilemap, motor.Transform.position);
@@ -103,6 +104,14 @@ namespace GamePlay.Strategy
 
             while (m_StepTimer >= timePerHex && target.NextPathIndex < target.Path.Length)
             {
+                // 检查即将进入的格子是否有敌方单位 → 触发战斗，停止移动。
+                if (TryEngageCombatIfHostile(target.Path[target.NextPathIndex], grid,
+                        occupancyIndex, nationIndex, diplomacyIndex, target))
+                {
+                    m_StepTimer = 0f;
+                    break;
+                }
+
                 Vector3 oldWorldPos = HexMapUtility.GetNearestMirroredWorldPosition(
                     tilemap, grid, position.Hex, motor.Transform.position);
 
@@ -246,20 +255,68 @@ namespace GamePlay.Strategy
 
         private bool TryResolveMapContext
         (
-            out Grid grid, out DrawMap drawMap, out UnitOccupancyIndex occupancyIndex
+            out Grid grid, out DrawMap drawMap, out UnitOccupancyIndex occupancyIndex,
+            out NationIndex nationIndex, out DiplomacyIndex diplomacyIndex
         )
         {
             grid = null;
             drawMap = null;
             occupancyIndex = null;
+            nationIndex = null;
+            diplomacyIndex = null;
 
-            // 通过 GameWorld 拿到主地图实体，再逐项解析 Grid / DrawMap / 占位索引。
+            // 通过 GameWorld 拿到主地图实体，再逐项解析 Grid / DrawMap / 占位索引 / 外交索引。
             if (World is not GameWorld gameWorld) return false;
             if (!gameWorld.TryGetPrimaryMapEntity(out CEntity mapEntity)) return false;
             if (!mapEntity.TryGetGrid(out grid)) return false;
             if (!mapEntity.TryGetDrawMap(out drawMap)) return false;
             if (!mapEntity.TryGetUnitOccupancyIndex(out occupancyIndex)) return false;
+            if (!mapEntity.TryGetNationIndex(out nationIndex)) return false;
+            if (!mapEntity.TryGetDiplomacyIndex(out diplomacyIndex)) return false;
             if (drawMap.Tilemap == null) return false;
+            return true;
+        }
+
+        // 检查目标格是否有敌方单位，如果是则触发战斗并清理移动状态。
+        // 在 MoveAlongHexPathCap 的步进循环中调用，确保战斗触发时单位恰好站在目标格前一格。
+        private bool TryEngageCombatIfHostile
+        (
+            HexCoordinates targetHex, Grid grid,
+            UnitOccupancyIndex occupancyIndex, NationIndex nationIndex,
+            DiplomacyIndex diplomacyIndex, UnitMoveTarget target
+        )
+        {
+            if (!HexMapUtility.TryNormalizeHex(grid, targetHex, out HexCoordinates normalizedHex))
+                return false;
+            if (!occupancyIndex.TryGetUnit(normalizedHex, out int occupantEntityId))
+                return false;
+            if (occupantEntityId == Owner.Id)
+                return false;
+
+            if (World is not GameWorld gameWorld) return false;
+            CEntity occupantEntity = gameWorld.GetChild(occupantEntityId);
+            if (occupantEntity == null) return false;
+            if (!occupantEntity.TryGetUnit(out Unit occupantUnit)) return false;
+            if (!Owner.TryGetUnit(out Unit myUnit)) return false;
+            if (!Owner.TryGetUnitCombat(out UnitCombat myCombat)) return false;
+            if (!occupantEntity.TryGetUnitCombat(out _)) return false;
+
+            byte myId = NationUtility.GetIdOrDefault(nationIndex, myUnit.Tag);
+            byte otherId = NationUtility.GetIdOrDefault(nationIndex, occupantUnit.Tag);
+            if (!diplomacyIndex.IsHostile(myId, otherId))
+                return false;
+
+            // 对方已在战斗中，不重复触发。
+            if (occupantEntity.HasCombatState()) return false;
+
+            // 双方进入战斗。
+            Owner.AddComponent<CombatState>().OpponentEntityId = occupantEntityId;
+            occupantEntity.AddComponent<CombatState>().OpponentEntityId = Owner.Id;
+
+            // 清理移动状态。
+            DestroyPathIndicator(target);
+            Owner.RemoveComponent(m_TargetId);
+            occupantEntity.RemoveComponent(m_TargetId);
             return true;
         }
     }

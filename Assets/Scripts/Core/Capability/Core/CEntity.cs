@@ -3,6 +3,7 @@
 using System;
 using Tool;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 #endregion
 
@@ -29,6 +30,8 @@ namespace Core.Capability
         public string Name { get; set; }
 
         public int Version { get; private set; }
+
+        public GameObject Go;
 
         public CapabilityWorldBase World { get; private set; }
 
@@ -171,6 +174,12 @@ namespace Core.Capability
             Version++;
             EntityDisposed?.Invoke(this);
             ClearAllComponents();
+
+            if (Go != null)
+            {
+                Object.Destroy(Go);
+                Go = null;
+            }
         }
 
         private void InvokeComponentAdded(CComponent component)
