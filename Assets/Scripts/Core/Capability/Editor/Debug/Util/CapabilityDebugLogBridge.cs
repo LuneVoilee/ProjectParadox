@@ -1,9 +1,13 @@
 #if UNITY_EDITOR
-using System;
+
+#region
+
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Core.Capability
+#endregion
+
+namespace Core.Capability.Editor
 {
     /// <summary>
     ///     Editor 调试日志桥：运行时 Capability 只负责写入，窗口采样时再绑定到具体帧。

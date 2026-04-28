@@ -1,5 +1,6 @@
 #region
 
+using Core.Capability.Editor;
 using GamePlay.Strategy;
 using UnityEngine;
 using UnityEngine.Tilemaps;
@@ -209,6 +210,9 @@ namespace GamePlay.Map
                 // 从权威 OwnerId 重新取颜色，写回缓存后再刷 tilemap。
                 Color32 color =
                     NationRegistryCap.GetColorOrNeutral(nationIndex, cells[cellIndex].OwnerId);
+
+                this.Log("Color:" + color);
+
                 paintState.CellColorCache[cellIndex] = color;
 
                 // 计算当前真实列在 ghost column 范围内的所有镜像列。

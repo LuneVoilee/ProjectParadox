@@ -12,8 +12,8 @@ namespace GamePlay.Map
     public class TerritoryPaintState : CComponent
     {
         // 需要重刷颜色的格子索引列表；HashSet 用于去重，List 用于保持可遍历集合。
-        public readonly List<int> DirtyCellIndices = new List<int>(256);
-        public readonly HashSet<int> DirtyCellSet = new HashSet<int>();
+        public readonly List<int> DirtyCellIndices = new();
+        public readonly HashSet<int> DirtyCellSet = new();
 
         // 全图颜色脏标记。国家表重建、首次绘制、阈值超限时会置 true。
         public bool ColorDirtyAll = true;

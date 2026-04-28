@@ -32,8 +32,10 @@ namespace GamePlay.Strategy
         public override bool ShouldActivate()
         {
             if (!Owner.HasComponent(m_UnitId)) return false;
-            if (!Owner.HasComponent(m_UnitCombatId)) return false;
-            return true;
+
+            if (!Owner.TryGetComponent(m_UnitCombatId, out UnitCombat combat)) return false;
+
+            return combat.Morale < combat.MaxMorale;
         }
 
         public override bool ShouldDeactivate()
