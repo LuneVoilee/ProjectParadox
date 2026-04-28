@@ -55,6 +55,7 @@ namespace GamePlay.Map
             world.BindCapability<DrawMapCap>(entity);
             world.BindCapability<NationRegistryCap>(entity);
             world.BindCapability<TimeCap>(entity);
+            world.BindCapability<DiplomacyRegistryCap>(entity);
 
             // 地图生成输入组件，GenerateMapDataCap 激活后会消费并移除这些一次性配置。
             var biomeComp = entity.AddComponent<Biome>();
@@ -84,6 +85,8 @@ namespace GamePlay.Map
             entity.AddComponent<TerritoryPaintState>();
             entity.AddComponent<UnitOccupancyIndex>();
             entity.AddComponent<NationBootstrap>();
+            entity.AddComponent<DiplomacyIndex>();
+            entity.AddComponent<DiplomacyBootstrap>();
 
             // 时间组件仍由地图实体承载，保持现有 TimeCap 绑定方式。
             var time = entity.AddComponent<Time>();

@@ -22,6 +22,11 @@ namespace GamePlay.Strategy
             public NationTag Tag;
             public float MoveSpeed;
             public float ArriveDistance;
+            public float MaxMorale;
+            public float MaxHealth;
+            public float Attack;
+            public float Defense;
+            public float MoraleRecovery;
         }
 
         public static CEntity Create
@@ -45,6 +50,9 @@ namespace GamePlay.Strategy
 
             world.BindCapability<MoveAlongHexPathCap>(entity);
             world.BindCapability<OccupyCap>(entity);
+            world.BindCapability<CombatEngageCap>(entity);
+            world.BindCapability<CombatResolveCap>(entity);
+            world.BindCapability<CombatRecoveryCap>(entity);
 
             Unit unit = entity.AddComponent<Unit>();
             unit.NationId = config.NationId;
@@ -58,6 +66,15 @@ namespace GamePlay.Strategy
             UnitMotor motor = entity.AddComponent<UnitMotor>();
             motor.Transform = config.Transform;
             motor.ArriveDistance = Mathf.Max(0.001f, config.ArriveDistance);
+
+            UnitCombat combat = entity.AddComponent<UnitCombat>();
+            combat.MaxMorale = Mathf.Max(1f, config.MaxMorale);
+            combat.Morale = combat.MaxMorale;
+            combat.MaxHealth = Mathf.Max(1f, config.MaxHealth);
+            combat.Health = combat.MaxHealth;
+            combat.Attack = Mathf.Max(0f, config.Attack);
+            combat.Defense = Mathf.Max(0f, config.Defense);
+            combat.MoraleRecovery = Mathf.Max(0f, config.MoraleRecovery);
 
             occupancyIndex.Set(config.StartHex, entity.Id);
 

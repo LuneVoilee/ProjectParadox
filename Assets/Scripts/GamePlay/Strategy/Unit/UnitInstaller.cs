@@ -20,6 +20,11 @@ namespace GamePlay.Strategy
         [BoxGroup("Unit参数")] public float MoveSpeed = 3f;
         [BoxGroup("Unit参数")] public float ArriveDistance = 0.03f;
         [BoxGroup("Unit参数")] public bool SnapToCellCenter = true;
+        [BoxGroup("战斗参数")] public float MaxMorale = 100f;
+        [BoxGroup("战斗参数")] public float MaxHealth = 100f;
+        [BoxGroup("战斗参数")] public float Attack = 10f;
+        [BoxGroup("战斗参数")] public float Defense = 5f;
+        [BoxGroup("战斗参数")] public float MoraleRecovery = 5f;
 
         private GameWorld m_World;
         private CEntity m_UnitEntity;
@@ -76,7 +81,12 @@ namespace GamePlay.Strategy
                 NationId = NationId,
                 Tag = new NationTag(NationTag),
                 MoveSpeed = MoveSpeed,
-                ArriveDistance = ArriveDistance
+                ArriveDistance = ArriveDistance,
+                MaxMorale = MaxMorale,
+                MaxHealth = MaxHealth,
+                Attack = Attack,
+                Defense = Defense,
+                MoraleRecovery = MoraleRecovery
             };
 
             m_UnitEntity = UnitEntityPreset.Create(m_World, mapEntity, config, gameObject.name);

@@ -2,11 +2,13 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Text;
 using UnityEditor;
 using UnityEngine;
+using Debug = UnityEngine.Debug;
 using Object = UnityEngine.Object;
 
 #endregion
@@ -30,6 +32,10 @@ namespace Core.Capability.Editor
                 Debug.LogWarning("[ComponentAccessCodeGenerator] Play Mode 下不能执行代码生成。");
                 return;
             }
+
+            // 优先调用独立 Python 脚本，不依赖 Unity 编译状态。
+            if (TryRunPythonScript("Tools/generate_component_access.py"))
+                return;
 
             try
             {
@@ -58,6 +64,54 @@ namespace Core.Capability.Editor
             }
         }
 
+        // 调用项目根目录下的 Python 脚本。成功返回 true 并自动 Refresh AssetDatabase。
+        private static bool TryRunPythonScript(string scriptRelativePath)
+        {
+            string projectRoot = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
+            string scriptPath = Path.Combine(projectRoot, scriptRelativePath);
+
+            if (!File.Exists(scriptPath))
+            {
+                Debug.LogWarning($"[ComponentAccessCodeGenerator] Python 脚本不存在: {scriptPath}");
+                return false;
+            }
+
+            try
+            {
+                var process = new Process();
+                process.StartInfo.FileName = "python";
+                process.StartInfo.Arguments = $"\"{scriptPath}\"";
+                process.StartInfo.WorkingDirectory = projectRoot;
+                process.StartInfo.UseShellExecute = false;
+                process.StartInfo.RedirectStandardOutput = true;
+                process.StartInfo.RedirectStandardError = true;
+                process.StartInfo.CreateNoWindow = true;
+
+                process.Start();
+                string stdout = process.StandardOutput.ReadToEnd();
+                string stderr = process.StandardError.ReadToEnd();
+                process.WaitForExit(5000);
+
+                if (process.ExitCode == 0)
+                {
+                    if (!string.IsNullOrWhiteSpace(stdout))
+                        Debug.Log(stdout.TrimEnd());
+                    AssetDatabase.Refresh();
+                    return true;
+                }
+
+                if (!string.IsNullOrWhiteSpace(stderr))
+                    Debug.LogWarning($"[ComponentAccessCodeGenerator] Python 脚本输出:\n{stderr.TrimEnd()}");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning(
+                    $"[ComponentAccessCodeGenerator] Python 调用失败，回退到内置程序集扫描: {ex.Message}");
+                return false;
+            }
+        }
+
         [MenuItem(MenuOpenGeneratedPath, false, 23)]
         public static void OpenGeneratedFile()
         {
@@ -71,55 +125,188 @@ namespace Core.Capability.Editor
             AssetDatabase.OpenAsset(asset);
         }
 
+        // 在源码中扫描 CComponent 子类的完整类型名（namespace.class）。
+        // 不再依赖编译后的程序集，避免 GamePlay 等程序集有编译错误时丢失组件。
+        private sealed class SourceComponentInfo
+        {
+            public string FullName;  // namespace.class
+            public string SourceFile;
+        }
+
         private static List<ComponentMetadata> CollectComponents()
         {
-            List<ComponentMetadata> metadata = new List<ComponentMetadata>(64);
-            HashSet<Type> componentTypes = new HashSet<Type>();
+            List<SourceComponentInfo> sourceInfos = CollectComponentsFromSource();
+
+            List<ComponentMetadata> metadata = new List<ComponentMetadata>(sourceInfos.Count);
+            HashSet<string> seenFullNames = new HashSet<string>(StringComparer.Ordinal);
+
+            for (int i = 0; i < sourceInfos.Count; i++)
+            {
+                SourceComponentInfo info = sourceInfos[i];
+                if (!seenFullNames.Add(info.FullName))
+                {
+                    continue;
+                }
+
+                // 尝试从已加载程序集中解析 Type 以检测是否有无参构造函数。
+                // 若程序集未加载（编译错误），保守假定有无参构造函数。
+                Type type = TryResolveType(info.FullName);
+                metadata.Add(new ComponentMetadata
+                {
+                    Type = type,
+                    SourceFullName = info.FullName,
+                    HasPublicParameterlessConstructor =
+                        type == null || type.GetConstructor(Type.EmptyTypes) != null
+                });
+            }
+
+            metadata.Sort((left, right) =>
+                string.CompareOrdinal(
+                    left.SourceFullName ?? left.Type?.FullName,
+                    right.SourceFullName ?? right.Type?.FullName));
+            AssignAliases(metadata);
+            return metadata;
+        }
+
+        // 遍历 Assets/Scripts 下所有 .cs 文件，解析出继承 CComponent 的非抽象类。
+        private static List<SourceComponentInfo> CollectComponentsFromSource()
+        {
+            List<SourceComponentInfo> result = new List<SourceComponentInfo>(96);
+            string scriptsDir = Path.GetFullPath("Assets/Scripts");
+
+            if (!Directory.Exists(scriptsDir))
+            {
+                return result;
+            }
+
+            string[] csFiles = Directory.GetFiles(scriptsDir, "*.cs", SearchOption.AllDirectories);
+
+            for (int i = 0; i < csFiles.Length; i++)
+            {
+                string filePath = csFiles[i];
+                string relativePath = filePath.Replace('\\', '/');
+
+                // 跳过 Editor 目录，与旧版 IsRuntimeComponentType 行为一致。
+                if (relativePath.Contains("/Editor/"))
+                {
+                    continue;
+                }
+
+                string content;
+                try
+                {
+                    content = File.ReadAllText(filePath);
+                }
+                catch
+                {
+                    continue;
+                }
+
+                ParseComponentClasses(content, relativePath, result);
+            }
+
+            return result;
+        }
+
+        // 从单个 .cs 文件中提取 namespace + class 对。
+        // 正则匹配：可选 abstract 关键字 → class 关键字 → 类名 → 可选泛型参数 →
+        // 基类列表必须直接包含 CComponent（如 "class Foo : CComponent" 或 "class Foo : ISome, CComponent"）。
+        // 这样的设计不处理间接继承（class A : B，而 B : CComponent），实际 gameplay 组件全部直接继承 CComponent。
+        private static readonly System.Text.RegularExpressions.Regex s_ClassRegex =
+            new System.Text.RegularExpressions.Regex(
+                @"(?:^|\n)\s*(?:(?:public|internal|private|protected)\s+)?(?:sealed\s+)?(?:partial\s+)?(?!abstract\s+)class\s+(\w+)(?:<[^>]*>)?\s*:\s*[^\{]*?\bCComponent\b",
+                System.Text.RegularExpressions.RegexOptions.Multiline |
+                System.Text.RegularExpressions.RegexOptions.Compiled);
+
+        private static readonly System.Text.RegularExpressions.Regex s_NamespaceRegex =
+            new System.Text.RegularExpressions.Regex(
+                @"namespace\s+([\w.]+)",
+                System.Text.RegularExpressions.RegexOptions.Compiled);
+
+        private static void ParseComponentClasses(string content, string sourcePath,
+            List<SourceComponentInfo> result)
+        {
+            // 提取所有 namespace 声明。
+            System.Text.RegularExpressions.MatchCollection nsMatches =
+                s_NamespaceRegex.Matches(content);
+
+            string defaultNamespace = null;
+            if (nsMatches.Count == 0)
+            {
+                defaultNamespace = ""; // 无 namespace 的全局作用域
+            }
+
+            // 为每个 namespace 块搜索 CComponent 子类。
+            if (nsMatches.Count > 0)
+            {
+                for (int i = 0; i < nsMatches.Count; i++)
+                {
+                    string ns = nsMatches[i].Groups[1].Value;
+
+                    // 跳过 Editor 命名空间。
+                    if (ns.Contains(".Editor") || ns.StartsWith("UnityEditor"))
+                    {
+                        continue;
+                    }
+
+                    // 确定该 namespace 块在源文件中的起止范围。
+                    int blockStart = nsMatches[i].Index;
+                    int blockEnd = (i + 1 < nsMatches.Count)
+                        ? nsMatches[i + 1].Index
+                        : content.Length;
+
+                    string blockText = content.Substring(blockStart, blockEnd - blockStart);
+                    AddClassesFromBlock(blockText, ns, result);
+                }
+            }
+            else
+            {
+                AddClassesFromBlock(content, defaultNamespace, result);
+            }
+        }
+
+        private static void AddClassesFromBlock(string blockText, string ns,
+            List<SourceComponentInfo> result)
+        {
+            System.Text.RegularExpressions.MatchCollection classMatches =
+                s_ClassRegex.Matches(blockText);
+
+            for (int i = 0; i < classMatches.Count; i++)
+            {
+                string className = classMatches[i].Groups[1].Value;
+                string fullName = string.IsNullOrEmpty(ns)
+                    ? className
+                    : ns + "." + className;
+
+                result.Add(new SourceComponentInfo
+                {
+                    FullName = fullName
+                });
+            }
+        }
+
+        // 尝试从已加载程序集中反射出 Type。编译失败时返回 null。
+        private static Type TryResolveType(string fullName)
+        {
             Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
             for (int i = 0; i < assemblies.Length; i++)
             {
                 Type[] types = GetTypesSafely(assemblies[i]);
+                if (types == null) continue;
                 for (int j = 0; j < types.Length; j++)
                 {
                     Type type = types[j];
-                    if (type == null || !type.IsClass || type.IsAbstract)
+                    if (type != null &&
+                        (type.FullName == fullName || type.Name == fullName) &&
+                        !type.IsAbstract &&
+                        typeof(CComponent).IsAssignableFrom(type))
                     {
-                        continue;
+                        return type;
                     }
-
-                    if (type.ContainsGenericParameters)
-                    {
-                        continue;
-                    }
-
-                    if (!typeof(CComponent).IsAssignableFrom(type))
-                    {
-                        continue;
-                    }
-
-                    if (!IsRuntimeComponentType(type))
-                    {
-                        continue;
-                    }
-
-                    if (!componentTypes.Add(type))
-                    {
-                        continue;
-                    }
-
-                    metadata.Add(new ComponentMetadata
-                    {
-                        Type = type,
-                        HasPublicParameterlessConstructor =
-                            type.GetConstructor(Type.EmptyTypes) != null
-                    });
                 }
             }
 
-            metadata.Sort((left, right) =>
-                string.CompareOrdinal(left.Type.FullName, right.Type.FullName));
-            AssignAliases(metadata);
-            return metadata;
+            return null;
         }
 
         private static Type[] GetTypesSafely(Assembly assembly)
@@ -141,7 +328,7 @@ namespace Core.Capability.Editor
             for (int i = 0; i < metadata.Count; i++)
             {
                 ComponentMetadata item = metadata[i];
-                string simpleName = item.Type.Name;
+                string simpleName = GetSimpleName(item);
                 if (!groups.TryGetValue(simpleName, out List<ComponentMetadata> group))
                 {
                     group = new List<ComponentMetadata>(2);
@@ -159,8 +346,8 @@ namespace Core.Capability.Editor
                 {
                     ComponentMetadata item = group[i];
                     string alias = group.Count == 1
-                        ? SanitizeIdentifier(item.Type.Name)
-                        : SanitizeIdentifier((item.Type.FullName ?? item.Type.Name)
+                        ? SanitizeIdentifier(GetSimpleName(item))
+                        : SanitizeIdentifier((GetFullName(item) ?? GetSimpleName(item))
                             .Replace('.', '_')
                             .Replace('+', '_'));
 
@@ -180,19 +367,6 @@ namespace Core.Capability.Editor
                     item.Alias = alias;
                 }
             }
-        }
-
-        private static bool IsRuntimeComponentType(Type type)
-        {
-            string namespaceName = type.Namespace ?? string.Empty;
-            if (namespaceName.StartsWith("UnityEditor", StringComparison.Ordinal) ||
-                namespaceName.Contains(".Editor"))
-            {
-                return false;
-            }
-
-            string assemblyName = type.Assembly.GetName().Name ?? string.Empty;
-            return !assemblyName.EndsWith(".Editor", StringComparison.Ordinal);
         }
 
         private static string SanitizeIdentifier(string value)
@@ -250,7 +424,7 @@ namespace Core.Capability.Editor
                 for (int i = 0; i < metadata.Count; i++)
                 {
                     ComponentMetadata item = metadata[i];
-                    string typeName = GetTypeName(item.Type);
+                    string typeName = GetTypeName(item);
                     builder.AppendLine(
                         $"        public static readonly int {item.Alias}Id = Component<{typeName}>.TId;");
                 }
@@ -277,7 +451,7 @@ namespace Core.Capability.Editor
 
         private static void AppendMethods(StringBuilder builder, ComponentMetadata item)
         {
-            string typeName = GetTypeName(item.Type);
+            string typeName = GetTypeName(item);
             string idName = $"{item.Alias}Id";
 
             builder.AppendLine(
@@ -330,6 +504,46 @@ namespace Core.Capability.Editor
             builder.AppendLine("        }");
         }
 
+        // 返回组件的完整类型名，优先用反射 Type，编译失败时降级为源码字符串。
+        private static string GetTypeName(ComponentMetadata item)
+        {
+            if (item.Type != null)
+            {
+                return GetTypeName(item.Type);
+            }
+
+            // 编译失败时直接用源码解析的完整路径名。
+            return (item.SourceFullName ?? item.Type?.FullName ?? "Unknown")
+                .Replace('+', '.');
+        }
+
+        private static string GetSimpleName(ComponentMetadata item)
+        {
+            if (item.Type != null)
+            {
+                return item.Type.Name;
+            }
+
+            string fullName = item.SourceFullName;
+            if (string.IsNullOrEmpty(fullName))
+            {
+                return "Unknown";
+            }
+
+            int lastDot = fullName.LastIndexOf('.');
+            return lastDot >= 0 ? fullName.Substring(lastDot + 1) : fullName;
+        }
+
+        private static string GetFullName(ComponentMetadata item)
+        {
+            if (item.Type != null)
+            {
+                return item.Type.FullName;
+            }
+
+            return item.SourceFullName;
+        }
+
         private static string GetTypeName(Type type)
         {
             if (!type.IsGenericType)
@@ -374,7 +588,11 @@ namespace Core.Capability.Editor
 
         private sealed class ComponentMetadata
         {
+            // 编译后可解析的 Type；编译失败时为 null。
             public Type Type;
+
+            // 从源码解析的完整类型名（namespace.class），始终非 null。
+            public string SourceFullName;
 
             public string Alias;
 

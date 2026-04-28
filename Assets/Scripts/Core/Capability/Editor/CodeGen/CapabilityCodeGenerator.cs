@@ -2,11 +2,13 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Text;
 using UnityEditor;
 using UnityEngine;
+using Debug = UnityEngine.Debug;
 using Object = UnityEngine.Object;
 
 #endregion
@@ -56,6 +58,10 @@ namespace Core.Capability.Editor
                 return;
             }
 
+            // 优先调用独立 Python 脚本，不依赖 Unity 编译状态。
+            if (TryRunPythonScript("Tools/generate_all_capability.py"))
+                return;
+
             try
             {
                 List<CapabilityMetadata> metadata = CollectCapabilities();
@@ -93,6 +99,54 @@ namespace Core.Capability.Editor
         {
             GenerateAllCapability();
         }*/
+
+        // 调用项目根目录下的 Python 脚本。成功返回 true 并自动 Refresh AssetDatabase。
+        private static bool TryRunPythonScript(string scriptRelativePath)
+        {
+            string projectRoot = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
+            string scriptPath = Path.Combine(projectRoot, scriptRelativePath);
+
+            if (!File.Exists(scriptPath))
+            {
+                Debug.LogWarning($"[CapabilityCodeGenerator] Python 脚本不存在: {scriptPath}");
+                return false;
+            }
+
+            try
+            {
+                var process = new Process();
+                process.StartInfo.FileName = "python";
+                process.StartInfo.Arguments = $"\"{scriptPath}\"";
+                process.StartInfo.WorkingDirectory = projectRoot;
+                process.StartInfo.UseShellExecute = false;
+                process.StartInfo.RedirectStandardOutput = true;
+                process.StartInfo.RedirectStandardError = true;
+                process.StartInfo.CreateNoWindow = true;
+
+                process.Start();
+                string stdout = process.StandardOutput.ReadToEnd();
+                string stderr = process.StandardError.ReadToEnd();
+                process.WaitForExit(5000);
+
+                if (process.ExitCode == 0)
+                {
+                    if (!string.IsNullOrWhiteSpace(stdout))
+                        Debug.Log(stdout.TrimEnd());
+                    AssetDatabase.Refresh();
+                    return true;
+                }
+
+                if (!string.IsNullOrWhiteSpace(stderr))
+                    Debug.LogWarning($"[CapabilityCodeGenerator] Python 脚本输出:\n{stderr.TrimEnd()}");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning(
+                    $"[CapabilityCodeGenerator] Python 调用失败，回退到内置程序集扫描: {ex.Message}");
+                return false;
+            }
+        }
 
         [MenuItem(MenuOpenGeneratedPath, false, 21)]
         public static void OpenGeneratedFile()

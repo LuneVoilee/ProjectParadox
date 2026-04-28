@@ -37,8 +37,11 @@ namespace GamePlay.World
         public const int ScenarioMapGenerate = StageScenarioBootstrap + 10;
 
         public const int OrderUnitSelection = StageOrderDraft + 10;
+        public const int ResolveCombatEngage = StageResolve - 10;
         public const int ResolveUnitMovement = StageResolve;
         public const int ResolveUnitOccupy = StageResolve + 10;
+        public const int ResolveCombatResolve = StageResolve + 30;
+        public const int ResolveCombatRecovery = StageResolve + 40;
 
         public const int PresentationCameraZoom = StagePresentationSync + 10;
         public const int PresentationCameraMove = StagePresentationSync + 20;
