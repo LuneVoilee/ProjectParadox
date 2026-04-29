@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace GamePlay.Strategy
 {
-    // 国家运行时索引表。该组件只保存状态，不负责分配/注册逻辑，所有写入都由 NationRegistryCap 完成。
+    // 国家运行时索引表。该组件只保存状态，不负责分配/注册逻辑，所有写入都由 CpNationRegistry 完成。
     public class NationIndex : CComponent
     {
         // byte 可表示 0-255；0 固定为 Neutral，因此最多支持 255 个真实国家。
@@ -29,7 +29,7 @@ namespace GamePlay.Strategy
         // Tag -> id，用于命令、UI、配置引用等以 Tag 为输入的路径快速转成运行时 byte id。
         public Dictionary<NationTag, byte> IdByTag = new Dictionary<NationTag, byte>();
 
-        // 标记索引是否已经由 NationRegistryCap 完成初始化，便于其它逻辑做保护性判断。
+        // 标记索引是否已经由 CpNationRegistry 完成初始化，便于其它逻辑做保护性判断。
         public bool IsInitialized;
 
         public override void Dispose()

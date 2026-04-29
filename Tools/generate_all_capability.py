@@ -50,6 +50,15 @@ namespace Core.Capability
     {
         public static readonly int TotalCapabilities = Order();
 
+        public static void Register(CapabilityWorld world)
+        {
+            if (world == null)
+            {
+                return;
+            }
+{register_lines}
+        }
+
         private static int Order()
         {
 """
@@ -269,15 +278,30 @@ def _find_caps(text: str, ns: str) -> list[tuple[str, str, int]]:
 
 def generate(files: list[str], order_map: dict[str, int]) -> str:
     collected = []
+    invalid = []
     for fp in files:
-        for full_name, _, class_text in parse_file(fp):
+        for full_name, class_name, class_text in parse_file(fp):
+            if not class_name.startswith("Cp"):
+                invalid.append(f"{full_name} ({fp})")
+                continue
             tgo = parse_tick_group_order(class_text, order_map)
             collected.append((full_name, tgo))
+
+    if invalid:
+        details = "\n".join(f"  - {item}" for item in invalid)
+        raise RuntimeError(
+            "发现非 Cp 前缀的 CapabilityBase 子类，请先重命名：\n" + details
+        )
 
     # 按 TickGroupOrder 排序，相同则按全名排序
     collected.sort(key=lambda x: (x[1], x[0]))
 
-    lines = [HEADER]
+    register_lines = [
+        f"            world.BindGlobalCapability<{full_name}>();"
+        for full_name, _ in collected
+    ]
+
+    lines = [HEADER.replace("{register_lines}", "\n".join(register_lines))]
     for i, (full_name, _) in enumerate(collected):
         prefix = "            var orderTid = " if i == 0 else "            orderTid = "
         lines.append(

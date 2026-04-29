@@ -5,9 +5,10 @@ namespace Core.Capability.Editor
     internal enum CapabilityRuntimeState
     {
         None = 0,
-        Inactive = 1,
-        Active = 2,
-        Blocked = 3
+        NoMatch = 1,
+        Matched = 2,
+        Worked = 3,
+        Error = 4
     }
 
     internal struct CapabilityTimelineSegment

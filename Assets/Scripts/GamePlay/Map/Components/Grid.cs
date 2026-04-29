@@ -15,7 +15,7 @@ namespace GamePlay.Map
         public bool EnableSeamlessX;
         public bool EnableSeamlessY;
 
-        // 地图格子线性数组，由 GenerateMapDataCap 创建并由各 Strategy Cap 读取/更新 OwnerId。
+        // 地图格子线性数组，由 CpGenerateMapData 创建并由各 Strategy Cap 读取/更新 OwnerId。
         public Cell[] Cells;
     }
 }

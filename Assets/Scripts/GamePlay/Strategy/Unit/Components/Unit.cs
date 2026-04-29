@@ -1,4 +1,4 @@
-﻿#region
+#region
 
 using Core.Capability;
 
@@ -12,7 +12,7 @@ namespace GamePlay.Strategy
         // 标准化后的国家 Tag，不依赖运行时 id 分配顺序，跨存档和配置引用都稳定。
         public NationTag Tag;
 
-        // 单位在地图上的移动速度，MoveAlongHexPathCap 使用项目时间缩放后的 deltaTime 消耗它。
+        // 单位在地图上的移动速度，CpMoveAlongHexPath 使用项目时间缩放后的 deltaTime 消耗它。
         public float MoveSpeed = 3f;
     }
 }

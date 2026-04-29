@@ -1,6 +1,10 @@
+#region
+
 using System.Collections.Generic;
 using UnityEngine;
 using Object = UnityEngine.Object;
+
+#endregion
 
 namespace Core.Capability.Editor
 {
@@ -16,7 +20,7 @@ namespace Core.Capability.Editor
         public static Dictionary<CEntity, Transform> BuildEntityTransformMap()
         {
             var map = new Dictionary<CEntity, Transform>();
-            var installers = Object.FindObjectsOfType<EntityInstaller>();
+            var installers = Object.FindObjectsByType<EntityInstaller>(FindObjectsSortMode.None);
             for (int i = 0; i < installers.Length; i++)
             {
                 EntityInstaller installer = installers[i];

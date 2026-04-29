@@ -48,7 +48,7 @@ namespace GamePlay.Map
                 return null;
             }
 
-            // 地图生成输入组件，GenerateMapDataCap 激活后会消费并移除这些一次性配置。
+            // 地图生成输入组件，CpGenerateMapData 激活后会消费并移除这些一次性配置。
             var biomeComp = entity.AddComponent<Biome>();
             biomeComp.SeaLevel = config.SeaLevel;
             biomeComp.MountainLevel = config.MountainLevel;
@@ -70,7 +70,7 @@ namespace GamePlay.Map
             drawMap.Tilemap = config.Tilemap;
             drawMap.TerrainSettings = config.TerrainSettings;
 
-            // 国家与领土表现组件只安装状态，具体初始化由 NationRegistryCap/Apply/DrawMapCap 完成。
+            // 国家与领土表现组件只安装状态，具体初始化由 CpNationRegistry/Apply/CpDrawMap 完成。
             entity.AddComponent<NationIndex>();
             entity.AddComponent<TerritoryOwnershipBuffer>();
             entity.AddComponent<TerritoryPaintState>();
@@ -80,7 +80,7 @@ namespace GamePlay.Map
             entity.AddComponent<DiplomacyIndex>();
             entity.AddComponent<DiplomacyBootstrap>();
 
-            // 时间组件仍由地图实体承载，保持现有 TimeCap 绑定方式。
+            // 时间组件仍由地图实体承载，保持现有 CpTime 绑定方式。
             var time = entity.AddComponent<Time>();
             time.CurrentDate = new DateTime(500, 1, 1);
             time.NewTimeType = TimeType.Speed1;

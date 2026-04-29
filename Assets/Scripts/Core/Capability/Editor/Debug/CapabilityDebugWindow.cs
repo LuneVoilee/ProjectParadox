@@ -30,12 +30,12 @@ namespace Core.Capability.Editor
         private string m_SelectedWorldKey;
         private string m_SelectedEntityKey;
         private string m_SelectedItemKey;
+        private string m_SelectedCategory;
         private CapabilityDebugItemKind m_SelectedItemKind;
 
         private bool m_IsToolPlaying = true;
         private bool m_ComponentsFoldout = true;
-        private bool m_CapabilitiesFoldout = true;
-        private bool m_GlobalCapabilitiesFoldout = true;
+        private int m_NavigationMode;
         private bool m_WasEditorPausedByDebugger;
         private string m_FrameInput = "0";
         private int m_LastAppliedFrameIndex = -1;
@@ -260,7 +260,7 @@ namespace Core.Capability.Editor
 
         private void DrawNavigationPanel()
         {
-            EditorGUILayout.LabelField("Entity 导航", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("导航", EditorStyles.boldLabel);
             CapabilityDebugFrame frame = m_Session.CurrentFrame;
             if (frame == null)
             {
@@ -269,21 +269,22 @@ namespace Core.Capability.Editor
                 return;
             }
 
+            m_NavigationMode = GUILayout.Toolbar(m_NavigationMode,
+                new[] { "Capabilities", "Entities" });
+            EditorGUILayout.Space(4f);
             m_NavigationScroll = EditorGUILayout.BeginScrollView(m_NavigationScroll);
             for (int i = 0; i < frame.Worlds.Count; i++)
             {
                 CapabilityDebugWorldSnapshot world = frame.Worlds[i];
                 EditorGUILayout.LabelField(world.DisplayName, EditorStyles.boldLabel);
-                DrawGlobalCapabilityNavigation(world);
-                for (int j = 0; j < world.Entities.Count; j++)
+
+                if (m_NavigationMode == 0)
                 {
-                    CapabilityDebugEntitySnapshot entity = world.Entities[j];
-                    bool selected = entity.Key == m_SelectedEntityKey;
-                    if (DrawSelectableRow(entity.DisplayName, selected,
-                            CapabilityDebugStyles.InactiveStateColor))
-                    {
-                        SelectEntity(world.Key, entity.Key);
-                    }
+                    DrawCapabilityCategoryNavigation(world);
+                }
+                else
+                {
+                    DrawEntityNavigation(world);
                 }
 
                 EditorGUILayout.Space(6f);
@@ -292,55 +293,60 @@ namespace Core.Capability.Editor
             EditorGUILayout.EndScrollView();
         }
 
-        private void DrawGlobalCapabilityNavigation(CapabilityDebugWorldSnapshot world)
+        private void DrawCapabilityCategoryNavigation(CapabilityDebugWorldSnapshot world)
         {
-            m_GlobalCapabilitiesFoldout = EditorGUILayout.Foldout(m_GlobalCapabilitiesFoldout,
-                $"Global Cap ({world.GlobalCapabilities.Count})", true);
-            if (!m_GlobalCapabilitiesFoldout)
+            List<string> categories = BuildCategories(world);
+            for (int i = 0; i < categories.Count; i++)
             {
-                return;
-            }
-
-            string previousStage = null;
-            for (int i = 0; i < world.GlobalCapabilities.Count; i++)
-            {
-                CapabilityDebugCapabilitySnapshot capability = world.GlobalCapabilities[i];
-                if (previousStage != capability.StageName)
+                string category = categories[i];
+                int count = CountCapabilitiesInCategory(world, category);
+                bool selected = m_SelectedItemKind == CapabilityDebugItemKind.Category &&
+                                m_SelectedCategory == category &&
+                                m_SelectedWorldKey == world.Key;
+                if (DrawSelectableRow($"{category} ({count})", selected,
+                        CapabilityDebugStyles.MatchedStateColor))
                 {
-                    previousStage = capability.StageName;
-                    EditorGUILayout.LabelField(previousStage, EditorStyles.miniBoldLabel);
-                }
-
-                bool selected = m_SelectedItemKind == CapabilityDebugItemKind.GlobalCapability &&
-                                m_SelectedItemKey == capability.Key;
-                string label =
-                    $"{capability.TypeName} ({capability.MatchedEntityCount}, {capability.LastTickMilliseconds:F2} ms)";
-                if (DrawSelectableRow(label, selected,
-                        CapabilityDebugStyles.ToStateColor(capability.State)))
-                {
-                    m_SelectedWorldKey = world.Key;
-                    m_SelectedEntityKey = null;
-                    SelectItem(capability.Key, CapabilityDebugItemKind.GlobalCapability);
+                    SelectCategory(world.Key, category);
                 }
             }
+        }
 
-            EditorGUILayout.Space(4f);
+        private void DrawEntityNavigation(CapabilityDebugWorldSnapshot world)
+        {
+            for (int j = 0; j < world.Entities.Count; j++)
+            {
+                CapabilityDebugEntitySnapshot entity = world.Entities[j];
+                bool selected = entity.Key == m_SelectedEntityKey;
+                if (DrawSelectableRow(entity.DisplayName, selected,
+                        CapabilityDebugStyles.NoMatchStateColor))
+                {
+                    SelectEntity(world.Key, entity.Key);
+                }
+            }
         }
 
         private void DrawEntityDetailPanel()
         {
-            EditorGUILayout.LabelField("Entity 详情", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField(
+                m_NavigationMode == 0 ? "Capability 列表" : "Entity 详情",
+                EditorStyles.boldLabel);
+            if (m_SelectedItemKind == CapabilityDebugItemKind.Category)
+            {
+                DrawSelectedCategoryCapabilities();
+                return;
+            }
+
             CapabilityDebugEntitySnapshot entity = GetSelectedEntity();
             if (entity == null)
             {
-                if (m_SelectedItemKind == CapabilityDebugItemKind.GlobalCapability)
+                if (m_SelectedItemKind == CapabilityDebugItemKind.Capability)
                 {
                     DrawSelectedGlobalCapabilityDetail();
                     return;
                 }
 
                 EditorGUILayout.Space(8f);
-                EditorGUILayout.HelpBox("请选择一个 Entity。", MessageType.Info);
+                EditorGUILayout.HelpBox("请选择一个 Category 或 Entity。", MessageType.Info);
                 return;
             }
 
@@ -348,8 +354,6 @@ namespace Core.Capability.Editor
             EditorGUILayout.LabelField(entity.DisplayName, EditorStyles.miniBoldLabel);
             m_DetailScroll = EditorGUILayout.BeginScrollView(m_DetailScroll);
             DrawComponentList(entity);
-            EditorGUILayout.Space(10f);
-            DrawCapabilityList(entity);
             EditorGUILayout.EndScrollView();
         }
 
@@ -368,26 +372,35 @@ namespace Core.Capability.Editor
                 bool selected = m_SelectedItemKind == CapabilityDebugItemKind.Component &&
                                 m_SelectedItemKey == component.Key;
                 if (DrawSelectableRow(component.TypeName, selected,
-                        CapabilityDebugStyles.InactiveStateColor))
+                        CapabilityDebugStyles.NoMatchStateColor))
                 {
                     SelectItem(component.Key, CapabilityDebugItemKind.Component);
                 }
             }
         }
 
-        private void DrawCapabilityList(CapabilityDebugEntitySnapshot entity)
+        private void DrawSelectedCategoryCapabilities()
         {
-            m_CapabilitiesFoldout = EditorGUILayout.Foldout(m_CapabilitiesFoldout,
-                $"Cap ({entity.Capabilities.Count})", true);
-            if (!m_CapabilitiesFoldout)
+            CapabilityDebugFrame frame = m_Session.CurrentFrame;
+            CapabilityDebugWorldSnapshot world = frame?.FindWorld(m_SelectedWorldKey);
+            if (world == null || string.IsNullOrEmpty(m_SelectedCategory))
             {
+                EditorGUILayout.Space(8f);
+                EditorGUILayout.HelpBox("请选择一个 Capability 分类。", MessageType.Info);
                 return;
             }
 
+            EditorGUILayout.LabelField(m_SelectedCategory, EditorStyles.miniBoldLabel);
+            m_DetailScroll = EditorGUILayout.BeginScrollView(m_DetailScroll);
             string previousStage = null;
-            for (int i = 0; i < entity.Capabilities.Count; i++)
+            for (int i = 0; i < world.GlobalCapabilities.Count; i++)
             {
-                CapabilityDebugCapabilitySnapshot capability = entity.Capabilities[i];
+                CapabilityDebugCapabilitySnapshot capability = world.GlobalCapabilities[i];
+                if (capability.DebugCategory != m_SelectedCategory)
+                {
+                    continue;
+                }
+
                 if (previousStage != capability.StageName)
                 {
                     previousStage = capability.StageName;
@@ -399,13 +412,16 @@ namespace Core.Capability.Editor
 
                 bool selected = m_SelectedItemKind == CapabilityDebugItemKind.Capability &&
                                 m_SelectedItemKey == capability.Key;
-                Color stateColor = CapabilityDebugStyles.ToStateColor(capability.State);
-                string label = $"{capability.TypeName} [{capability.UpdateMode}]";
-                if (DrawSelectableRow(label, selected, stateColor))
+                string label =
+                    $"{capability.TypeName} [{capability.State}] hit:{capability.MatchedEntityCount} {capability.LastTickMilliseconds:F2} ms";
+                if (DrawSelectableRow(label, selected,
+                        CapabilityDebugStyles.ToStateColor(capability.State)))
                 {
                     SelectItem(capability.Key, CapabilityDebugItemKind.Capability);
                 }
             }
+
+            EditorGUILayout.EndScrollView();
         }
 
         private void DrawInspectorPanel()
@@ -414,7 +430,7 @@ namespace Core.Capability.Editor
             CapabilityDebugEntitySnapshot entity = GetSelectedEntity();
             if (entity == null)
             {
-                if (m_SelectedItemKind == CapabilityDebugItemKind.GlobalCapability)
+                if (m_SelectedItemKind == CapabilityDebugItemKind.Capability)
                 {
                     m_InspectorScroll = EditorGUILayout.BeginScrollView(m_InspectorScroll,
                         true, true);
@@ -435,10 +451,6 @@ namespace Core.Capability.Editor
                 DrawComponentInspector(entity.FindComponent(m_SelectedItemKey));
             }
             else if (m_SelectedItemKind == CapabilityDebugItemKind.Capability)
-            {
-                DrawCapabilityInspector(entity.FindCapability(m_SelectedItemKey));
-            }
-            else if (m_SelectedItemKind == CapabilityDebugItemKind.GlobalCapability)
             {
                 DrawCapabilityInspector(GetSelectedGlobalCapability());
             }
@@ -499,10 +511,18 @@ namespace Core.Capability.Editor
             DrawInspectorMetaRow("Stage", string.Empty,
                 $"{capability.StageName} ({capability.TickGroupOrder})", layout);
             DrawInspectorMetaRow("State", string.Empty, capability.State.ToString(), layout);
+            DrawInspectorMetaRow("Category", string.Empty,
+                capability.DebugCategory ?? string.Empty, layout);
+            DrawInspectorMetaRow("Tag", string.Empty,
+                capability.DebugTag ?? string.Empty, layout);
             DrawInspectorMetaRow("LastTickMs", string.Empty,
                 capability.LastTickMilliseconds.ToString("F3"), layout);
             DrawInspectorMetaRow("MatchedEntities", string.Empty,
                 FormatMatchedEntities(capability), layout);
+            if (!string.IsNullOrEmpty(capability.LastErrorMessage))
+            {
+                DrawInspectorMetaRow("Error", string.Empty, capability.LastErrorMessage, layout);
+            }
             EditorGUILayout.Space(6f);
 
             EditorGUILayout.LabelField("标记字段", EditorStyles.boldLabel);
@@ -523,12 +543,7 @@ namespace Core.Capability.Editor
         private void DrawCapabilityLogs(CapabilityDebugCapabilitySnapshot capability)
         {
             EditorGUILayout.LabelField("Log", EditorStyles.boldLabel);
-            m_Session.CollectLogs(m_SelectedEntityKey, capability.Key,
-                m_Session.CurrentFrameIndex, m_LogBuffer);
-            if (m_SelectedItemKind == CapabilityDebugItemKind.GlobalCapability)
-            {
-                CollectGlobalCapabilityLogs(capability, m_LogBuffer);
-            }
+            CollectGlobalCapabilityLogs(capability, m_LogBuffer);
             EditorGUILayout.BeginVertical(EditorStyles.helpBox, GUILayout.Height(140f));
             m_LogScroll = EditorGUILayout.BeginScrollView(m_LogScroll);
             if (m_LogBuffer.Count == 0)
@@ -911,27 +926,6 @@ namespace Core.Capability.Editor
                     track.Push(capability.State);
                     touched.Add(key);
                 }
-
-                for (int entityIndex = 0; entityIndex < world.Entities.Count; entityIndex++)
-                {
-                    CapabilityDebugEntitySnapshot entity = world.Entities[entityIndex];
-                    for (int capIndex = 0; capIndex < entity.Capabilities.Count; capIndex++)
-                    {
-                        CapabilityDebugCapabilitySnapshot capability =
-                            entity.Capabilities[capIndex];
-                        string key = $"{entity.Key}:{capability.Key}";
-                        if (!m_TimelineTracks.TryGetValue(key, out CapabilityTimelineTrack track))
-                        {
-                            track = new CapabilityTimelineTrack(
-                                $"{entity.DisplayName}/{capability.TypeName}");
-                            BackfillTrack(track, m_Session.Frames.Count - 1);
-                            m_TimelineTracks.Add(key, track);
-                        }
-
-                        track.Push(capability.State);
-                        touched.Add(key);
-                    }
-                }
             }
 
             foreach (KeyValuePair<string, CapabilityTimelineTrack> pair in m_TimelineTracks)
@@ -962,6 +956,22 @@ namespace Core.Capability.Editor
                 return;
             }
 
+            if (m_NavigationMode == 0)
+            {
+                CapabilityDebugWorldSnapshot world = frame.Worlds[0];
+                m_SelectedWorldKey = world.Key;
+                if (string.IsNullOrEmpty(m_SelectedCategory))
+                {
+                    List<string> categories = BuildCategories(world);
+                    if (categories.Count > 0)
+                    {
+                        SelectCategory(world.Key, categories[0]);
+                    }
+                }
+
+                return;
+            }
+
             CapabilityDebugEntitySnapshot selectedEntity = frame.FindEntity(m_SelectedEntityKey);
             if (selectedEntity == null)
             {
@@ -969,25 +979,9 @@ namespace Core.Capability.Editor
                 selectedEntity = world.Entities.Count > 0 ? world.Entities[0] : null;
                 m_SelectedWorldKey = world.Key;
                 m_SelectedEntityKey = selectedEntity?.Key;
-                if (selectedEntity == null && world.GlobalCapabilities.Count > 0)
-                {
-                    SelectItem(world.GlobalCapabilities[0].Key,
-                        CapabilityDebugItemKind.GlobalCapability);
-                    return;
-                }
-
-                if (m_SelectedItemKind != CapabilityDebugItemKind.GlobalCapability)
-                {
-                    m_SelectedItemKey = null;
-                    m_SelectedItemKind = CapabilityDebugItemKind.None;
-                }
             }
 
-            if (selectedEntity == null)
-            {
-                return;
-            }
-
+            if (selectedEntity == null) return;
             if (!HasSelectedItem(selectedEntity))
             {
                 SelectFirstItem(selectedEntity);
@@ -996,19 +990,19 @@ namespace Core.Capability.Editor
 
         private bool HasSelectedItem(CapabilityDebugEntitySnapshot entity)
         {
-            if (m_SelectedItemKind == CapabilityDebugItemKind.GlobalCapability)
+            if (m_SelectedItemKind == CapabilityDebugItemKind.Capability)
             {
                 return GetSelectedGlobalCapability() != null;
+            }
+
+            if (m_SelectedItemKind == CapabilityDebugItemKind.Category)
+            {
+                return !string.IsNullOrEmpty(m_SelectedCategory);
             }
 
             if (m_SelectedItemKind == CapabilityDebugItemKind.Component)
             {
                 return entity.FindComponent(m_SelectedItemKey) != null;
-            }
-
-            if (m_SelectedItemKind == CapabilityDebugItemKind.Capability)
-            {
-                return entity.FindCapability(m_SelectedItemKey) != null;
             }
 
             return false;
@@ -1022,12 +1016,6 @@ namespace Core.Capability.Editor
                 return;
             }
 
-            if (entity.Capabilities.Count > 0)
-            {
-                SelectItem(entity.Capabilities[0].Key, CapabilityDebugItemKind.Capability);
-                return;
-            }
-
             m_SelectedItemKey = null;
             m_SelectedItemKind = CapabilityDebugItemKind.None;
         }
@@ -1037,6 +1025,7 @@ namespace Core.Capability.Editor
             m_SelectedWorldKey = worldKey;
             m_SelectedEntityKey = entityKey;
             m_SelectedItemKey = null;
+            m_SelectedCategory = null;
             m_SelectedItemKind = CapabilityDebugItemKind.None;
             CapabilityDebugEntitySnapshot entity = GetSelectedEntity();
             if (entity != null)
@@ -1049,6 +1038,17 @@ namespace Core.Capability.Editor
         {
             m_SelectedItemKey = itemKey;
             m_SelectedItemKind = kind;
+            m_LogScroll = Vector2.zero;
+            m_ExpandedFoldouts.Clear();
+        }
+
+        private void SelectCategory(string worldKey, string category)
+        {
+            m_SelectedWorldKey = worldKey;
+            m_SelectedEntityKey = null;
+            m_SelectedItemKey = null;
+            m_SelectedCategory = category;
+            m_SelectedItemKind = CapabilityDebugItemKind.Category;
             m_LogScroll = Vector2.zero;
             m_ExpandedFoldouts.Clear();
         }
@@ -1095,6 +1095,52 @@ namespace Core.Capability.Editor
             }
 
             return string.Join(", ", capability.MatchedEntityIds);
+        }
+
+        private static List<string> BuildCategories(CapabilityDebugWorldSnapshot world)
+        {
+            List<string> categories = new List<string>(16);
+            if (world == null)
+            {
+                return categories;
+            }
+
+            for (int i = 0; i < world.GlobalCapabilities.Count; i++)
+            {
+                string category = world.GlobalCapabilities[i].DebugCategory;
+                if (string.IsNullOrEmpty(category))
+                {
+                    category = CapabilityDebugCategory.Other;
+                }
+
+                if (!categories.Contains(category))
+                {
+                    categories.Add(category);
+                }
+            }
+
+            categories.Sort(string.CompareOrdinal);
+            return categories;
+        }
+
+        private static int CountCapabilitiesInCategory
+            (CapabilityDebugWorldSnapshot world, string category)
+        {
+            int count = 0;
+            if (world == null)
+            {
+                return count;
+            }
+
+            for (int i = 0; i < world.GlobalCapabilities.Count; i++)
+            {
+                if (world.GlobalCapabilities[i].DebugCategory == category)
+                {
+                    count++;
+                }
+            }
+
+            return count;
         }
 
         private void CollectGlobalCapabilityLogs

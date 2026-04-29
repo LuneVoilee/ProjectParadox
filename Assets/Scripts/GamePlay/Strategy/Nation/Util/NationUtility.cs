@@ -6,8 +6,8 @@ using UnityEngine;
 
 namespace GamePlay.Strategy
 {
-    // 国家相关的纯函数辅助方法。Capability 之间禁止 static 调用，这些工具方法从 NationRegistryCap
-    // 中抽离出来，供 OccupyCap、CombatResolveCap、DrawMapCap、MoveAlongHexPathCap 等能力使用。
+    // 国家相关的纯函数辅助方法。Capability 之间禁止 static 调用，这些工具方法从 CpNationRegistry
+    // 中抽离出来，供 CpOccupy、CpCombatResolve、CpDrawMap、CpMoveAlongHexPath 等能力使用。
     public static class NationUtility
     {
         // Tag 是 JSON 与人类可读配置的稳定 key，进入运行时索引前统一大写去空白。

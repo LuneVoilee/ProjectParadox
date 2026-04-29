@@ -283,6 +283,12 @@ namespace Core.Capability.Editor
                         continue;
                     }
 
+                    if (!type.Name.StartsWith("Cp", StringComparison.Ordinal))
+                    {
+                        throw new InvalidOperationException(
+                            $"Capability 类型必须使用 Cp 前缀: {type.FullName}");
+                    }
+
                     if (!TryCreateCapabilityMetadata(type,
                             out CapabilityMetadata capabilityMetadata))
                     {

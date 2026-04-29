@@ -15,57 +15,57 @@ namespace Core.Capability
             {
                 return;
             }
-
-            world.BindGlobalCapability<GamePlay.Strategy.TimeCap>();
-            world.BindGlobalCapability<GamePlay.Map.GenerateMapDataCap>();
-            world.BindGlobalCapability<GamePlay.Strategy.NationRegistryCap>();
-            world.BindGlobalCapability<GamePlay.Strategy.DiplomacyRegistryCap>();
-            world.BindGlobalCapability<GamePlay.Strategy.PlayerInputCap>();
-            world.BindGlobalCapability<GamePlay.Strategy.SelectionCap>();
-            world.BindGlobalCapability<GamePlay.Strategy.MoveCommandDraftCap>();
-            world.BindGlobalCapability<GamePlay.Strategy.MoveCommandValidateCap>();
-            world.BindGlobalCapability<GamePlay.Strategy.MoveCommandCommitCap>();
-            world.BindGlobalCapability<GamePlay.Strategy.InputEventCleanupCap>();
-            world.BindGlobalCapability<GamePlay.Strategy.MoveAlongHexPathCap>();
-            world.BindGlobalCapability<GamePlay.Strategy.OccupyCap>();
-            world.BindGlobalCapability<GamePlay.Map.ApplyTerritoryChangesCap>();
-            world.BindGlobalCapability<GamePlay.Strategy.CombatResolveCap>();
-            world.BindGlobalCapability<GamePlay.Strategy.CombatRecoveryCap>();
-            world.BindGlobalCapability<GamePlay.Strategy.SelectionPresentationCap>();
-            world.BindGlobalCapability<GamePlay.Strategy.PathPresentationCap>();
-            world.BindGlobalCapability<GamePlay.Camera.ZoomCap>();
-            world.BindGlobalCapability<GamePlay.Camera.MoveCap>();
-            world.BindGlobalCapability<GamePlay.Camera.BoundsCap>();
-            world.BindGlobalCapability<GamePlay.Map.DrawMapCap>();
-            world.BindGlobalCapability<Core.Capability.DestroyCap>();
+            world.BindGlobalCapability<GamePlay.Strategy.CpTime>();
+            world.BindGlobalCapability<GamePlay.Map.CpGenerateMapData>();
+            world.BindGlobalCapability<GamePlay.Strategy.CpNationRegistry>();
+            world.BindGlobalCapability<GamePlay.Strategy.CpDiplomacyRegistry>();
+            world.BindGlobalCapability<GamePlay.Strategy.CpPlayerInput>();
+            world.BindGlobalCapability<GamePlay.Strategy.CpSelection>();
+            world.BindGlobalCapability<GamePlay.Strategy.CpMoveCommandDraft>();
+            world.BindGlobalCapability<GamePlay.Strategy.CpMoveCommandValidate>();
+            world.BindGlobalCapability<GamePlay.Strategy.CpMoveCommandCommit>();
+            world.BindGlobalCapability<GamePlay.Strategy.CpInputEventCleanup>();
+            world.BindGlobalCapability<GamePlay.Strategy.CpMoveAlongHexPath>();
+            world.BindGlobalCapability<GamePlay.Strategy.CpOccupy>();
+            world.BindGlobalCapability<GamePlay.Map.CpApplyTerritoryChanges>();
+            world.BindGlobalCapability<GamePlay.Strategy.CpCombatResolve>();
+            world.BindGlobalCapability<GamePlay.Strategy.CpCombatRecovery>();
+            world.BindGlobalCapability<GamePlay.Strategy.CpSelectionPresentation>();
+            world.BindGlobalCapability<GamePlay.Strategy.CpPathPresentation>();
+            world.BindGlobalCapability<GamePlay.Camera.CpZoom>();
+            world.BindGlobalCapability<GamePlay.Camera.CpMove>();
+            world.BindGlobalCapability<GamePlay.Camera.CpBounds>();
+            world.BindGlobalCapability<GamePlay.Map.CpDrawMap>();
+            world.BindGlobalCapability<Core.Capability.CpDestroy>();
         }
 
         private static int Order()
         {
 
-            var orderTid = CapabilityId<GamePlay.Strategy.TimeCap, IUpdateSystem>.TId;
-            orderTid = CapabilityId<GamePlay.Map.GenerateMapDataCap, IUpdateSystem>.TId;
-            orderTid = CapabilityId<GamePlay.Strategy.NationRegistryCap, IUpdateSystem>.TId;
-            orderTid = CapabilityId<GamePlay.Strategy.DiplomacyRegistryCap, IUpdateSystem>.TId;
-            orderTid = CapabilityId<GamePlay.Strategy.PlayerInputCap, IUpdateSystem>.TId;
-            orderTid = CapabilityId<GamePlay.Strategy.SelectionCap, IUpdateSystem>.TId;
-            orderTid = CapabilityId<GamePlay.Strategy.MoveCommandDraftCap, IUpdateSystem>.TId;
-            orderTid = CapabilityId<GamePlay.Strategy.MoveCommandValidateCap, IUpdateSystem>.TId;
-            orderTid = CapabilityId<GamePlay.Strategy.MoveCommandCommitCap, IUpdateSystem>.TId;
-            orderTid = CapabilityId<GamePlay.Strategy.InputEventCleanupCap, IUpdateSystem>.TId;
-            orderTid = CapabilityId<GamePlay.Strategy.MoveAlongHexPathCap, IUpdateSystem>.TId;
-            orderTid = CapabilityId<GamePlay.Strategy.OccupyCap, IUpdateSystem>.TId;
-            orderTid = CapabilityId<GamePlay.Map.ApplyTerritoryChangesCap, IUpdateSystem>.TId;
-            orderTid = CapabilityId<GamePlay.Strategy.CombatResolveCap, IUpdateSystem>.TId;
-            orderTid = CapabilityId<GamePlay.Strategy.CombatRecoveryCap, IUpdateSystem>.TId;
-            orderTid = CapabilityId<GamePlay.Strategy.SelectionPresentationCap, IUpdateSystem>.TId;
-            orderTid = CapabilityId<GamePlay.Strategy.PathPresentationCap, IUpdateSystem>.TId;
-            orderTid = CapabilityId<GamePlay.Camera.ZoomCap, IUpdateSystem>.TId;
-            orderTid = CapabilityId<GamePlay.Camera.MoveCap, IUpdateSystem>.TId;
-            orderTid = CapabilityId<GamePlay.Camera.BoundsCap, IUpdateSystem>.TId;
-            orderTid = CapabilityId<GamePlay.Map.DrawMapCap, IUpdateSystem>.TId;
-            orderTid = CapabilityId<Core.Capability.DestroyCap, IUpdateSystem>.TId;
+            var orderTid = CapabilityId<GamePlay.Strategy.CpTime, IUpdateSystem>.TId;
+            orderTid = CapabilityId<GamePlay.Map.CpGenerateMapData, IUpdateSystem>.TId;
+            orderTid = CapabilityId<GamePlay.Strategy.CpNationRegistry, IUpdateSystem>.TId;
+            orderTid = CapabilityId<GamePlay.Strategy.CpDiplomacyRegistry, IUpdateSystem>.TId;
+            orderTid = CapabilityId<GamePlay.Strategy.CpPlayerInput, IUpdateSystem>.TId;
+            orderTid = CapabilityId<GamePlay.Strategy.CpSelection, IUpdateSystem>.TId;
+            orderTid = CapabilityId<GamePlay.Strategy.CpMoveCommandDraft, IUpdateSystem>.TId;
+            orderTid = CapabilityId<GamePlay.Strategy.CpMoveCommandValidate, IUpdateSystem>.TId;
+            orderTid = CapabilityId<GamePlay.Strategy.CpMoveCommandCommit, IUpdateSystem>.TId;
+            orderTid = CapabilityId<GamePlay.Strategy.CpInputEventCleanup, IUpdateSystem>.TId;
+            orderTid = CapabilityId<GamePlay.Strategy.CpMoveAlongHexPath, IUpdateSystem>.TId;
+            orderTid = CapabilityId<GamePlay.Strategy.CpOccupy, IUpdateSystem>.TId;
+            orderTid = CapabilityId<GamePlay.Map.CpApplyTerritoryChanges, IUpdateSystem>.TId;
+            orderTid = CapabilityId<GamePlay.Strategy.CpCombatResolve, IUpdateSystem>.TId;
+            orderTid = CapabilityId<GamePlay.Strategy.CpCombatRecovery, IUpdateSystem>.TId;
+            orderTid = CapabilityId<GamePlay.Strategy.CpSelectionPresentation, IUpdateSystem>.TId;
+            orderTid = CapabilityId<GamePlay.Strategy.CpPathPresentation, IUpdateSystem>.TId;
+            orderTid = CapabilityId<GamePlay.Camera.CpZoom, IUpdateSystem>.TId;
+            orderTid = CapabilityId<GamePlay.Camera.CpMove, IUpdateSystem>.TId;
+            orderTid = CapabilityId<GamePlay.Camera.CpBounds, IUpdateSystem>.TId;
+            orderTid = CapabilityId<GamePlay.Map.CpDrawMap, IUpdateSystem>.TId;
+            orderTid = CapabilityId<Core.Capability.CpDestroy, IUpdateSystem>.TId;
             return 22;
         }
     }
 }
+

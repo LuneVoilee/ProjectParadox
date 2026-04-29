@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace GamePlay.Map
 {
-    // 国家颜色表现状态。DrawMapCap 负责解释这些字段，组件本身不执行绘制或阈值判断。
+    // 国家颜色表现状态。CpDrawMap 负责解释这些字段，组件本身不执行绘制或阈值判断。
     public class TerritoryPaintState : CComponent
     {
         // 需要重刷颜色的格子索引列表；HashSet 用于去重，List 用于保持可遍历集合。

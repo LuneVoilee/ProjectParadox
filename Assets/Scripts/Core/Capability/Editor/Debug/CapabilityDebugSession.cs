@@ -11,7 +11,7 @@ namespace Core.Capability.Editor
         None = 0,
         Component = 1,
         Capability = 2,
-        GlobalCapability = 3
+        Category = 3
     }
 
     /// <summary>
@@ -68,38 +68,6 @@ namespace Core.Capability.Editor
             CurrentFrameIndex = -1;
         }
 
-        public void CollectLogs
-        (
-            string entityKey, string capabilityKey, int maxFrameIndex,
-            List<CapabilityDebugLogSnapshot> destination
-        )
-        {
-            destination.Clear();
-            if (string.IsNullOrEmpty(entityKey) || string.IsNullOrEmpty(capabilityKey))
-            {
-                return;
-            }
-
-            int endIndex = Mathf.Clamp(maxFrameIndex, 0, Frames.Count - 1);
-            for (int i = 0; i <= endIndex; i++)
-            {
-                CapabilityDebugFrame frame = Frames[i];
-                CapabilityDebugEntitySnapshot entity = frame.FindEntity(entityKey);
-                if (entity == null)
-                {
-                    continue;
-                }
-
-                CapabilityDebugCapabilitySnapshot capability =
-                    entity.FindCapability(capabilityKey);
-                if (capability == null)
-                {
-                    continue;
-                }
-
-                destination.AddRange(capability.Logs);
-            }
-        }
     }
 
     /// <summary>
@@ -197,8 +165,6 @@ namespace Core.Capability.Editor
         public string DisplayName;
         public readonly List<CapabilityDebugComponentSnapshot> Components =
             new List<CapabilityDebugComponentSnapshot>(32);
-        public readonly List<CapabilityDebugCapabilitySnapshot> Capabilities =
-            new List<CapabilityDebugCapabilitySnapshot>(32);
         public readonly List<CapabilityDebugTransformSnapshot> Transforms =
             new List<CapabilityDebugTransformSnapshot>(8);
 
@@ -210,20 +176,6 @@ namespace Core.Capability.Editor
                 if (component.Key == itemKey)
                 {
                     return component;
-                }
-            }
-
-            return null;
-        }
-
-        public CapabilityDebugCapabilitySnapshot FindCapability(string itemKey)
-        {
-            for (int i = 0; i < Capabilities.Count; i++)
-            {
-                CapabilityDebugCapabilitySnapshot capability = Capabilities[i];
-                if (capability.Key == itemKey)
-                {
-                    return capability;
                 }
             }
 
@@ -257,6 +209,9 @@ namespace Core.Capability.Editor
         public int TickGroupOrder;
         public string StageName;
         public CapabilityRuntimeState State;
+        public string DebugCategory;
+        public string DebugTag;
+        public string LastErrorMessage;
         public double LastTickMilliseconds;
         public int MatchedEntityCount;
         public readonly List<int> MatchedEntityIds = new List<int>(32);

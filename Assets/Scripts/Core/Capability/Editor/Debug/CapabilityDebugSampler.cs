@@ -103,15 +103,14 @@ namespace Core.Capability.Editor
             m_UpdateCapabilities.Clear();
             m_FixedUpdateCapabilities.Clear();
             world.GetGlobalCapabilities(m_UpdateCapabilities, m_FixedUpdateCapabilities);
-            SampleGlobalCapabilityList(world, m_UpdateCapabilities, snapshot);
-            SampleGlobalCapabilityList(world, m_FixedUpdateCapabilities, snapshot);
+            SampleGlobalCapabilityList(m_UpdateCapabilities, snapshot);
+            SampleGlobalCapabilityList(m_FixedUpdateCapabilities, snapshot);
             snapshot.GlobalCapabilities.Sort(CompareCapability);
         }
 
         private void SampleGlobalCapabilityList
         (
-            CapabilityWorld world, List<CapabilityBase> capabilities,
-            CapabilityDebugWorldSnapshot snapshot
+            List<CapabilityBase> capabilities, CapabilityDebugWorldSnapshot snapshot
         )
         {
             for (int i = 0; i < capabilities.Count; i++)
@@ -132,7 +131,10 @@ namespace Core.Capability.Editor
                         UpdateMode = capability.UpdateMode,
                         TickGroupOrder = capability.TickGroupOrder,
                         StageName = m_StageResolver.Resolve(capability.TickGroupOrder),
-                        State = CapabilityRuntimeState.Active,
+                        State = ToRuntimeState(capability.LastRunState),
+                        DebugCategory = capability.DebugCategory,
+                        DebugTag = capability.DebugTag,
+                        LastErrorMessage = capability.LastErrorMessage,
                         LastTickMilliseconds = capability.LastTickMilliseconds,
                         MatchedEntityCount = capability.LastMatchedEntityCount
                     };
@@ -160,7 +162,6 @@ namespace Core.Capability.Editor
             };
 
             SampleComponents(entity, snapshot);
-            SampleCapabilities(world, entity, snapshot);
 
             // 主路径：通过 Installer 映射获取该 Entity 的场景 Transform。
 #if UNITY_EDITOR
@@ -243,52 +244,6 @@ namespace Core.Capability.Editor
             CapabilityDebugSceneState.Capture(buffer, snapshot.Transforms);
         }
 
-        private void SampleCapabilities
-            (CapabilityWorld world, CEntity entity, CapabilityDebugEntitySnapshot snapshot)
-        {
-            m_UpdateCapabilities.Clear();
-            m_FixedUpdateCapabilities.Clear();
-            world.GetCapabilities(entity, m_UpdateCapabilities, m_FixedUpdateCapabilities);
-            SampleCapabilityList(world, entity, m_UpdateCapabilities, snapshot);
-            SampleCapabilityList(world, entity, m_FixedUpdateCapabilities, snapshot);
-            snapshot.Capabilities.Sort(CompareCapability);
-        }
-
-        private void SampleCapabilityList
-        (
-            CapabilityWorld world, CEntity entity, List<CapabilityBase> capabilities,
-            CapabilityDebugEntitySnapshot snapshot
-        )
-        {
-            for (int i = 0; i < capabilities.Count; i++)
-            {
-                CapabilityBase capability = capabilities[i];
-                if (capability == null)
-                {
-                    continue;
-                }
-
-                CapabilityDebugCapabilitySnapshot capabilitySnapshot =
-                    new CapabilityDebugCapabilitySnapshot
-                    {
-                        Key = BuildCapabilityKey(capability),
-                        CapabilityId = capability.Id,
-                        TypeName = capability.GetType().Name,
-                        TypeFullName = capability.GetType().FullName,
-                        UpdateMode = capability.UpdateMode,
-                        TickGroupOrder = capability.TickGroupOrder,
-                        StageName = m_StageResolver.Resolve(capability.TickGroupOrder),
-                        State = ResolveCapabilityState(world, entity, capability),
-                        LastTickMilliseconds = capability.LastTickMilliseconds,
-                        MatchedEntityCount = capability.LastMatchedEntityCount
-                    };
-
-                m_Reflection.CaptureCapabilityFields(capability, capabilitySnapshot.Fields);
-                ConsumeLogs(capability, capabilitySnapshot);
-                snapshot.Capabilities.Add(capabilitySnapshot);
-            }
-        }
-
         private void ConsumeLogs
         (
             CapabilityBase capability, CapabilityDebugCapabilitySnapshot capabilitySnapshot
@@ -333,18 +288,21 @@ namespace Core.Capability.Editor
             return string.CompareOrdinal(left.TypeName, right.TypeName);
         }
 
-        private static CapabilityRuntimeState ResolveCapabilityState
-            (CapabilityWorld world, CEntity entity, CapabilityBase capability)
+        private static CapabilityRuntimeState ToRuntimeState(CapabilityRunState state)
         {
-            if (capability.TagList != null &&
-                world.IsCapabilityBlocked(entity, capability.TagList))
+            switch (state)
             {
-                return CapabilityRuntimeState.Blocked;
+                case CapabilityRunState.Worked:
+                    return CapabilityRuntimeState.Worked;
+                case CapabilityRunState.Matched:
+                    return CapabilityRuntimeState.Matched;
+                case CapabilityRunState.Error:
+                    return CapabilityRuntimeState.Error;
+                case CapabilityRunState.NoMatch:
+                    return CapabilityRuntimeState.NoMatch;
+                default:
+                    return CapabilityRuntimeState.None;
             }
-
-            return capability.IsActive
-                ? CapabilityRuntimeState.Active
-                : CapabilityRuntimeState.Inactive;
         }
 
         private static string BuildWorldKey(CapabilityWorld world)

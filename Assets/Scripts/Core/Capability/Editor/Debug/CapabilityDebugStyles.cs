@@ -9,9 +9,10 @@ namespace Core.Capability.Editor
     internal static class CapabilityDebugStyles
     {
         public static readonly Color NoneStateColor = new Color(0.25f, 0.25f, 0.25f, 0.4f);
-        public static readonly Color InactiveStateColor = new Color(0.78f, 0.78f, 0.78f, 1f);
-        public static readonly Color ActiveStateColor = new Color(0.28f, 0.85f, 0.38f, 1f);
-        public static readonly Color BlockedStateColor = new Color(1f, 0.82f, 0.24f, 1f);
+        public static readonly Color NoMatchStateColor = new Color(0.78f, 0.78f, 0.78f, 1f);
+        public static readonly Color MatchedStateColor = new Color(0.30f, 0.58f, 0.95f, 1f);
+        public static readonly Color WorkedStateColor = new Color(0.28f, 0.85f, 0.38f, 1f);
+        public static readonly Color ErrorStateColor = new Color(1f, 0.28f, 0.22f, 1f);
         public static readonly Color SelectedRowColor = new Color(0.24f, 0.46f, 0.85f, 0.55f);
         public static readonly Color RowHoverColor = new Color(1f, 1f, 1f, 0.06f);
         public static readonly Color PanelBackgroundColor = new Color(0f, 0f, 0f, 0.08f);
@@ -167,12 +168,14 @@ namespace Core.Capability.Editor
         {
             switch (state)
             {
-                case CapabilityRuntimeState.Active:
-                    return ActiveStateColor;
-                case CapabilityRuntimeState.Blocked:
-                    return BlockedStateColor;
-                case CapabilityRuntimeState.Inactive:
-                    return InactiveStateColor;
+                case CapabilityRuntimeState.Worked:
+                    return WorkedStateColor;
+                case CapabilityRuntimeState.Matched:
+                    return MatchedStateColor;
+                case CapabilityRuntimeState.NoMatch:
+                    return NoMatchStateColor;
+                case CapabilityRuntimeState.Error:
+                    return ErrorStateColor;
                 default:
                     return NoneStateColor;
             }

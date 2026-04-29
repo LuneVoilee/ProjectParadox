@@ -8,8 +8,6 @@ namespace Core.Capability
 
         private GroupChanged m_GroupChanged;
 
-        private CapabilityBase m_Capability;
-
         public ChangeEventState.EventMask State = ChangeEventState.EventMask.AddRemoveUpdate;
 
         public static CapabilityCollector CreateCollector(CapabilityWorldBase world, CapabilityBase capability, params int[] componentIds)
@@ -22,7 +20,6 @@ namespace Core.Capability
             }
 
             CapabilityCollector collector = new CapabilityCollector();
-            collector.m_Capability = capability;
             collector.InitCollector(groups);
             return collector;
         }
@@ -67,7 +64,6 @@ namespace Core.Capability
 
         private void OnGroupChanged(EntityGroup group, CEntity entity)
         {
-            m_Capability.ComponentChanged = true;
         }
 
         public void Dispose()
@@ -89,7 +85,6 @@ namespace Core.Capability
             }
 
             m_Groups = null;
-            m_Capability = null;
             m_GroupChanged = null;
         }
     }
