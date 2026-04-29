@@ -80,6 +80,8 @@ namespace Core.Capability.Editor
                 return snapshot;
             }
 
+            SampleGlobalCapabilities(world, snapshot);
+
             foreach (CEntity entity in world.Children)
             {
                 if (entity == null || !entity.IsActive)
@@ -93,6 +95,53 @@ namespace Core.Capability.Editor
 
             snapshot.Entities.Sort((x, y) => x.EntityId.CompareTo(y.EntityId));
             return snapshot;
+        }
+
+        private void SampleGlobalCapabilities
+            (CapabilityWorld world, CapabilityDebugWorldSnapshot snapshot)
+        {
+            m_UpdateCapabilities.Clear();
+            m_FixedUpdateCapabilities.Clear();
+            world.GetGlobalCapabilities(m_UpdateCapabilities, m_FixedUpdateCapabilities);
+            SampleGlobalCapabilityList(world, m_UpdateCapabilities, snapshot);
+            SampleGlobalCapabilityList(world, m_FixedUpdateCapabilities, snapshot);
+            snapshot.GlobalCapabilities.Sort(CompareCapability);
+        }
+
+        private void SampleGlobalCapabilityList
+        (
+            CapabilityWorld world, List<CapabilityBase> capabilities,
+            CapabilityDebugWorldSnapshot snapshot
+        )
+        {
+            for (int i = 0; i < capabilities.Count; i++)
+            {
+                CapabilityBase capability = capabilities[i];
+                if (capability == null)
+                {
+                    continue;
+                }
+
+                CapabilityDebugCapabilitySnapshot capabilitySnapshot =
+                    new CapabilityDebugCapabilitySnapshot
+                    {
+                        Key = BuildCapabilityKey(capability),
+                        CapabilityId = capability.Id,
+                        TypeName = capability.GetType().Name,
+                        TypeFullName = capability.GetType().FullName,
+                        UpdateMode = capability.UpdateMode,
+                        TickGroupOrder = capability.TickGroupOrder,
+                        StageName = m_StageResolver.Resolve(capability.TickGroupOrder),
+                        State = CapabilityRuntimeState.Active,
+                        LastTickMilliseconds = capability.LastTickMilliseconds,
+                        MatchedEntityCount = capability.LastMatchedEntityCount
+                    };
+
+                capabilitySnapshot.MatchedEntityIds.AddRange(capability.LastMatchedEntityIds);
+                m_Reflection.CaptureCapabilityFields(capability, capabilitySnapshot.Fields);
+                ConsumeLogs(capability, capabilitySnapshot);
+                snapshot.GlobalCapabilities.Add(capabilitySnapshot);
+            }
         }
 
         private CapabilityDebugEntitySnapshot SampleEntity
@@ -229,7 +278,9 @@ namespace Core.Capability.Editor
                         UpdateMode = capability.UpdateMode,
                         TickGroupOrder = capability.TickGroupOrder,
                         StageName = m_StageResolver.Resolve(capability.TickGroupOrder),
-                        State = ResolveCapabilityState(world, entity, capability)
+                        State = ResolveCapabilityState(world, entity, capability),
+                        LastTickMilliseconds = capability.LastTickMilliseconds,
+                        MatchedEntityCount = capability.LastMatchedEntityCount
                     };
 
                 m_Reflection.CaptureCapabilityFields(capability, capabilitySnapshot.Fields);
@@ -244,7 +295,7 @@ namespace Core.Capability.Editor
         )
         {
 #if UNITY_EDITOR
-            List<CapabilityDebugLogBridge.Entry> entries =
+            List<CapabilityDebugLogStream.Entry> entries =
                 CapabilityDebugLogBridge.Consume(capability);
             if (entries == null)
             {
@@ -253,7 +304,7 @@ namespace Core.Capability.Editor
 
             for (int i = 0; i < entries.Count; i++)
             {
-                CapabilityDebugLogBridge.Entry entry = entries[i];
+                CapabilityDebugLogStream.Entry entry = entries[i];
                 capabilitySnapshot.Logs.Add(new CapabilityDebugLogSnapshot
                 {
                     FrameIndex = m_CurrentFrameIndex,

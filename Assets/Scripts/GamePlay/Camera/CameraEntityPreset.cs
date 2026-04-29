@@ -40,10 +40,6 @@ namespace GamePlay.Camera
                 return null;
             }
 
-            world.BindCapability<ZoomCap>(entity);
-            world.BindCapability<MoveCap>(entity);
-            world.BindCapability<BoundsCap>(entity);
-
             var refComp = entity.AddComponent<Ref>();
             refComp.Target = config.Target;
             refComp.Camera = config.Camera;

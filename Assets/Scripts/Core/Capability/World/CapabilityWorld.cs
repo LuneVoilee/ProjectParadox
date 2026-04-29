@@ -15,7 +15,6 @@ namespace Core.Capability
                 return;
             }
 
-            BindCapability<DestroyCapability>(entity);
             CapabilityBlockComponent blockComponent =
                 entity.AddComponent<CapabilityBlockComponent>();
             blockComponent.Init(m_MaxCapabilityTag);
@@ -27,6 +26,17 @@ namespace Core.Capability
             m_MaxCapabilityTag = maxTag;
             m_CapabilityRegistry = new CapabilityRegistry();
             m_CapabilityRegistry.Init(this, maxCapabilityCount, estimatedEntityCount);
+        }
+
+        public void BindGlobalCapability<TCapability>()
+            where TCapability : CapabilityBase, new()
+        {
+            if (m_CapabilityRegistry == null)
+            {
+                return;
+            }
+
+            m_CapabilityRegistry.AddGlobal<TCapability>();
         }
 
         public override TEntity AddChild<TEntity>()
@@ -67,6 +77,21 @@ namespace Core.Capability
             }
 
             m_CapabilityRegistry.GetCapabilitiesByEntity(entity, updateCapabilities,
+                fixedUpdateCapabilities);
+        }
+
+        public void GetGlobalCapabilities
+        (
+            List<CapabilityBase> updateCapabilities,
+            List<CapabilityBase> fixedUpdateCapabilities
+        )
+        {
+            if (m_CapabilityRegistry == null)
+            {
+                return;
+            }
+
+            m_CapabilityRegistry.GetGlobalCapabilities(updateCapabilities,
                 fixedUpdateCapabilities);
         }
 

@@ -1,9 +1,6 @@
 #region
 
-using System;
-using Common.Event;
 using Core.Capability;
-using Core.Capability.Editor;
 using GamePlay.Util;
 using GamePlay.World;
 using UnityEngine;
@@ -12,82 +9,63 @@ using UnityEngine;
 
 namespace GamePlay.Strategy
 {
-    // 士气恢复能力：当单位不处于战斗中时，每日按 MoraleRecovery 恢复士气。
+    // 士气恢复能力：世界级每日扫描所有 SignalRecover 单位。
     public class CombatRecoveryCap : CapabilityBase
     {
-        private static readonly int m_UnitId = Component<Unit>.TId;
-        private static readonly int m_UnitCombatId = Component<UnitCombat>.TId;
         private static readonly int m_SignalRecoverId = Component<SignalRecover>.TId;
-        private Action<DateTime> m_OnTimeChange;
-        private int m_LastRecoveryDay = -1;
+        private int m_LastRecoveryDayVersion = -1;
 
-        // 在战斗结算之后执行，确保当天战斗已处理完毕。
         public override int TickGroupOrder { get; protected set; } =
             CapabilityOrder.ResolveCombatRecovery;
 
-        protected override void OnInit()
+        public override void Tick
+            (CapabilityContext context, float deltaTime, float realElapsedSeconds)
         {
-            Filter(m_UnitId, m_UnitCombatId, m_SignalRecoverId);
+            if (context.World is not GameWorld gameWorld)
+            {
+                return;
+            }
+
+            if (!gameWorld.TryGetPrimaryMapEntity(out CEntity mapEntity))
+            {
+                return;
+            }
+
+            if (!mapEntity.TryGetTime(out Time time))
+            {
+                return;
+            }
+
+            if (time.DayVersion == m_LastRecoveryDayVersion)
+            {
+                return;
+            }
+
+            m_LastRecoveryDayVersion = time.DayVersion;
+            EntityGroup group = context.Query<Unit, UnitCombat, SignalRecover>();
+            if (group?.EntitiesMap == null)
+            {
+                return;
+            }
+
+            foreach (CEntity entity in group.EntitiesMap)
+            {
+                Recover(entity);
+            }
         }
 
-        public override bool ShouldActivate()
+        private static void Recover(CEntity entity)
         {
-            if (!Owner.HasComponent(m_UnitId))
-            {
-                this.Log("m_UnitId");
-                return false;
-            }
+            if (entity == null) return;
+            if (entity.HasCombatState()) return;
+            if (!entity.TryGetUnitCombat(out UnitCombat combat)) return;
 
-            if (!Owner.TryGetComponent(m_UnitCombatId, out UnitCombat combat))
-            {
-                this.Log("m_UnitCombatId");
-
-                return false;
-            }
-
+            combat.Morale = Mathf.Min(combat.MaxMorale,
+                combat.Morale + combat.MoraleRecovery);
             if (combat.Morale >= combat.MaxMorale)
             {
-                this.Log("bigger");
-                return false;
+                entity.RemoveComponent(m_SignalRecoverId);
             }
-
-            return true;
-        }
-
-        public override bool ShouldDeactivate()
-        {
-            return !ShouldActivate();
-        }
-
-        protected override void OnActivated()
-        {
-            m_OnTimeChange = OnDayChanged;
-            EventBus.GP_OnTimeChange += m_OnTimeChange;
-            m_LastRecoveryDay = -1;
-        }
-
-        protected override void OnDeactivated()
-        {
-            if (m_OnTimeChange != null)
-            {
-                EventBus.GP_OnTimeChange -= m_OnTimeChange;
-                m_OnTimeChange = null;
-            }
-
-            Owner.RemoveComponent(m_SignalRecoverId);
-        }
-
-        private void OnDayChanged(DateTime currentDate)
-        {
-            int today = currentDate.DayOfYear + currentDate.Year * 1000;
-            if (today == m_LastRecoveryDay) return;
-            m_LastRecoveryDay = today;
-
-            // 仅在非战斗状态下恢复士气。
-            if (Owner.HasCombatState()) return;
-            if (!Owner.TryGetUnitCombat(out UnitCombat combat)) return;
-
-            combat.Morale = Mathf.Min(combat.MaxMorale, combat.Morale + combat.MoraleRecovery);
         }
     }
 }

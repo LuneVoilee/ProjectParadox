@@ -1,27 +1,22 @@
 namespace Core.Capability
 {
-    public class DestroyCapability : CapabilityBase
+    public class DestroyCap : CapabilityBase
     {
         public override int TickGroupOrder { get; protected set; } = int.MaxValue;
 
-        protected override void OnInit()
+        public override void Tick
+            (CapabilityContext context, float deltaTime, float realElapsedSeconds)
         {
-            Filter(Component<DestroyComponent>.TId);
-        }
+            EntityGroup group = context.Query<DestroyComponent>();
+            if (group?.EntitiesMap == null)
+            {
+                return;
+            }
 
-        public override bool ShouldActivate()
-        {
-            return Owner.GetComponent(Component<DestroyComponent>.TId) != null;
-        }
-
-        protected override void OnActivated()
-        {
-            World.RemoveChild(Owner);
-        }
-
-        public override bool ShouldDeactivate()
-        {
-            return Owner.GetComponent(Component<DestroyComponent>.TId) == null;
+            foreach (CEntity entity in group.EntitiesMap)
+            {
+                context.Commands.DestroyEntity(entity);
+            }
         }
     }
 }

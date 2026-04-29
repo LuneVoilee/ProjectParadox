@@ -52,11 +52,6 @@ namespace GamePlay.Strategy
 
             entity.Go = go;
 
-            world.BindCapability<MoveAlongHexPathCap>(entity);
-            world.BindCapability<OccupyCap>(entity);
-            world.BindCapability<CombatResolveCap>(entity);
-            world.BindCapability<CombatRecoveryCap>(entity);
-
             Unit unit = entity.AddComponent<Unit>();
             unit.Tag = config.Tag;
             unit.MoveSpeed = Mathf.Max(0.01f, config.MoveSpeed);

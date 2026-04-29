@@ -18,14 +18,18 @@ namespace GamePlay.Util
         public static readonly int DiplomacyBootstrapId = Component<GamePlay.Strategy.DiplomacyBootstrap>.TId;
         public static readonly int DiplomacyIndexId = Component<GamePlay.Strategy.DiplomacyIndex>.TId;
         public static readonly int DrawMapId = Component<GamePlay.Map.DrawMap>.TId;
+        public static readonly int GameplayClickEventId = Component<GamePlay.Strategy.GameplayClickEvent>.TId;
         public static readonly int GridId = Component<GamePlay.Map.Grid>.TId;
         public static readonly int MapId = Component<GamePlay.Map.Map>.TId;
         public static readonly int MoveId = Component<GamePlay.Camera.Move>.TId;
+        public static readonly int MoveCommandRequestId = Component<GamePlay.Strategy.MoveCommandRequest>.TId;
         public static readonly int NationId = Component<GamePlay.Strategy.Nation>.TId;
         public static readonly int NationBootstrapId = Component<GamePlay.Strategy.NationBootstrap>.TId;
         public static readonly int NationIndexId = Component<GamePlay.Strategy.NationIndex>.TId;
         public static readonly int NoiseId = Component<GamePlay.Map.Noise>.TId;
         public static readonly int RefId = Component<GamePlay.Camera.Ref>.TId;
+        public static readonly int RejectedMoveCommandId = Component<GamePlay.Strategy.RejectedMoveCommand>.TId;
+        public static readonly int SelectionStateId = Component<GamePlay.Strategy.SelectionState>.TId;
         public static readonly int SignalRecoverId = Component<GamePlay.Strategy.SignalRecover>.TId;
         public static readonly int TerritoryOwnershipBufferId = Component<GamePlay.Map.TerritoryOwnershipBuffer>.TId;
         public static readonly int TerritoryPaintStateId = Component<GamePlay.Map.TerritoryPaintState>.TId;
@@ -36,9 +40,10 @@ namespace GamePlay.Util
         public static readonly int UnitMoveTargetId = Component<GamePlay.Strategy.UnitMoveTarget>.TId;
         public static readonly int UnitOccupancyIndexId = Component<GamePlay.Map.UnitOccupancyIndex>.TId;
         public static readonly int UnitPositionId = Component<GamePlay.Strategy.UnitPosition>.TId;
+        public static readonly int ValidMoveCommandId = Component<GamePlay.Strategy.ValidMoveCommand>.TId;
         public static readonly int ZoomId = Component<GamePlay.Camera.Zoom>.TId;
 
-        public static int Count => 28;
+        public static int Count => 33;
 
         public static bool HasBiome(this CEntity entity)
         {
@@ -328,6 +333,38 @@ namespace GamePlay.Util
             return true;
         }
 
+        public static bool HasGameplayClickEvent(this CEntity entity)
+        {
+            return entity != null && entity.HasComponent(GameplayClickEventId);
+        }
+
+        public static bool TryGetGameplayClickEvent(this CEntity entity, out GamePlay.Strategy.GameplayClickEvent component)
+        {
+            component = null;
+            return entity != null && entity.TryGetComponent(GameplayClickEventId, out component);
+        }
+
+        public static GamePlay.Strategy.GameplayClickEvent GetGameplayClickEventOrNull(this CEntity entity)
+        {
+            return entity != null ? entity.GetComponent(GameplayClickEventId) as GamePlay.Strategy.GameplayClickEvent : null;
+        }
+
+        public static GamePlay.Strategy.GameplayClickEvent AddGameplayClickEvent(this CEntity entity)
+        {
+            return entity != null ? entity.AddComponent<GamePlay.Strategy.GameplayClickEvent>() : null;
+        }
+
+        public static bool RemoveGameplayClickEvent(this CEntity entity)
+        {
+            if (entity == null || !entity.HasComponent(GameplayClickEventId))
+            {
+                return false;
+            }
+
+            entity.RemoveComponent(GameplayClickEventId);
+            return true;
+        }
+
         public static bool HasGrid(this CEntity entity)
         {
             return entity != null && entity.HasComponent(GridId);
@@ -421,6 +458,38 @@ namespace GamePlay.Util
             }
 
             entity.RemoveComponent(MoveId);
+            return true;
+        }
+
+        public static bool HasMoveCommandRequest(this CEntity entity)
+        {
+            return entity != null && entity.HasComponent(MoveCommandRequestId);
+        }
+
+        public static bool TryGetMoveCommandRequest(this CEntity entity, out GamePlay.Strategy.MoveCommandRequest component)
+        {
+            component = null;
+            return entity != null && entity.TryGetComponent(MoveCommandRequestId, out component);
+        }
+
+        public static GamePlay.Strategy.MoveCommandRequest GetMoveCommandRequestOrNull(this CEntity entity)
+        {
+            return entity != null ? entity.GetComponent(MoveCommandRequestId) as GamePlay.Strategy.MoveCommandRequest : null;
+        }
+
+        public static GamePlay.Strategy.MoveCommandRequest AddMoveCommandRequest(this CEntity entity)
+        {
+            return entity != null ? entity.AddComponent<GamePlay.Strategy.MoveCommandRequest>() : null;
+        }
+
+        public static bool RemoveMoveCommandRequest(this CEntity entity)
+        {
+            if (entity == null || !entity.HasComponent(MoveCommandRequestId))
+            {
+                return false;
+            }
+
+            entity.RemoveComponent(MoveCommandRequestId);
             return true;
         }
 
@@ -581,6 +650,70 @@ namespace GamePlay.Util
             }
 
             entity.RemoveComponent(RefId);
+            return true;
+        }
+
+        public static bool HasRejectedMoveCommand(this CEntity entity)
+        {
+            return entity != null && entity.HasComponent(RejectedMoveCommandId);
+        }
+
+        public static bool TryGetRejectedMoveCommand(this CEntity entity, out GamePlay.Strategy.RejectedMoveCommand component)
+        {
+            component = null;
+            return entity != null && entity.TryGetComponent(RejectedMoveCommandId, out component);
+        }
+
+        public static GamePlay.Strategy.RejectedMoveCommand GetRejectedMoveCommandOrNull(this CEntity entity)
+        {
+            return entity != null ? entity.GetComponent(RejectedMoveCommandId) as GamePlay.Strategy.RejectedMoveCommand : null;
+        }
+
+        public static GamePlay.Strategy.RejectedMoveCommand AddRejectedMoveCommand(this CEntity entity)
+        {
+            return entity != null ? entity.AddComponent<GamePlay.Strategy.RejectedMoveCommand>() : null;
+        }
+
+        public static bool RemoveRejectedMoveCommand(this CEntity entity)
+        {
+            if (entity == null || !entity.HasComponent(RejectedMoveCommandId))
+            {
+                return false;
+            }
+
+            entity.RemoveComponent(RejectedMoveCommandId);
+            return true;
+        }
+
+        public static bool HasSelectionState(this CEntity entity)
+        {
+            return entity != null && entity.HasComponent(SelectionStateId);
+        }
+
+        public static bool TryGetSelectionState(this CEntity entity, out GamePlay.Strategy.SelectionState component)
+        {
+            component = null;
+            return entity != null && entity.TryGetComponent(SelectionStateId, out component);
+        }
+
+        public static GamePlay.Strategy.SelectionState GetSelectionStateOrNull(this CEntity entity)
+        {
+            return entity != null ? entity.GetComponent(SelectionStateId) as GamePlay.Strategy.SelectionState : null;
+        }
+
+        public static GamePlay.Strategy.SelectionState AddSelectionState(this CEntity entity)
+        {
+            return entity != null ? entity.AddComponent<GamePlay.Strategy.SelectionState>() : null;
+        }
+
+        public static bool RemoveSelectionState(this CEntity entity)
+        {
+            if (entity == null || !entity.HasComponent(SelectionStateId))
+            {
+                return false;
+            }
+
+            entity.RemoveComponent(SelectionStateId);
             return true;
         }
 
@@ -901,6 +1034,38 @@ namespace GamePlay.Util
             }
 
             entity.RemoveComponent(UnitPositionId);
+            return true;
+        }
+
+        public static bool HasValidMoveCommand(this CEntity entity)
+        {
+            return entity != null && entity.HasComponent(ValidMoveCommandId);
+        }
+
+        public static bool TryGetValidMoveCommand(this CEntity entity, out GamePlay.Strategy.ValidMoveCommand component)
+        {
+            component = null;
+            return entity != null && entity.TryGetComponent(ValidMoveCommandId, out component);
+        }
+
+        public static GamePlay.Strategy.ValidMoveCommand GetValidMoveCommandOrNull(this CEntity entity)
+        {
+            return entity != null ? entity.GetComponent(ValidMoveCommandId) as GamePlay.Strategy.ValidMoveCommand : null;
+        }
+
+        public static GamePlay.Strategy.ValidMoveCommand AddValidMoveCommand(this CEntity entity)
+        {
+            return entity != null ? entity.AddComponent<GamePlay.Strategy.ValidMoveCommand>() : null;
+        }
+
+        public static bool RemoveValidMoveCommand(this CEntity entity)
+        {
+            if (entity == null || !entity.HasComponent(ValidMoveCommandId))
+            {
+                return false;
+            }
+
+            entity.RemoveComponent(ValidMoveCommandId);
             return true;
         }
 

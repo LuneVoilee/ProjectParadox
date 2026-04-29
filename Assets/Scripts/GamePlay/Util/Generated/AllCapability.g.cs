@@ -9,6 +9,37 @@ namespace Core.Capability
     {
         public static readonly int TotalCapabilities = Order();
 
+        public static void Register(CapabilityWorld world)
+        {
+            if (world == null)
+            {
+                return;
+            }
+
+            world.BindGlobalCapability<GamePlay.Strategy.TimeCap>();
+            world.BindGlobalCapability<GamePlay.Map.GenerateMapDataCap>();
+            world.BindGlobalCapability<GamePlay.Strategy.NationRegistryCap>();
+            world.BindGlobalCapability<GamePlay.Strategy.DiplomacyRegistryCap>();
+            world.BindGlobalCapability<GamePlay.Strategy.PlayerInputCap>();
+            world.BindGlobalCapability<GamePlay.Strategy.SelectionCap>();
+            world.BindGlobalCapability<GamePlay.Strategy.MoveCommandDraftCap>();
+            world.BindGlobalCapability<GamePlay.Strategy.MoveCommandValidateCap>();
+            world.BindGlobalCapability<GamePlay.Strategy.MoveCommandCommitCap>();
+            world.BindGlobalCapability<GamePlay.Strategy.InputEventCleanupCap>();
+            world.BindGlobalCapability<GamePlay.Strategy.MoveAlongHexPathCap>();
+            world.BindGlobalCapability<GamePlay.Strategy.OccupyCap>();
+            world.BindGlobalCapability<GamePlay.Map.ApplyTerritoryChangesCap>();
+            world.BindGlobalCapability<GamePlay.Strategy.CombatResolveCap>();
+            world.BindGlobalCapability<GamePlay.Strategy.CombatRecoveryCap>();
+            world.BindGlobalCapability<GamePlay.Strategy.SelectionPresentationCap>();
+            world.BindGlobalCapability<GamePlay.Strategy.PathPresentationCap>();
+            world.BindGlobalCapability<GamePlay.Camera.ZoomCap>();
+            world.BindGlobalCapability<GamePlay.Camera.MoveCap>();
+            world.BindGlobalCapability<GamePlay.Camera.BoundsCap>();
+            world.BindGlobalCapability<GamePlay.Map.DrawMapCap>();
+            world.BindGlobalCapability<Core.Capability.DestroyCap>();
+        }
+
         private static int Order()
         {
 
@@ -16,19 +47,25 @@ namespace Core.Capability
             orderTid = CapabilityId<GamePlay.Map.GenerateMapDataCap, IUpdateSystem>.TId;
             orderTid = CapabilityId<GamePlay.Strategy.NationRegistryCap, IUpdateSystem>.TId;
             orderTid = CapabilityId<GamePlay.Strategy.DiplomacyRegistryCap, IUpdateSystem>.TId;
-            orderTid = CapabilityId<GamePlay.Strategy.SelectAndSetDestinationCap, IUpdateSystem>.TId;
+            orderTid = CapabilityId<GamePlay.Strategy.PlayerInputCap, IUpdateSystem>.TId;
+            orderTid = CapabilityId<GamePlay.Strategy.SelectionCap, IUpdateSystem>.TId;
+            orderTid = CapabilityId<GamePlay.Strategy.MoveCommandDraftCap, IUpdateSystem>.TId;
+            orderTid = CapabilityId<GamePlay.Strategy.MoveCommandValidateCap, IUpdateSystem>.TId;
+            orderTid = CapabilityId<GamePlay.Strategy.MoveCommandCommitCap, IUpdateSystem>.TId;
+            orderTid = CapabilityId<GamePlay.Strategy.InputEventCleanupCap, IUpdateSystem>.TId;
             orderTid = CapabilityId<GamePlay.Strategy.MoveAlongHexPathCap, IUpdateSystem>.TId;
             orderTid = CapabilityId<GamePlay.Strategy.OccupyCap, IUpdateSystem>.TId;
             orderTid = CapabilityId<GamePlay.Map.ApplyTerritoryChangesCap, IUpdateSystem>.TId;
             orderTid = CapabilityId<GamePlay.Strategy.CombatResolveCap, IUpdateSystem>.TId;
             orderTid = CapabilityId<GamePlay.Strategy.CombatRecoveryCap, IUpdateSystem>.TId;
+            orderTid = CapabilityId<GamePlay.Strategy.SelectionPresentationCap, IUpdateSystem>.TId;
+            orderTid = CapabilityId<GamePlay.Strategy.PathPresentationCap, IUpdateSystem>.TId;
             orderTid = CapabilityId<GamePlay.Camera.ZoomCap, IUpdateSystem>.TId;
             orderTid = CapabilityId<GamePlay.Camera.MoveCap, IUpdateSystem>.TId;
             orderTid = CapabilityId<GamePlay.Camera.BoundsCap, IUpdateSystem>.TId;
             orderTid = CapabilityId<GamePlay.Map.DrawMapCap, IUpdateSystem>.TId;
-            orderTid = CapabilityId<Core.Capability.DestroyCapability, IUpdateSystem>.TId;
-            return 15;
+            orderTid = CapabilityId<Core.Capability.DestroyCap, IUpdateSystem>.TId;
+            return 22;
         }
     }
 }
-

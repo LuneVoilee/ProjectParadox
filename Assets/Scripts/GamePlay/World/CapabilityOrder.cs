@@ -36,13 +36,19 @@ namespace GamePlay.World
 
         public const int ScenarioMapGenerate = StageScenarioBootstrap + 10;
 
+        public const int OrderPlayerInput = StageOrderDraft + 5;
         public const int OrderUnitSelection = StageOrderDraft + 10;
+        public const int OrderMoveCommandDraft = StageOrderDraft + 20;
+        public const int OrderMoveCommandValidate = StageOrderCommit + 10;
+        public const int OrderMoveCommandCommit = StageOrderCommit + 20;
         public const int ResolveCombatEngage = StageResolve - 10;
         public const int ResolveUnitMovement = StageResolve;
         public const int ResolveUnitOccupy = StageResolve + 10;
         public const int ResolveCombatResolve = StageResolve + 30;
         public const int ResolveCombatRecovery = StageResolve + 40;
 
+        public const int PresentationSelection = StagePresentationSync + 5;
+        public const int PresentationPath = StagePresentationSync + 6;
         public const int PresentationCameraZoom = StagePresentationSync + 10;
         public const int PresentationCameraMove = StagePresentationSync + 20;
         public const int PresentationCameraBounds = StagePresentationSync + 30;

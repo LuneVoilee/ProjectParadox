@@ -1,13 +1,11 @@
 #region
 
-using System.Collections.Generic;
 using Common.Event;
 using Core.Capability;
 using GamePlay.Map;
 using GamePlay.Util;
 using GamePlay.World;
 using UnityEngine;
-using UnityEngine.Tilemaps;
 using Grid = GamePlay.Map.Grid;
 
 #endregion
@@ -22,13 +20,7 @@ namespace GamePlay.Strategy
         private static readonly int m_MotorId = Component<UnitMotor>.TId;
         private static readonly int m_TargetId = Component<UnitMoveTarget>.TId;
 
-        private readonly List<Vector3> m_WorldPathBuffer = new List<Vector3>(64);
-
         // HOI4 式步进移动：时间累积到 timePerHex 后推进一格，表现层独立插值。
-        private float m_StepTimer;
-        private Vector3 m_VisualLerpStart;
-        private Vector3 m_VisualLerpTarget;
-        private float m_VisualLerpProgress = 1f;
         private const float VisualMoveDuration = 0.15f;
 
         public override int TickGroupOrder { get; protected set; } =
@@ -66,19 +58,19 @@ namespace GamePlay.Strategy
 
         public override void Dispose()
         {
-            if (Owner != null &&
-                Owner.TryGetUnitMoveTarget(out UnitMoveTarget target))
+            if (IsGlobal)
+            {
+                DestroyAllActivePathIndicators();
+                base.Dispose();
+                return;
+            }
+
+            if (Owner != null && Owner.TryGetUnitMoveTarget(out UnitMoveTarget target))
             {
                 DestroyPathIndicator(target);
             }
 
             base.Dispose();
-        }
-
-        protected override void OnActivated()
-        {
-            m_StepTimer = 0f;
-            m_VisualLerpProgress = 1f;
         }
 
         public override void TickActive(float deltaTime, float realElapsedSeconds)
@@ -95,50 +87,48 @@ namespace GamePlay.Strategy
                     out UnitOccupancyIndex occupancyIndex,
                     out NationIndex nationIndex, out DiplomacyIndex diplomacyIndex)) return;
 
-            Tilemap tilemap = drawMap.Tilemap;
-            EnsurePathIndicator(target, grid, tilemap, motor.Transform.position);
-
             // 逻辑阶段：时间累积到 timePerHex 则推进到路径下一格。
-            m_StepTimer += deltaTime;
+            target.StepTimer += deltaTime;
             float timePerHex = 1f / Mathf.Max(0.01f, unit.MoveSpeed);
 
-            while (m_StepTimer >= timePerHex && target.NextPathIndex < target.Path.Length)
+            while (target.StepTimer >= timePerHex && target.NextPathIndex < target.Path.Length)
             {
                 // 检查即将进入的格子是否有敌方单位 → 触发战斗，停止移动。
                 if (TryEngageCombatIfHostile(target.Path[target.NextPathIndex], grid,
                         occupancyIndex, nationIndex, diplomacyIndex, target))
                 {
-                    m_StepTimer = 0f;
+                    target.StepTimer = 0f;
                     break;
                 }
 
                 Vector3 oldWorldPos = HexMapUtility.GetNearestMirroredWorldPosition(
-                    tilemap, grid, position.Hex, motor.Transform.position);
+                    drawMap.Tilemap, grid, position.Hex, motor.Transform.position);
 
                 EnterPathHex(target, position, occupancyIndex, grid, target.NextPathIndex);
                 target.NextPathIndex++;
-                m_StepTimer -= timePerHex;
+                target.StepTimer -= timePerHex;
 
                 Vector3 newWorldPos = HexMapUtility.GetNearestMirroredWorldPosition(
-                    tilemap, grid, position.Hex, oldWorldPos);
+                    drawMap.Tilemap, grid, position.Hex, oldWorldPos);
 
-                m_VisualLerpStart = oldWorldPos;
-                m_VisualLerpTarget = newWorldPos;
-                m_VisualLerpProgress = 0f;
+                target.VisualLerpStart = oldWorldPos;
+                target.VisualLerpTarget = newWorldPos;
+                target.VisualLerpProgress = 0f;
             }
 
             // 表现阶段：推进视觉插值（在逻辑阶段之后，确保最后一格的插值也能拿到 deltaTime）。
-            if (m_VisualLerpProgress < 1f)
+            if (target.VisualLerpProgress < 1f)
             {
-                m_VisualLerpProgress += deltaTime / VisualMoveDuration;
-                if (m_VisualLerpProgress >= 1f)
+                target.VisualLerpProgress += deltaTime / VisualMoveDuration;
+                if (target.VisualLerpProgress >= 1f)
                 {
-                    motor.Transform.position = m_VisualLerpTarget;
+                    motor.Transform.position = target.VisualLerpTarget;
                 }
                 else
                 {
                     motor.Transform.position =
-                        Vector3.Lerp(m_VisualLerpStart, m_VisualLerpTarget, m_VisualLerpProgress);
+                        Vector3.Lerp(target.VisualLerpStart, target.VisualLerpTarget,
+                            target.VisualLerpProgress);
                 }
             }
 
@@ -146,15 +136,13 @@ namespace GamePlay.Strategy
             if (logicDone)
             {
                 DestroyPathIndicator(target);
-                if (m_VisualLerpProgress >= 1f)
+                if (target.VisualLerpProgress >= 1f)
                 {
                     Owner.RemoveComponent(m_TargetId);
                 }
 
                 return;
             }
-
-            UpdatePathIndicator(target, grid, tilemap, motor.Transform.position);
         }
 
         // 进入路径上的下一格：更新占位索引、写入 Position、提交占领请求 Hex。
@@ -180,49 +168,6 @@ namespace GamePlay.Strategy
             }
         }
 
-        private void FinishMove(UnitMoveTarget target)
-        {
-            DestroyPathIndicator(target);
-            Owner.RemoveComponent(m_TargetId);
-        }
-
-        private void EnsurePathIndicator
-        (
-            UnitMoveTarget target, Grid grid, Tilemap tilemap,
-            Vector3 unitWorldPosition
-        )
-        {
-            if (target.PathIndicatorId >= 0)
-            {
-                UpdatePathIndicator(target, grid, tilemap, unitWorldPosition);
-                return;
-            }
-
-            BuildRemainingWorldPath(target, grid, tilemap, unitWorldPosition);
-            if (m_WorldPathBuffer.Count < 2)
-            {
-                return;
-            }
-
-            target.PathIndicatorId =
-                EventBus.GP_OnCreatePathIndicator?.Invoke(m_WorldPathBuffer) ?? -1;
-        }
-
-        private void UpdatePathIndicator
-        (
-            UnitMoveTarget target, Grid grid, Tilemap tilemap,
-            Vector3 unitWorldPosition
-        )
-        {
-            if (target.PathIndicatorId < 0)
-            {
-                return;
-            }
-
-            BuildRemainingWorldPath(target, grid, tilemap, unitWorldPosition);
-            EventBus.GP_OnUpdatePathIndicator?.Invoke(target.PathIndicatorId, m_WorldPathBuffer);
-        }
-
         private void DestroyPathIndicator(UnitMoveTarget target)
         {
             if (target == null || target.PathIndicatorId < 0)
@@ -234,22 +179,27 @@ namespace GamePlay.Strategy
             target.PathIndicatorId = -1;
         }
 
-        private void BuildRemainingWorldPath
-        (
-            UnitMoveTarget target, Grid grid, Tilemap tilemap,
-            Vector3 unitWorldPosition
-        )
+        private void DestroyAllActivePathIndicators()
         {
-            m_WorldPathBuffer.Clear();
-            m_WorldPathBuffer.Add(unitWorldPosition);
-
-            Vector3 previous = unitWorldPosition;
-            for (int i = Mathf.Max(1, target.NextPathIndex); i < target.Path.Length; i++)
+            if (World == null)
             {
-                Vector3 next = HexMapUtility.GetNearestMirroredWorldPosition(
-                    tilemap, grid, target.Path[i], previous);
-                m_WorldPathBuffer.Add(next);
-                previous = next;
+                return;
+            }
+
+            foreach (int entityId in GlobalActiveEntityIds)
+            {
+                CEntity entity = World.GetChild(entityId);
+                if (entity == null)
+                {
+                    continue;
+                }
+
+                if (!entity.TryGetUnitMoveTarget(out UnitMoveTarget target))
+                {
+                    continue;
+                }
+
+                DestroyPathIndicator(target);
             }
         }
 

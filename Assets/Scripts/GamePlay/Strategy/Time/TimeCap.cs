@@ -1,4 +1,4 @@
-﻿#region
+#region
 
 using System;
 using Common.Contracts;
@@ -11,54 +11,33 @@ using GamePlay.World;
 
 namespace GamePlay.Strategy
 {
+    // 世界级时间能力：读取地图实体上的 Time 组件并推进游戏日期。
     public class TimeCap : CapabilityBase
     {
-        private static readonly int m_TimeId = Component<Time>.TId;
         private Func<DateTime?> m_ReadCurrentTime;
+        private bool m_TimeInitialized;
 
-        protected override void OnInit()
+        protected override void OnCreated()
         {
-            Filter(m_TimeId);
-        }
-
-        public override bool ShouldActivate()
-        {
-            return Owner.HasComponent(m_TimeId);
-        }
-
-        public override bool ShouldDeactivate()
-        {
-            return !ShouldActivate();
-        }
-
-        protected override void OnActivated()
-        {
-            if (!Owner.TryGetTime(out var time))
-            {
-                return;
-            }
-
             EventBus.UI_OnSpeedChange += ChangeTimeSpeed;
             m_ReadCurrentTime ??= ReadCurrentTime;
             EventBus.UI_GetCurrentTime = m_ReadCurrentTime;
-            ChangeTimeSpeed(time.NewTimeType);
-
-            //Day1
-            EventBus.GP_OnTimeChange?.Invoke(time.CurrentDate);
         }
 
-        protected override void OnDeactivated()
+        public override void Dispose()
         {
             EventBus.UI_OnSpeedChange -= ChangeTimeSpeed;
             if (EventBus.UI_GetCurrentTime == m_ReadCurrentTime)
             {
                 EventBus.UI_GetCurrentTime = null;
             }
+
+            base.Dispose();
         }
 
         private DateTime? ReadCurrentTime()
         {
-            return Owner.TryGetTime(out var time) ? time.CurrentDate : null;
+            return TryGetTime(out Time time) ? time.CurrentDate : null;
         }
 
         private void ChangeTimeSpeed(TimeType timeType)
@@ -68,7 +47,7 @@ namespace GamePlay.Strategy
                 return;
             }
 
-            if (Owner.TryGetTime(out var time))
+            if (TryGetTime(out Time time))
             {
                 time.NewTimeType = timeType;
             }
@@ -77,38 +56,53 @@ namespace GamePlay.Strategy
             EventBus.GP_OnSpeedChange?.Invoke(timeType);
         }
 
-        public override void TickActive(float deltaTime, float realElapsedSeconds)
+        public override void Tick
+            (CapabilityContext context, float deltaTime, float realElapsedSeconds)
         {
-            if (!Owner.TryGetTime(out var time))
+            if (!TryGetTime(out Time time))
             {
                 return;
             }
 
-            // 定义基础时间流速比：现实 1 秒 = 游戏内 0.5 小时 (1小时 = 3600秒)
-            double gameSecondsPerRealSecond = 3600.0;
+            if (!m_TimeInitialized)
+            {
+                m_TimeInitialized = true;
+                ChangeTimeSpeed(time.NewTimeType);
+                EventBus.GP_OnTimeChange?.Invoke(time.CurrentDate);
+            }
 
+            double gameSecondsPerRealSecond = 3600.0;
             time.SubSecondAccumulator += deltaTime * gameSecondsPerRealSecond;
 
-            var oldDay = time.CurrentDate.Day;
-
-            // 当累积时间大于 1 秒时才写入 DateTime，避免极小值被 DateTime 内部结构截断
+            int oldDay = time.CurrentDate.Day;
             if (time.SubSecondAccumulator >= 1.0)
             {
-                // 向下取整获取完整的秒数
                 int secondsToAdvance = (int)time.SubSecondAccumulator;
-
                 time.CurrentDate = time.CurrentDate.AddSeconds(secondsToAdvance);
-
-                // 扣除已使用的完整秒数，保留小数部分
                 time.SubSecondAccumulator -= secondsToAdvance;
             }
 
-
-            //NOTICE: 跨天逻辑触发
             if (time.CurrentDate.Day != oldDay)
             {
+                time.DayVersion++;
                 EventBus.GP_OnTimeChange?.Invoke(time.CurrentDate);
             }
+        }
+
+        private bool TryGetTime(out Time time)
+        {
+            time = null;
+            if (World is not GameWorld gameWorld)
+            {
+                return false;
+            }
+
+            if (!gameWorld.TryGetPrimaryMapEntity(out CEntity mapEntity))
+            {
+                return false;
+            }
+
+            return mapEntity.TryGetTime(out time);
         }
     }
 }

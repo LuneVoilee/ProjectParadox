@@ -35,6 +35,7 @@ namespace Core.Capability.Editor
         private bool m_IsToolPlaying = true;
         private bool m_ComponentsFoldout = true;
         private bool m_CapabilitiesFoldout = true;
+        private bool m_GlobalCapabilitiesFoldout = true;
         private bool m_WasEditorPausedByDebugger;
         private string m_FrameInput = "0";
         private int m_LastAppliedFrameIndex = -1;
@@ -273,6 +274,7 @@ namespace Core.Capability.Editor
             {
                 CapabilityDebugWorldSnapshot world = frame.Worlds[i];
                 EditorGUILayout.LabelField(world.DisplayName, EditorStyles.boldLabel);
+                DrawGlobalCapabilityNavigation(world);
                 for (int j = 0; j < world.Entities.Count; j++)
                 {
                     CapabilityDebugEntitySnapshot entity = world.Entities[j];
@@ -290,12 +292,53 @@ namespace Core.Capability.Editor
             EditorGUILayout.EndScrollView();
         }
 
+        private void DrawGlobalCapabilityNavigation(CapabilityDebugWorldSnapshot world)
+        {
+            m_GlobalCapabilitiesFoldout = EditorGUILayout.Foldout(m_GlobalCapabilitiesFoldout,
+                $"Global Cap ({world.GlobalCapabilities.Count})", true);
+            if (!m_GlobalCapabilitiesFoldout)
+            {
+                return;
+            }
+
+            string previousStage = null;
+            for (int i = 0; i < world.GlobalCapabilities.Count; i++)
+            {
+                CapabilityDebugCapabilitySnapshot capability = world.GlobalCapabilities[i];
+                if (previousStage != capability.StageName)
+                {
+                    previousStage = capability.StageName;
+                    EditorGUILayout.LabelField(previousStage, EditorStyles.miniBoldLabel);
+                }
+
+                bool selected = m_SelectedItemKind == CapabilityDebugItemKind.GlobalCapability &&
+                                m_SelectedItemKey == capability.Key;
+                string label =
+                    $"{capability.TypeName} ({capability.MatchedEntityCount}, {capability.LastTickMilliseconds:F2} ms)";
+                if (DrawSelectableRow(label, selected,
+                        CapabilityDebugStyles.ToStateColor(capability.State)))
+                {
+                    m_SelectedWorldKey = world.Key;
+                    m_SelectedEntityKey = null;
+                    SelectItem(capability.Key, CapabilityDebugItemKind.GlobalCapability);
+                }
+            }
+
+            EditorGUILayout.Space(4f);
+        }
+
         private void DrawEntityDetailPanel()
         {
             EditorGUILayout.LabelField("Entity 详情", EditorStyles.boldLabel);
             CapabilityDebugEntitySnapshot entity = GetSelectedEntity();
             if (entity == null)
             {
+                if (m_SelectedItemKind == CapabilityDebugItemKind.GlobalCapability)
+                {
+                    DrawSelectedGlobalCapabilityDetail();
+                    return;
+                }
+
                 EditorGUILayout.Space(8f);
                 EditorGUILayout.HelpBox("请选择一个 Entity。", MessageType.Info);
                 return;
@@ -371,6 +414,15 @@ namespace Core.Capability.Editor
             CapabilityDebugEntitySnapshot entity = GetSelectedEntity();
             if (entity == null)
             {
+                if (m_SelectedItemKind == CapabilityDebugItemKind.GlobalCapability)
+                {
+                    m_InspectorScroll = EditorGUILayout.BeginScrollView(m_InspectorScroll,
+                        true, true);
+                    DrawCapabilityInspector(GetSelectedGlobalCapability());
+                    EditorGUILayout.EndScrollView();
+                    return;
+                }
+
                 EditorGUILayout.Space(8f);
                 EditorGUILayout.HelpBox("请选择一个 Entity。", MessageType.Info);
                 return;
@@ -385,6 +437,10 @@ namespace Core.Capability.Editor
             else if (m_SelectedItemKind == CapabilityDebugItemKind.Capability)
             {
                 DrawCapabilityInspector(entity.FindCapability(m_SelectedItemKey));
+            }
+            else if (m_SelectedItemKind == CapabilityDebugItemKind.GlobalCapability)
+            {
+                DrawCapabilityInspector(GetSelectedGlobalCapability());
             }
             else
             {
@@ -443,6 +499,10 @@ namespace Core.Capability.Editor
             DrawInspectorMetaRow("Stage", string.Empty,
                 $"{capability.StageName} ({capability.TickGroupOrder})", layout);
             DrawInspectorMetaRow("State", string.Empty, capability.State.ToString(), layout);
+            DrawInspectorMetaRow("LastTickMs", string.Empty,
+                capability.LastTickMilliseconds.ToString("F3"), layout);
+            DrawInspectorMetaRow("MatchedEntities", string.Empty,
+                FormatMatchedEntities(capability), layout);
             EditorGUILayout.Space(6f);
 
             EditorGUILayout.LabelField("标记字段", EditorStyles.boldLabel);
@@ -465,6 +525,10 @@ namespace Core.Capability.Editor
             EditorGUILayout.LabelField("Log", EditorStyles.boldLabel);
             m_Session.CollectLogs(m_SelectedEntityKey, capability.Key,
                 m_Session.CurrentFrameIndex, m_LogBuffer);
+            if (m_SelectedItemKind == CapabilityDebugItemKind.GlobalCapability)
+            {
+                CollectGlobalCapabilityLogs(capability, m_LogBuffer);
+            }
             EditorGUILayout.BeginVertical(EditorStyles.helpBox, GUILayout.Height(140f));
             m_LogScroll = EditorGUILayout.BeginScrollView(m_LogScroll);
             if (m_LogBuffer.Count == 0)
@@ -831,6 +895,23 @@ namespace Core.Capability.Editor
             for (int worldIndex = 0; worldIndex < frame.Worlds.Count; worldIndex++)
             {
                 CapabilityDebugWorldSnapshot world = frame.Worlds[worldIndex];
+                for (int capIndex = 0; capIndex < world.GlobalCapabilities.Count; capIndex++)
+                {
+                    CapabilityDebugCapabilitySnapshot capability =
+                        world.GlobalCapabilities[capIndex];
+                    string key = $"{world.Key}:global:{capability.Key}";
+                    if (!m_TimelineTracks.TryGetValue(key, out CapabilityTimelineTrack track))
+                    {
+                        track = new CapabilityTimelineTrack(
+                            $"{world.DisplayName}/{capability.TypeName}");
+                        BackfillTrack(track, m_Session.Frames.Count - 1);
+                        m_TimelineTracks.Add(key, track);
+                    }
+
+                    track.Push(capability.State);
+                    touched.Add(key);
+                }
+
                 for (int entityIndex = 0; entityIndex < world.Entities.Count; entityIndex++)
                 {
                     CapabilityDebugEntitySnapshot entity = world.Entities[entityIndex];
@@ -888,8 +969,18 @@ namespace Core.Capability.Editor
                 selectedEntity = world.Entities.Count > 0 ? world.Entities[0] : null;
                 m_SelectedWorldKey = world.Key;
                 m_SelectedEntityKey = selectedEntity?.Key;
-                m_SelectedItemKey = null;
-                m_SelectedItemKind = CapabilityDebugItemKind.None;
+                if (selectedEntity == null && world.GlobalCapabilities.Count > 0)
+                {
+                    SelectItem(world.GlobalCapabilities[0].Key,
+                        CapabilityDebugItemKind.GlobalCapability);
+                    return;
+                }
+
+                if (m_SelectedItemKind != CapabilityDebugItemKind.GlobalCapability)
+                {
+                    m_SelectedItemKey = null;
+                    m_SelectedItemKind = CapabilityDebugItemKind.None;
+                }
             }
 
             if (selectedEntity == null)
@@ -905,6 +996,11 @@ namespace Core.Capability.Editor
 
         private bool HasSelectedItem(CapabilityDebugEntitySnapshot entity)
         {
+            if (m_SelectedItemKind == CapabilityDebugItemKind.GlobalCapability)
+            {
+                return GetSelectedGlobalCapability() != null;
+            }
+
             if (m_SelectedItemKind == CapabilityDebugItemKind.Component)
             {
                 return entity.FindComponent(m_SelectedItemKey) != null;
@@ -961,6 +1057,73 @@ namespace Core.Capability.Editor
         {
             CapabilityDebugFrame frame = m_Session.CurrentFrame;
             return frame?.FindEntity(m_SelectedEntityKey);
+        }
+
+        private CapabilityDebugCapabilitySnapshot GetSelectedGlobalCapability()
+        {
+            CapabilityDebugFrame frame = m_Session.CurrentFrame;
+            CapabilityDebugWorldSnapshot world = frame?.FindWorld(m_SelectedWorldKey);
+            return world?.FindGlobalCapability(m_SelectedItemKey);
+        }
+
+        private void DrawSelectedGlobalCapabilityDetail()
+        {
+            CapabilityDebugCapabilitySnapshot capability = GetSelectedGlobalCapability();
+            if (capability == null)
+            {
+                EditorGUILayout.Space(8f);
+                EditorGUILayout.HelpBox("请选择一个 Entity。", MessageType.Info);
+                return;
+            }
+
+            EditorGUILayout.Space(4f);
+            EditorGUILayout.LabelField("Global Capability", EditorStyles.miniBoldLabel);
+            EditorGUILayout.LabelField(capability.TypeName, EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Stage",
+                $"{capability.StageName} ({capability.TickGroupOrder})");
+            EditorGUILayout.LabelField("Matched Entities",
+                FormatMatchedEntities(capability));
+            EditorGUILayout.LabelField("Last Tick",
+                $"{capability.LastTickMilliseconds:F3} ms");
+        }
+
+        private static string FormatMatchedEntities(CapabilityDebugCapabilitySnapshot capability)
+        {
+            if (capability == null || capability.MatchedEntityIds.Count == 0)
+            {
+                return "0";
+            }
+
+            return string.Join(", ", capability.MatchedEntityIds);
+        }
+
+        private void CollectGlobalCapabilityLogs
+        (
+            CapabilityDebugCapabilitySnapshot capability,
+            List<CapabilityDebugLogSnapshot> destination
+        )
+        {
+            destination.Clear();
+            if (capability == null || string.IsNullOrEmpty(m_SelectedWorldKey))
+            {
+                return;
+            }
+
+            int endIndex = Mathf.Clamp(m_Session.CurrentFrameIndex, 0,
+                m_Session.Frames.Count - 1);
+            for (int i = 0; i <= endIndex; i++)
+            {
+                CapabilityDebugWorldSnapshot world =
+                    m_Session.Frames[i].FindWorld(m_SelectedWorldKey);
+                CapabilityDebugCapabilitySnapshot current =
+                    world?.FindGlobalCapability(capability.Key);
+                if (current == null)
+                {
+                    continue;
+                }
+
+                destination.AddRange(current.Logs);
+            }
         }
 
         private void JumpToFrame(int frameIndex)

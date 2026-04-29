@@ -17,9 +17,6 @@ namespace GamePlay.Strategy
         private static readonly int m_UnitId = Component<Unit>.TId;
         private static readonly int m_PositionId = Component<UnitPosition>.TId;
 
-        private HexCoordinates m_LastHex;
-        private bool m_LastHexValid;
-
         public override int TickGroupOrder { get; protected set; } =
             CapabilityOrder.ResolveUnitOccupy;
 
@@ -49,11 +46,6 @@ namespace GamePlay.Strategy
             if (!mapEntity.TryGetGrid(out var grid)) return;
             if (!mapEntity.TryGetTerritoryOwnershipBuffer(out var ownershipBuffer)) return;
             if (!mapEntity.TryGetNationIndex(out var nationIndex)) return;
-
-            // 首帧必定写入起始 hex；后续仅在 hex 变化时写入。
-            if (m_LastHexValid && position.Hex.Equals(m_LastHex)) return;
-            m_LastHex = position.Hex;
-            m_LastHexValid = true;
 
             int width = grid.Width;
             int height = grid.Height;

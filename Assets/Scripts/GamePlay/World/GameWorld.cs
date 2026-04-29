@@ -20,6 +20,7 @@ namespace GamePlay.World
                 : 1;
             InitCapabilities(maxCapabilityCount: capabilityCount, maxTag: 64,
                 estimatedEntityCount: 512);
+            AllCapability.Register(this);
         }
 
         // 统一维护“主地图实体”入口，避免各能力自行扫描 World.Children。

@@ -10,7 +10,8 @@ namespace Core.Capability.Editor
     {
         None = 0,
         Component = 1,
-        Capability = 2
+        Capability = 2,
+        GlobalCapability = 3
     }
 
     /// <summary>
@@ -152,6 +153,8 @@ namespace Core.Capability.Editor
         public string DisplayName;
         public readonly List<CapabilityDebugEntitySnapshot> Entities =
             new List<CapabilityDebugEntitySnapshot>(128);
+        public readonly List<CapabilityDebugCapabilitySnapshot> GlobalCapabilities =
+            new List<CapabilityDebugCapabilitySnapshot>(64);
 
         public CapabilityDebugEntitySnapshot FindEntity(string entityKey)
         {
@@ -161,6 +164,20 @@ namespace Core.Capability.Editor
                 if (entity.Key == entityKey)
                 {
                     return entity;
+                }
+            }
+
+            return null;
+        }
+
+        public CapabilityDebugCapabilitySnapshot FindGlobalCapability(string itemKey)
+        {
+            for (int i = 0; i < GlobalCapabilities.Count; i++)
+            {
+                CapabilityDebugCapabilitySnapshot capability = GlobalCapabilities[i];
+                if (capability.Key == itemKey)
+                {
+                    return capability;
                 }
             }
 
@@ -240,6 +257,9 @@ namespace Core.Capability.Editor
         public int TickGroupOrder;
         public string StageName;
         public CapabilityRuntimeState State;
+        public double LastTickMilliseconds;
+        public int MatchedEntityCount;
+        public readonly List<int> MatchedEntityIds = new List<int>(32);
         public readonly List<CapabilityDebugValueSnapshot> Fields =
             new List<CapabilityDebugValueSnapshot>(16);
         public readonly List<CapabilityDebugLogSnapshot> Logs =

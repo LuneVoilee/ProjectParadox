@@ -48,15 +48,6 @@ namespace GamePlay.Map
                 return null;
             }
 
-            // 绑定运行时流程：生成地图 -> 注册国家 -> 应用领土变更 -> 表现绘制。
-            world.BindCapability<GenerateMapDataCap>(entity);
-            world.BindCapability<SelectAndSetDestinationCap>(entity);
-            world.BindCapability<ApplyTerritoryChangesCap>(entity);
-            world.BindCapability<DrawMapCap>(entity);
-            world.BindCapability<NationRegistryCap>(entity);
-            world.BindCapability<TimeCap>(entity);
-            world.BindCapability<DiplomacyRegistryCap>(entity);
-
             // 地图生成输入组件，GenerateMapDataCap 激活后会消费并移除这些一次性配置。
             var biomeComp = entity.AddComponent<Biome>();
             biomeComp.SeaLevel = config.SeaLevel;
@@ -84,6 +75,7 @@ namespace GamePlay.Map
             entity.AddComponent<TerritoryOwnershipBuffer>();
             entity.AddComponent<TerritoryPaintState>();
             entity.AddComponent<UnitOccupancyIndex>();
+            entity.AddComponent<SelectionState>();
             entity.AddComponent<NationBootstrap>();
             entity.AddComponent<DiplomacyIndex>();
             entity.AddComponent<DiplomacyBootstrap>();
