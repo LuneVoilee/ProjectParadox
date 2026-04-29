@@ -1,5 +1,6 @@
 #region
 
+using System;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
@@ -14,6 +15,8 @@ namespace Core.Capability.Editor
 
         private readonly CapabilityDebugSession m_Session = new CapabilityDebugSession();
         private readonly CapabilityDebugSampler m_Sampler = new CapabilityDebugSampler();
+        private readonly CapabilityDebugTraceCapture m_TraceCapture =
+            new CapabilityDebugTraceCapture();
         private readonly List<CapabilityDebugLogSnapshot> m_LogBuffer =
             new List<CapabilityDebugLogSnapshot>(64);
         private readonly Dictionary<string, CapabilityTimelineTrack> m_TimelineTracks =
@@ -43,6 +46,20 @@ namespace Core.Capability.Editor
         private float m_InspectorPanelWidth = CapabilityDebugStyles.InspectorMinWidth;
 
         private readonly HashSet<string> m_ExpandedFoldouts = new HashSet<string>();
+        private readonly HashSet<int> m_EvidenceEntityIds = new HashSet<int>();
+        private readonly HashSet<string> m_EvidenceCategories = new HashSet<string>();
+
+        private bool m_EvidenceFoldout = true;
+        private bool m_EvidenceRecording;
+        private bool m_EvidenceFollowTouchedEntities = true;
+        private bool m_EvidenceIncludeTransforms = true;
+        private string m_EvidenceDescription = string.Empty;
+        private string m_EvidenceReproSteps = string.Empty;
+        private string m_EvidenceExpected = string.Empty;
+        private string m_EvidenceSearch = string.Empty;
+        private string m_EvidenceLastExport = string.Empty;
+        private int m_EvidenceStartFrame = -1;
+        private int m_EvidenceMarkedFrame = -1;
 
         [MenuItem(MenuPath)]
         private static void OpenWindow()
@@ -55,12 +72,14 @@ namespace Core.Capability.Editor
 
         private void OnEnable()
         {
+            m_Sampler.SetTraceCapture(m_TraceCapture);
             EditorApplication.update += OnEditorUpdate;
         }
 
         private void OnDisable()
         {
             EditorApplication.update -= OnEditorUpdate;
+            m_TraceCapture.Unregister();
         }
 
         private void OnEditorUpdate()
@@ -135,7 +154,7 @@ namespace Core.Capability.Editor
 
         private void SampleFrame()
         {
-            int nextFrameIndex = m_Session.Frames.Count;
+            int nextFrameIndex = m_Session.FrameCount;
             CapabilityDebugFrame frame = m_Sampler.Sample(nextFrameIndex);
             m_Session.AddFrame(frame);
             m_LastSampledUnityFrameCount = frame.UnityFrameCount;
@@ -193,8 +212,113 @@ namespace Core.Capability.Editor
             }
 
             Rect separatorRect = new Rect(0f, y, position.width, 1f);
+            float evidenceHeight = DrawEvidencePanel(y + 4f);
+            y += evidenceHeight + 8f;
+
+            separatorRect = new Rect(0f, y, position.width, 1f);
             EditorGUI.DrawRect(separatorRect, CapabilityDebugStyles.SeparatorColor);
             return y + 3f;
+        }
+
+        private float DrawEvidencePanel(float y)
+        {
+            float height = m_EvidenceFoldout ? 218f : 26f;
+            Rect rect = new Rect(4f, y, Mathf.Max(1f, position.width - 8f), height);
+            GUILayout.BeginArea(rect, EditorStyles.helpBox);
+            EditorGUILayout.BeginHorizontal();
+            m_EvidenceFoldout = EditorGUILayout.Foldout(m_EvidenceFoldout, "AI Evidence",
+                true);
+            GUILayout.FlexibleSpace();
+            EditorGUILayout.LabelField(m_EvidenceRecording ? "Recording" : "Idle",
+                GUILayout.Width(78f));
+            GUI.enabled = EditorApplication.isPlaying && !m_EvidenceRecording;
+            if (GUILayout.Button("开始录制", GUILayout.Width(76f)))
+            {
+                StartEvidenceRecording();
+            }
+
+            GUI.enabled = m_EvidenceRecording;
+            if (GUILayout.Button("标记异常帧", GUILayout.Width(88f)))
+            {
+                MarkEvidenceFrame();
+            }
+
+            GUI.enabled = m_Session.HasFrames;
+            if (GUILayout.Button("结束并导出", GUILayout.Width(88f)))
+            {
+                StopAndExportEvidence();
+            }
+
+            GUI.enabled = true;
+            EditorGUILayout.EndHorizontal();
+
+            if (!m_EvidenceFoldout)
+            {
+                GUILayout.EndArea();
+                return height;
+            }
+
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField("现象", GUILayout.Width(36f));
+            m_EvidenceDescription = EditorGUILayout.TextField(m_EvidenceDescription);
+            EditorGUILayout.LabelField("期望", GUILayout.Width(36f));
+            m_EvidenceExpected = EditorGUILayout.TextField(m_EvidenceExpected);
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField("复现", GUILayout.Width(36f));
+            m_EvidenceReproSteps = EditorGUILayout.TextField(m_EvidenceReproSteps);
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.BeginHorizontal();
+            if (GUILayout.Button("加入当前选择", GUILayout.Width(104f)))
+            {
+                AddSelectedEvidenceTarget();
+            }
+
+            if (GUILayout.Button("加入场景选择", GUILayout.Width(104f)))
+            {
+                AddSceneSelectionEvidenceTargets();
+            }
+
+            m_EvidenceSearch = EditorGUILayout.TextField(m_EvidenceSearch);
+            if (GUILayout.Button("搜索加入", GUILayout.Width(76f)))
+            {
+                AddSearchEvidenceTargets();
+            }
+
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.BeginHorizontal();
+            m_EvidenceFollowTouchedEntities = EditorGUILayout.ToggleLeft(
+                "Follow touched entities", m_EvidenceFollowTouchedEntities,
+                GUILayout.Width(168f));
+            m_EvidenceIncludeTransforms = EditorGUILayout.ToggleLeft(
+                "Transform", m_EvidenceIncludeTransforms, GUILayout.Width(96f));
+            EditorGUILayout.LabelField($"Entity: {FormatEvidenceIds()}");
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField($"Category: {FormatEvidenceCategories()}");
+            if (GUILayout.Button("清空目标", GUILayout.Width(76f)))
+            {
+                m_EvidenceEntityIds.Clear();
+                m_EvidenceCategories.Clear();
+                ConfigureEvidenceTraceCapture();
+            }
+
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.LabelField(
+                $"Start:{m_EvidenceStartFrame}  Marked:{m_EvidenceMarkedFrame}  Export:{m_EvidenceLastExport}",
+                EditorStyles.miniLabel);
+            if (m_EvidenceRecording)
+            {
+                ConfigureEvidenceTraceCapture();
+            }
+
+            GUILayout.EndArea();
+            return height;
         }
 
         private string GetToolbarMessage(out MessageType messageType)
@@ -772,7 +896,7 @@ namespace Core.Capability.Editor
                 PauseToolAndUnity();
             }
 
-            int totalFrames = m_Session.Frames.Count;
+            int totalFrames = m_Session.FrameCount;
             int current = Mathf.Max(0, m_Session.CurrentFrameIndex);
             EditorGUILayout.LabelField($"共 {totalFrames} 帧", GUILayout.Width(84f));
 
@@ -919,7 +1043,7 @@ namespace Core.Capability.Editor
                     {
                         track = new CapabilityTimelineTrack(
                             $"{world.DisplayName}/{capability.TypeName}");
-                        BackfillTrack(track, m_Session.Frames.Count - 1);
+                        BackfillTrack(track, m_Session.FrameCount - 1);
                         m_TimelineTracks.Add(key, track);
                     }
 
@@ -930,7 +1054,7 @@ namespace Core.Capability.Editor
 
             foreach (KeyValuePair<string, CapabilityTimelineTrack> pair in m_TimelineTracks)
             {
-                if (!touched.Contains(pair.Key) && pair.Value.Count < m_Session.Frames.Count)
+                if (!touched.Contains(pair.Key) && pair.Value.Count < m_Session.FrameCount)
                 {
                     pair.Value.Push(CapabilityRuntimeState.None);
                 }
@@ -1143,6 +1267,224 @@ namespace Core.Capability.Editor
             return count;
         }
 
+        private void StartEvidenceRecording()
+        {
+            if (!EditorApplication.isPlaying)
+            {
+                return;
+            }
+
+            if (m_EvidenceEntityIds.Count == 0 && m_EvidenceCategories.Count == 0)
+            {
+                AddSelectedEvidenceTarget();
+            }
+
+            m_EvidenceRecording = true;
+            m_EvidenceStartFrame = Mathf.Max(0, m_Session.FrameCount);
+            m_EvidenceMarkedFrame = -1;
+            m_EvidenceLastExport = string.Empty;
+            m_TraceCapture.Clear();
+            ConfigureEvidenceTraceCapture();
+            m_TraceCapture.Register();
+        }
+
+        private void MarkEvidenceFrame()
+        {
+            if (!m_Session.HasFrames)
+            {
+                return;
+            }
+
+            m_EvidenceMarkedFrame = Mathf.Max(0, m_Session.CurrentFrameIndex);
+        }
+
+        private void StopAndExportEvidence()
+        {
+            if (!m_Session.HasFrames)
+            {
+                return;
+            }
+
+            int startFrame = m_EvidenceStartFrame >= 0 ? m_EvidenceStartFrame : 0;
+            var request = new CapabilityEvidenceExportRequest
+            {
+                Description = m_EvidenceDescription,
+                ReproSteps = m_EvidenceReproSteps,
+                Expected = m_EvidenceExpected,
+                StartFrame = startFrame,
+                EndFrame = m_Session.FrameCount - 1,
+                MarkedFrame = m_EvidenceMarkedFrame,
+                FollowTouchedEntities = m_EvidenceFollowTouchedEntities,
+                IncludeTransforms = m_EvidenceIncludeTransforms
+            };
+            request.EntityIds.AddRange(m_EvidenceEntityIds);
+            request.Categories.AddRange(m_EvidenceCategories);
+
+            m_EvidenceRecording = false;
+            ConfigureEvidenceTraceCapture();
+            FlushPendingEvidenceTraceToCurrentFrame();
+            m_TraceCapture.Unregister();
+
+            if (CapabilityEvidenceExporter.Export(m_Session, request, out string jsonlPath,
+                    out string markdownPath, out string error))
+            {
+                m_EvidenceLastExport = jsonlPath;
+                Debug.Log($"Capability evidence exported: {jsonlPath}\n{markdownPath}");
+            }
+            else
+            {
+                m_EvidenceLastExport = "Export failed";
+                Debug.LogError(error);
+            }
+        }
+
+        private void AddSelectedEvidenceTarget()
+        {
+            CapabilityDebugEntitySnapshot entity = GetSelectedEntity();
+            if (entity != null)
+            {
+                m_EvidenceEntityIds.Add(entity.EntityId);
+            }
+
+            CapabilityDebugCapabilitySnapshot capability = GetSelectedGlobalCapability();
+            if (capability != null && !string.IsNullOrEmpty(capability.DebugCategory))
+            {
+                m_EvidenceCategories.Add(capability.DebugCategory);
+            }
+
+            if (m_SelectedItemKind == CapabilityDebugItemKind.Category &&
+                !string.IsNullOrEmpty(m_SelectedCategory))
+            {
+                m_EvidenceCategories.Add(m_SelectedCategory);
+            }
+
+            ConfigureEvidenceTraceCapture();
+        }
+
+        private void FlushPendingEvidenceTraceToCurrentFrame()
+        {
+            CapabilityDebugFrame frame = m_Session.CurrentFrame;
+            if (frame == null)
+            {
+                m_TraceCapture.Clear();
+                return;
+            }
+
+            m_TraceCapture.Consume(frame.FrameIndex, frame.Traces);
+        }
+
+        private void AddSceneSelectionEvidenceTargets()
+        {
+            GameObject[] selection = Selection.gameObjects;
+            for (int i = 0; i < selection.Length; i++)
+            {
+                GameObject go = selection[i];
+                if (go == null)
+                {
+                    continue;
+                }
+
+                EntityInstaller installer = go.GetComponentInParent<EntityInstaller>();
+                if (installer?.Entity != null)
+                {
+                    m_EvidenceEntityIds.Add(installer.Entity.Id);
+                }
+            }
+
+            ConfigureEvidenceTraceCapture();
+        }
+
+        private void AddSearchEvidenceTargets()
+        {
+            string query = m_EvidenceSearch?.Trim();
+            if (string.IsNullOrEmpty(query))
+            {
+                return;
+            }
+
+            if (int.TryParse(query, out int entityId))
+            {
+                m_EvidenceEntityIds.Add(entityId);
+            }
+
+            CapabilityDebugFrame frame = m_Session.CurrentFrame;
+            if (frame == null)
+            {
+                ConfigureEvidenceTraceCapture();
+                return;
+            }
+
+            for (int worldIndex = 0; worldIndex < frame.Worlds.Count; worldIndex++)
+            {
+                CapabilityDebugWorldSnapshot world = frame.Worlds[worldIndex];
+                for (int entityIndex = 0; entityIndex < world.Entities.Count; entityIndex++)
+                {
+                    CapabilityDebugEntitySnapshot entity = world.Entities[entityIndex];
+                    if (Contains(entity.DisplayName, query))
+                    {
+                        m_EvidenceEntityIds.Add(entity.EntityId);
+                        continue;
+                    }
+
+                    for (int componentIndex = 0;
+                         componentIndex < entity.Components.Count;
+                         componentIndex++)
+                    {
+                        CapabilityDebugComponentSnapshot component =
+                            entity.Components[componentIndex];
+                        if (Contains(component.TypeName, query) ||
+                            Contains(component.TypeFullName, query))
+                        {
+                            m_EvidenceEntityIds.Add(entity.EntityId);
+                            break;
+                        }
+                    }
+                }
+
+                for (int capabilityIndex = 0;
+                     capabilityIndex < world.GlobalCapabilities.Count;
+                     capabilityIndex++)
+                {
+                    CapabilityDebugCapabilitySnapshot capability =
+                        world.GlobalCapabilities[capabilityIndex];
+                    if (Contains(capability.DebugCategory, query) ||
+                        Contains(capability.TypeName, query) ||
+                        Contains(capability.TypeFullName, query))
+                    {
+                        m_EvidenceCategories.Add(capability.DebugCategory);
+                    }
+                }
+            }
+
+            ConfigureEvidenceTraceCapture();
+        }
+
+        private void ConfigureEvidenceTraceCapture()
+        {
+            m_TraceCapture.Configure(m_EvidenceRecording, m_EvidenceEntityIds,
+                m_EvidenceFollowTouchedEntities);
+        }
+
+        private string FormatEvidenceIds()
+        {
+            return m_EvidenceEntityIds.Count == 0
+                ? "(all)"
+                : string.Join(", ", m_EvidenceEntityIds);
+        }
+
+        private string FormatEvidenceCategories()
+        {
+            return m_EvidenceCategories.Count == 0
+                ? "(auto)"
+                : string.Join(", ", m_EvidenceCategories);
+        }
+
+        private static bool Contains(string value, string query)
+        {
+            return value != null &&
+                   value.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
         private void CollectGlobalCapabilityLogs
         (
             CapabilityDebugCapabilitySnapshot capability,
@@ -1156,11 +1498,11 @@ namespace Core.Capability.Editor
             }
 
             int endIndex = Mathf.Clamp(m_Session.CurrentFrameIndex, 0,
-                m_Session.Frames.Count - 1);
+                m_Session.FrameCount - 1);
             for (int i = 0; i <= endIndex; i++)
             {
                 CapabilityDebugWorldSnapshot world =
-                    m_Session.Frames[i].FindWorld(m_SelectedWorldKey);
+                    m_Session.GetFrame(i)?.FindWorld(m_SelectedWorldKey);
                 CapabilityDebugCapabilitySnapshot current =
                     world?.FindGlobalCapability(capability.Key);
                 if (current == null)
@@ -1219,7 +1561,7 @@ namespace Core.Capability.Editor
 
             if (!m_Session.IsAtLatestFrame)
             {
-                m_Session.SetCurrentFrameIndex(m_Session.Frames.Count - 1);
+                m_Session.SetCurrentFrameIndex(m_Session.FrameCount - 1);
                 SyncFrameInput();
                 ApplyCurrentFrameToScene();
                 if (m_Session.CurrentFrame != null)
@@ -1256,7 +1598,7 @@ namespace Core.Capability.Editor
             // 如果正在查看历史帧，先把场景恢复到最新帧状态再清除数据。
             if (m_Session.HasFrames && !m_Session.IsAtLatestFrame)
             {
-                m_Session.SetCurrentFrameIndex(m_Session.Frames.Count - 1);
+                m_Session.SetCurrentFrameIndex(m_Session.FrameCount - 1);
                 SyncFrameInput();
                 ApplyCurrentFrameToScene();
             }
@@ -1264,6 +1606,10 @@ namespace Core.Capability.Editor
             bool wasPaused = !m_IsToolPlaying;
 
             m_Session.Clear();
+            m_EvidenceRecording = false;
+            ConfigureEvidenceTraceCapture();
+            m_TraceCapture.Unregister();
+            m_TraceCapture.Clear();
             m_TimelineTracks.Clear();
             m_SelectedWorldKey = null;
             m_SelectedEntityKey = null;

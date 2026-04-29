@@ -65,6 +65,7 @@ namespace Core.Capability
                 m_Stopwatch.Restart();
                 try
                 {
+                    CapabilityTraceStream.CapabilityBeforeTick(m_World, capability);
                     capability.Tick(m_Context, deltaTime, realElapsedSeconds);
                 }
                 catch (Exception exception)
@@ -76,6 +77,7 @@ namespace Core.Capability
                 {
                     m_Stopwatch.Stop();
                     capability.LastTickMilliseconds = m_Stopwatch.Elapsed.TotalMilliseconds;
+                    CapabilityTraceStream.CapabilityAfterTick(m_World, capability);
                     m_CommandBuffer.Flush();
                 }
             }

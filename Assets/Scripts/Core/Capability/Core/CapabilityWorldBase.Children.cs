@@ -50,6 +50,7 @@ namespace Core.Capability
             entity.SetWorld(this);
             Children.Set(entityId, entity);
             entity.OnDirty(this, entityId);
+            CEntity.InvokeEntityCreated(entity);
             return entity;
         }
 
@@ -66,7 +67,9 @@ namespace Core.Capability
                 return;
             }
 
+            CEntity.InvokeEntityRemoving(removed);
             removed.Dispose();
+            CEntity.InvokeEntityRemoved(removed);
             m_RecycledEntityIds.Push(entity.Id);
         }
 

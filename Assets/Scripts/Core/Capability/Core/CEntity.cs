@@ -11,10 +11,25 @@ namespace Core.Capability
 {
     public class CEntity : IEntity
     {
+        public static event Action<CEntity> EntityCreated;
+
+        public static event Action<CEntity> EntityRemoving;
+
+        public static event Action<CEntity> EntityRemoved;
+
+        /// <summary>
+        ///     组件新增前通知。用于调试证据层记录结构变化。
+        /// </summary>
+        public static event Action<CEntity, CComponent> ComponentAdding;
+
         /// <summary>
         ///     组件新增通知。外部系统可订阅此事件做组件生命周期扩展。
         /// </summary>
         public static event Action<CEntity, CComponent> ComponentAdded;
+
+        public static event Action<CEntity, CComponent> ComponentRemoving;
+
+        public static event Action<CEntity, CComponent> ComponentRemoved;
 
         /// <summary>
         ///     实体释放通知。订阅方可清理缓存，避免残留引用。
@@ -66,6 +81,7 @@ namespace Core.Capability
             TComponent component = new TComponent();
             Components.Set(componentId, component);
             component.Owner = this;
+            InvokeComponentAdding(component);
             InvokeComponentAdded(component);
             World.NotifyComponentChanged(componentId, this);
             return component;
@@ -93,6 +109,7 @@ namespace Core.Capability
             var component = (CComponent)Activator.CreateInstance(componentType);
             Components.Set(componentId, component);
             component.Owner = this;
+            InvokeComponentAdding(component);
             InvokeComponentAdded(component);
             World.NotifyComponentChanged(componentId, this);
             return component;
@@ -150,10 +167,12 @@ namespace Core.Capability
                 return;
             }
 
+            InvokeComponentRemoving(component);
             component.Owner = null;
             component.Dispose();
             Components.Remove(componentId);
             World.NotifyComponentChanged(componentId, this);
+            InvokeComponentRemoved(component);
         }
 
         private void ClearAllComponents()
@@ -182,9 +201,51 @@ namespace Core.Capability
             }
         }
 
+        internal static void InvokeEntityCreated(CEntity entity)
+        {
+            InvokeEntityEvent(EntityCreated, entity);
+            CapabilityTraceStream.EntityLifecycle("entity.created", entity);
+        }
+
+        internal static void InvokeEntityRemoving(CEntity entity)
+        {
+            InvokeEntityEvent(EntityRemoving, entity);
+            CapabilityTraceStream.EntityLifecycle("entity.removing", entity);
+        }
+
+        internal static void InvokeEntityRemoved(CEntity entity)
+        {
+            InvokeEntityEvent(EntityRemoved, entity);
+            CapabilityTraceStream.EntityLifecycle("entity.removed", entity);
+        }
+
+        private void InvokeComponentAdding(CComponent component)
+        {
+            InvokeComponentEvent(ComponentAdding, component);
+            CapabilityTraceStream.ComponentLifecycle("component.adding", this, component);
+        }
+
         private void InvokeComponentAdded(CComponent component)
         {
-            Action<CEntity, CComponent> handlers = ComponentAdded;
+            InvokeComponentEvent(ComponentAdded, component);
+            CapabilityTraceStream.ComponentLifecycle("component.added", this, component);
+        }
+
+        private void InvokeComponentRemoving(CComponent component)
+        {
+            InvokeComponentEvent(ComponentRemoving, component);
+            CapabilityTraceStream.ComponentLifecycle("component.removing", this, component);
+        }
+
+        private void InvokeComponentRemoved(CComponent component)
+        {
+            InvokeComponentEvent(ComponentRemoved, component);
+            CapabilityTraceStream.ComponentLifecycle("component.removed", this, component);
+        }
+
+        private void InvokeComponentEvent
+            (Action<CEntity, CComponent> handlers, CComponent component)
+        {
             if (handlers == null)
             {
                 return;
@@ -195,6 +256,26 @@ namespace Core.Capability
                 try
                 {
                     ((Action<CEntity, CComponent>)del)?.Invoke(this, component);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogException(e);
+                }
+            }
+        }
+
+        private static void InvokeEntityEvent(Action<CEntity> handlers, CEntity entity)
+        {
+            if (handlers == null)
+            {
+                return;
+            }
+
+            foreach (Delegate del in handlers.GetInvocationList())
+            {
+                try
+                {
+                    ((Action<CEntity>)del)?.Invoke(entity);
                 }
                 catch (Exception e)
                 {

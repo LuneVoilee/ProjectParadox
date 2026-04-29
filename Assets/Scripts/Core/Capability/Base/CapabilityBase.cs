@@ -311,7 +311,19 @@ namespace Core.Capability
         {
             MarkWorked();
             CapabilityDebugLogStream.Add(m_Capability, message);
+            CapabilityTraceStream.Log(m_Capability, message);
             UnityEngine.Debug.Log(message);
+        }
+
+        public void TracePhase(string phase, CEntity entity = null)
+        {
+            CapabilityTraceStream.Phase(m_Capability, phase, entity);
+        }
+
+        public void TracePhase
+            (string phase, CEntity entity, string key, object value)
+        {
+            CapabilityTraceStream.Phase(m_Capability, phase, entity, key, value);
         }
 
         internal void MarkError(Exception exception)
@@ -324,6 +336,7 @@ namespace Core.Capability
             m_Capability.LastRunState = CapabilityRunState.Error;
             m_Capability.LastErrorMessage = exception?.ToString();
             CapabilityDebugLogStream.Add(m_Capability, m_Capability.LastErrorMessage);
+            CapabilityTraceStream.Log(m_Capability, m_Capability.LastErrorMessage);
         }
 
         private void RecordMatchedEntities(IndexedSet<CEntity> entities)
@@ -439,9 +452,19 @@ namespace Core.Capability
 
     public sealed class CapabilityCommandBuffer
     {
-        private readonly List<Action> m_Commands = new List<Action>(64);
+        private readonly List<CommandEntry> m_Commands = new List<CommandEntry>(64);
         private CapabilityWorld m_World;
         private CapabilityContext m_Context;
+
+        private sealed class CommandEntry
+        {
+            public string Name;
+            public CEntity Entity;
+            public string Path;
+            public string Value;
+            public CapabilityBase Capability;
+            public Action Execute;
+        }
 
         internal void Reset(CapabilityWorld world, CapabilityContext context)
         {
@@ -459,15 +482,29 @@ namespace Core.Capability
             }
 
             m_Context?.MarkWorked();
-            m_Commands.Add(() =>
+            CapabilityBase capability = m_Context?.Capability;
+            Enqueue(new CommandEntry
             {
-                if (entity.State != IEntity.EntityState.Running)
+                Name = "AddComponent",
+                Entity = entity,
+                Path = typeof(TComponent).FullName,
+                Capability = capability,
+                Execute = () =>
                 {
-                    return;
-                }
+                    if (entity.State != IEntity.EntityState.Running)
+                    {
+                        return;
+                    }
 
-                TComponent component = entity.AddComponent<TComponent>();
-                configure?.Invoke(component);
+                    TComponent component = entity.AddComponent<TComponent>();
+                    configure?.Invoke(component);
+                    CapabilityTraceStream.CommandFlushed(
+                        capability,
+                        "AddComponent",
+                        entity,
+                        typeof(TComponent).FullName,
+                        CapabilityTraceStream.CaptureObjectFields(component));
+                }
             });
         }
 
@@ -479,14 +516,31 @@ namespace Core.Capability
             }
 
             m_Context?.MarkWorked();
-            m_Commands.Add(() =>
+            CapabilityBase capability = m_Context?.Capability;
+            Enqueue(new CommandEntry
             {
-                if (entity.State != IEntity.EntityState.Running)
+                Name = "RemoveComponent",
+                Entity = entity,
+                Path = componentId.ToString(),
+                Capability = capability,
+                Execute = () =>
                 {
-                    return;
-                }
+                    if (entity.State != IEntity.EntityState.Running)
+                    {
+                        return;
+                    }
 
-                entity.RemoveComponent(componentId);
+                    CComponent component = entity.GetComponent(componentId);
+                    string componentPath = component != null
+                        ? component.GetType().FullName
+                        : componentId.ToString();
+                    string value = component != null
+                        ? CapabilityTraceStream.CaptureObjectFields(component)
+                        : "missing";
+                    entity.RemoveComponent(componentId);
+                    CapabilityTraceStream.CommandFlushed(
+                        capability, "RemoveComponent", entity, componentPath, value);
+                }
             });
         }
 
@@ -498,14 +552,25 @@ namespace Core.Capability
             }
 
             m_Context?.MarkWorked();
-            m_Commands.Add(() =>
+            CapabilityBase capability = m_Context?.Capability;
+            Enqueue(new CommandEntry
             {
-                if (m_World == null || entity.State != IEntity.EntityState.Running)
+                Name = "DestroyEntity",
+                Entity = entity,
+                Path = "entity",
+                Capability = capability,
+                Execute = () =>
                 {
-                    return;
-                }
+                    if (m_World == null || entity.State != IEntity.EntityState.Running)
+                    {
+                        return;
+                    }
 
-                m_World.RemoveChild(entity);
+                    string value = CaptureComponentList(entity);
+                    m_World.RemoveChild(entity);
+                    CapabilityTraceStream.CommandFlushed(
+                        capability, "DestroyEntity", entity, "entity", value);
+                }
             });
         }
 
@@ -514,60 +579,140 @@ namespace Core.Capability
             where TComponent : CComponent, new()
         {
             m_Context?.MarkWorked();
-            m_Commands.Add(() =>
+            CapabilityBase capability = m_Context?.Capability;
+            Enqueue(new CommandEntry
             {
-                if (m_World == null)
+                Name = "CreateEventEntity",
+                Path = typeof(TComponent).FullName,
+                Capability = capability,
+                Execute = () =>
                 {
-                    return;
-                }
+                    if (m_World == null)
+                    {
+                        return;
+                    }
 
-                CEntity entity = m_World.AddChild(name ?? typeof(TComponent).Name);
-                TComponent component = entity.AddComponent<TComponent>();
-                configure?.Invoke(component);
+                    CEntity entity = m_World.AddChild(name ?? typeof(TComponent).Name);
+                    TComponent component = entity.AddComponent<TComponent>();
+                    configure?.Invoke(component);
+                    CapabilityTraceStream.CommandFlushed(
+                        capability,
+                        "CreateEventEntity",
+                        entity,
+                        typeof(TComponent).FullName,
+                        CapabilityTraceStream.CaptureObjectFields(component));
+                }
             });
         }
 
         public void RemoveEventEntities<TComponent>() where TComponent : CComponent
         {
             m_Context?.MarkWorked();
-            m_Commands.Add(() =>
+            CapabilityBase capability = m_Context?.Capability;
+            Enqueue(new CommandEntry
             {
-                if (m_World == null)
+                Name = "RemoveEventEntities",
+                Path = typeof(TComponent).FullName,
+                Capability = capability,
+                Execute = () =>
                 {
-                    return;
-                }
-
-                EntityGroup group = m_World.GetGroup(
-                    EntityMatcher.SetAll(Component<TComponent>.TId));
-                if (group?.EntitiesMap == null)
-                {
-                    return;
-                }
-
-                List<CEntity> buffer = new List<CEntity>(group.EntitiesMap.Count);
-                foreach (CEntity entity in group.EntitiesMap)
-                {
-                    if (entity != null)
+                    if (m_World == null)
                     {
-                        buffer.Add(entity);
+                        return;
                     }
-                }
 
-                for (int i = 0; i < buffer.Count; i++)
-                {
-                    m_World.RemoveChild(buffer[i]);
+                    EntityGroup group = m_World.GetGroup(
+                        EntityMatcher.SetAll(Component<TComponent>.TId));
+                    if (group?.EntitiesMap == null)
+                    {
+                        return;
+                    }
+
+                    List<CEntity> buffer = new List<CEntity>(group.EntitiesMap.Count);
+                    foreach (CEntity entity in group.EntitiesMap)
+                    {
+                        if (entity != null)
+                        {
+                            buffer.Add(entity);
+                        }
+                    }
+
+                    string value = FormatEntityIds(buffer);
+                    for (int i = 0; i < buffer.Count; i++)
+                    {
+                        m_World.RemoveChild(buffer[i]);
+                    }
+
+                    CapabilityTraceStream.CommandFlushed(
+                        capability,
+                        "RemoveEventEntities",
+                        null,
+                        typeof(TComponent).FullName,
+                        value);
                 }
             });
+        }
+
+        private void Enqueue(CommandEntry entry)
+        {
+            if (entry == null)
+            {
+                return;
+            }
+
+            m_Commands.Add(entry);
+            CapabilityTraceStream.CommandQueued(
+                entry.Capability, entry.Name, entry.Entity, entry.Path, entry.Value);
         }
 
         public void Flush()
         {
             for (int i = 0; i < m_Commands.Count; i++)
             {
-                m_Commands[i]?.Invoke();
+                m_Commands[i]?.Execute?.Invoke();
             }
 
             m_Commands.Clear();
+        }
+
+        private static string CaptureComponentList(CEntity entity)
+        {
+            if (entity?.Components?.IndexList == null)
+            {
+                return string.Empty;
+            }
+
+            List<string> names = new List<string>(entity.Components.IndexList.Count);
+            List<int> indices = entity.Components.IndexList;
+            for (int i = 0; i < indices.Count; i++)
+            {
+                CComponent component = entity.GetComponent(indices[i]);
+                if (component != null)
+                {
+                    names.Add(component.GetType().FullName);
+                }
+            }
+
+            return string.Join(",", names);
+        }
+
+        private static string FormatEntityIds(List<CEntity> entities)
+        {
+            if (entities == null || entities.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            List<string> ids = new List<string>(entities.Count);
+            for (int i = 0; i < entities.Count; i++)
+            {
+                if (entities[i] != null)
+                {
+                    ids.Add(entities[i].Id.ToString());
+                }
+            }
+
+            return string.Join(",", ids);
         }
     }
 }

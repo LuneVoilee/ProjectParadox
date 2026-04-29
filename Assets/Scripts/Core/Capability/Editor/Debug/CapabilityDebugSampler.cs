@@ -16,7 +16,13 @@ namespace Core.Capability.Editor
             new List<CapabilityBase>(64);
         private readonly List<CapabilityBase> m_FixedUpdateCapabilities =
             new List<CapabilityBase>(64);
+        private CapabilityDebugTraceCapture m_TraceCapture;
         private int m_CurrentFrameIndex;
+
+        public void SetTraceCapture(CapabilityDebugTraceCapture traceCapture)
+        {
+            m_TraceCapture = traceCapture;
+        }
 
         public CapabilityDebugFrame Sample(int frameIndex)
         {
@@ -58,6 +64,7 @@ namespace Core.Capability.Editor
                 }
             }
 
+            m_TraceCapture?.Consume(frameIndex, frame.Traces);
             return frame;
         }
 
