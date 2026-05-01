@@ -19,7 +19,6 @@ namespace Core.Capability.Editor
         private string m_SelectedPipeline;
         private string m_SelectedCapabilityKey;
         private string m_SelectedWorldKey;
-        private int m_CurrentFrameIndex = -1;
         private float m_LastSampleTime;
 
         internal void SetSession(CapabilityDebugSession session)
@@ -27,11 +26,18 @@ namespace Core.Capability.Editor
             m_Session = session;
         }
 
-        public void OnInternalGUI()
+        private Rect m_LayoutRect;
+
+        private const float ToolbarHeight = 22f;
+        private const float InspectorHeight = 150f;
+
+        public void OnInternalGUI(Rect layoutRect)
         {
+            m_LayoutRect = layoutRect;
             if (m_Session == null || !m_Session.HasFrames)
             {
-                EditorGUILayout.HelpBox("暂无采样数据，请进入 Play Mode。", MessageType.Info);
+                GUI.Label(new Rect(0f, 0f, layoutRect.width, 22f),
+                    "暂无采样数据，请进入 Play Mode。");
                 return;
             }
 
@@ -41,15 +47,25 @@ namespace Core.Capability.Editor
                 return;
             }
 
-            DrawPipelineSelector(frame);
-            DrawFlowchart(frame);
-            DrawInspector(frame);
+            Rect toolbarRect = new Rect(0f, 0f, layoutRect.width, ToolbarHeight);
+            DrawPipelineSelector(toolbarRect, frame);
+
+            float flowchartTop = ToolbarHeight + 2f;
+            float flowchartHeight = Mathf.Max(80f, layoutRect.height - flowchartTop - InspectorHeight);
+            Rect flowchartRect = new Rect(0f, flowchartTop, layoutRect.width, flowchartHeight);
+            DrawFlowchart(frame, flowchartRect);
+
+            Rect inspectorRect = new Rect(0f, flowchartTop + flowchartHeight,
+                layoutRect.width, InspectorHeight);
+            DrawInspector(frame, inspectorRect);
         }
 
-        private void DrawPipelineSelector(CapabilityDebugFrame frame)
+        private void DrawPipelineSelector(Rect rect, CapabilityDebugFrame frame)
         {
-            EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
-            EditorGUILayout.LabelField("Pipeline:", GUILayout.Width(54f));
+            GUI.BeginGroup(rect, EditorStyles.toolbar);
+
+            Rect labelRect = new Rect(4f, 3f, 54f, 16f);
+            GUI.Label(labelRect, "Pipeline:");
 
             List<string> pipelines = BuildPipelines(frame.Worlds[0]);
             int currentIndex = pipelines.IndexOf(m_SelectedPipeline);
@@ -58,7 +74,8 @@ namespace Core.Capability.Editor
                 currentIndex = 0;
             }
 
-            int newIndex = EditorGUILayout.Popup(currentIndex, pipelines.ToArray(),
+            Rect popupRect = new Rect(60f, 2f, 160f, 18f);
+            int newIndex = EditorGUI.Popup(popupRect, currentIndex, pipelines.ToArray(),
                 EditorStyles.toolbarPopup);
             if (newIndex >= 0 && newIndex < pipelines.Count)
             {
@@ -70,13 +87,14 @@ namespace Core.Capability.Editor
                 }
             }
 
-            GUILayout.FlexibleSpace();
-            EditorGUILayout.LabelField($"Frame: {Mathf.Max(0, m_Session.CurrentFrameIndex)}",
-                GUILayout.Width(100f));
-            EditorGUILayout.EndHorizontal();
+            Rect frameRect = new Rect(rect.width - 104f, 3f, 100f, 16f);
+            GUI.Label(frameRect,
+                $"Frame: {Mathf.Max(0, m_Session.CurrentFrameIndex)}");
+
+            GUI.EndGroup();
         }
 
-        private void DrawFlowchart(CapabilityDebugFrame frame)
+        private void DrawFlowchart(CapabilityDebugFrame frame, Rect chartRect)
         {
             CapabilityDebugWorldSnapshot world = frame.Worlds[0];
             if (world == null || string.IsNullOrEmpty(m_SelectedPipeline))
@@ -86,7 +104,6 @@ namespace Core.Capability.Editor
 
             m_SelectedWorldKey = world.Key;
 
-            // 收集当前 Pipeline 的 Cp 并按 TickGroupOrder 排序。
             List<CapabilityDebugCapabilitySnapshot> caps =
                 new List<CapabilityDebugCapabilitySnapshot>();
             for (int i = 0; i < world.GlobalCapabilities.Count; i++)
@@ -100,8 +117,9 @@ namespace Core.Capability.Editor
 
             if (caps.Count == 0)
             {
-                EditorGUILayout.HelpBox($"Pipeline '{m_SelectedPipeline}' 中没有 Cp。",
-                    MessageType.Info);
+                EditorGUI.HelpBox(new Rect(chartRect.x + 4f, chartRect.y + 4f,
+                    chartRect.width - 8f, 28f),
+                    $"Pipeline '{m_SelectedPipeline}' 中没有 Cp。", MessageType.Info);
                 return;
             }
 
@@ -113,27 +131,25 @@ namespace Core.Capability.Editor
             float arrowWidth = CapabilityDebugStyles.FlowchartArrowWidth;
             float totalWidth = caps.Count * (nodeWidth + arrowWidth + spacing) + 60f;
 
-            Rect viewRect = new Rect(0f, 0f, Mathf.Max(totalWidth, position.width - 30f),
-                nodeHeight + 120f);
-            m_FlowchartScroll = GUI.BeginScrollView(
-                new Rect(0f, 26f, position.width, position.height - 180f),
+            Rect viewRect = new Rect(0f, 0f, Mathf.Max(totalWidth, chartRect.width - 4f),
+                nodeHeight + 40f);
+            m_FlowchartScroll = GUI.BeginScrollView(chartRect,
                 m_FlowchartScroll, viewRect);
 
-            float y = 40f;
+            float nodeY = Mathf.Max(4f, (chartRect.height - nodeHeight) * 0.3f);
             float x = 30f;
 
             for (int i = 0; i < caps.Count; i++)
             {
                 CapabilityDebugCapabilitySnapshot cap = caps[i];
-                Rect nodeRect = new Rect(x, y, nodeWidth, nodeHeight);
+                Rect nodeRect = new Rect(x, nodeY, nodeWidth, nodeHeight);
                 DrawFlowchartNode(nodeRect, cap);
                 x += nodeWidth;
 
-                // 绘制箭头。
                 if (i < caps.Count - 1)
                 {
-                    Rect arrowRect = new Rect(x + 4f, y + nodeHeight * 0.5f - 6f,
-                        arrowWidth, 14f);
+                    Rect arrowRect = new Rect(x + 4f,
+                        nodeY + nodeHeight * 0.5f - 6f, arrowWidth, 14f);
                     DrawArrow(arrowRect);
                     x += arrowWidth + spacing;
                 }
@@ -141,17 +157,17 @@ namespace Core.Capability.Editor
 
             GUI.EndScrollView();
 
-            // 点击检测。
             if (Event.current.type == EventType.MouseDown &&
                 Event.current.button == 0)
             {
                 Vector2 mouse = Event.current.mousePosition;
-                mouse.y -= 26f;
+                mouse.x -= chartRect.x;
+                mouse.y -= chartRect.y;
                 mouse += m_FlowchartScroll;
                 x = 30f;
                 for (int i = 0; i < caps.Count; i++)
                 {
-                    Rect nodeRect = new Rect(x, 40f, nodeWidth, nodeHeight);
+                    Rect nodeRect = new Rect(x, nodeY, nodeWidth, nodeHeight);
                     if (nodeRect.Contains(mouse))
                     {
                         m_SelectedCapabilityKey = caps[i].Key;
@@ -225,17 +241,16 @@ namespace Core.Capability.Editor
             Handles.DrawAAConvexPolygon(tip, top, bottom);
         }
 
-        private void DrawInspector(CapabilityDebugFrame frame)
+        private void DrawInspector(CapabilityDebugFrame frame, Rect inspectorRect)
         {
-            float inspectorHeight = 160f;
-            Rect inspectorRect = new Rect(0f, position.height - inspectorHeight,
-                position.width, inspectorHeight);
-            GUILayout.BeginArea(inspectorRect, EditorStyles.helpBox);
+            GUI.Box(inspectorRect, string.Empty, EditorStyles.helpBox);
+            Rect innerRect = new Rect(inspectorRect.x + 4f, inspectorRect.y + 2f,
+                inspectorRect.width - 8f, inspectorRect.height - 4f);
 
             if (string.IsNullOrEmpty(m_SelectedCapabilityKey))
             {
-                EditorGUILayout.LabelField("点击节点查看详情", EditorStyles.centeredGreyMiniLabel);
-                GUILayout.EndArea();
+                EditorGUI.LabelField(innerRect, "点击节点查看详情",
+                    EditorStyles.centeredGreyMiniLabel);
                 return;
             }
 
@@ -245,26 +260,39 @@ namespace Core.Capability.Editor
             if (cap == null)
             {
                 m_SelectedCapabilityKey = null;
-                GUILayout.EndArea();
                 return;
             }
 
-            EditorGUILayout.LabelField(cap.TypeName, EditorStyles.boldLabel);
-            m_InspectorScroll = EditorGUILayout.BeginScrollView(m_InspectorScroll);
-            EditorGUILayout.LabelField("Pipeline", cap.Pipeline ?? string.Empty);
-            EditorGUILayout.LabelField("Stage",
-                $"{cap.StageName} ({cap.TickGroupOrder})");
-            EditorGUILayout.LabelField("State",
-                $"{cap.State}  hit:{cap.MatchedEntityCount}");
-            EditorGUILayout.LabelField("LastTick",
-                $"{cap.LastTickMilliseconds:F3} ms");
+            float y = innerRect.y;
+            EditorGUI.LabelField(new Rect(innerRect.x, y, innerRect.width, 18f),
+                cap.TypeName, EditorStyles.boldLabel);
+            y += 18f;
+
+            EditorGUI.LabelField(new Rect(innerRect.x, y, innerRect.width, 16f),
+                "Pipeline", cap.Pipeline ?? string.Empty);
+            y += 16f;
+            EditorGUI.LabelField(new Rect(innerRect.x, y, innerRect.width, 16f),
+                "Stage", $"{cap.StageName} ({cap.TickGroupOrder})");
+            y += 16f;
+            EditorGUI.LabelField(new Rect(innerRect.x, y, innerRect.width, 16f),
+                "State", $"{cap.State}  hit:{cap.MatchedEntityCount}");
+            y += 16f;
+            EditorGUI.LabelField(new Rect(innerRect.x, y, innerRect.width, 16f),
+                "LastTick", $"{cap.LastTickMilliseconds:F3} ms");
+            y += 16f;
+
             if (!string.IsNullOrEmpty(cap.LastErrorMessage))
             {
-                EditorGUILayout.LabelField("Error", cap.LastErrorMessage);
+                EditorGUI.LabelField(new Rect(innerRect.x, y, innerRect.width, 16f),
+                    "Error", cap.LastErrorMessage);
+                y += 16f;
             }
 
-            EditorGUILayout.EndScrollView();
-            GUILayout.EndArea();
+            // Log section
+            float logTop = Mathf.Max(y + 2f, inspectorRect.y + 60f);
+            Rect logRect = new Rect(innerRect.x, logTop,
+                innerRect.width, Mathf.Max(20f, inspectorRect.yMax - logTop - 2f));
+            GUI.Box(logRect, "点击节点查看详细日志", EditorStyles.helpBox);
         }
 
         private static List<string> BuildPipelines(CapabilityDebugWorldSnapshot world)
@@ -336,10 +364,8 @@ namespace Core.Capability.Editor
 
         void IHasCustomMenu.AddItemsToMenu(GenericMenu menu)
         {
-            menu.AddItem(new GUIContent("返回工具箱"), false, () =>
-            {
-                CapabilityDebugToolboxWindow.OpenToolbox();
-            });
+            menu.AddItem(new GUIContent("返回工具箱"), false,
+                () => { CapabilityDebugToolboxWindow.OpenToolbox(); });
         }
     }
 }

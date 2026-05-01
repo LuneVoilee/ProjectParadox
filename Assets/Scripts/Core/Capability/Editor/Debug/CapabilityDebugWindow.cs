@@ -68,7 +68,7 @@ namespace Core.Capability.Editor
 
         private void OnGUI()
         {
-            OnInternalGUI();
+            OnInternalGUI(position);
         }
 
         private void OnEnable()
@@ -164,11 +164,14 @@ namespace Core.Capability.Editor
             SyncFrameInput();
         }
 
-        public void OnInternalGUI()
+        private Rect m_LayoutRect;
+
+        public void OnInternalGUI(Rect layoutRect)
         {
+            m_LayoutRect = layoutRect;
             float contentTop = DrawTopToolbar();
-            Rect contentRect = new Rect(0f, contentTop, position.width,
-                Mathf.Max(0f, position.height - contentTop));
+            Rect contentRect = new Rect(0f, contentTop, m_LayoutRect.width,
+                Mathf.Max(0f, m_LayoutRect.height - contentTop));
             float timelineHeight = Mathf.Max(CapabilityDebugStyles.TimelineMinHeight,
                 contentRect.height * 0.33f);
             Rect upperRect = new Rect(contentRect.x, contentRect.y, contentRect.width,
@@ -184,7 +187,7 @@ namespace Core.Capability.Editor
         {
             const float toolbarHeight = 21f;
             float y = 0f;
-            Rect toolbarRect = new Rect(0f, y, position.width, toolbarHeight);
+            Rect toolbarRect = new Rect(0f, y, m_LayoutRect.width, toolbarHeight);
             GUILayout.BeginArea(toolbarRect, EditorStyles.toolbar);
             EditorGUILayout.BeginHorizontal();
             GUILayout.Label("Capability Temporal Debugger", EditorStyles.boldLabel,
@@ -205,18 +208,18 @@ namespace Core.Capability.Editor
             if (!string.IsNullOrEmpty(message))
             {
                 float helpHeight = Mathf.Max(38f, EditorStyles.helpBox.CalcHeight(
-                    new GUIContent(message), Mathf.Max(1f, position.width - 8f)));
-                Rect helpRect = new Rect(4f, y + 4f, Mathf.Max(1f, position.width - 8f),
+                    new GUIContent(message), Mathf.Max(1f, m_LayoutRect.width - 8f)));
+                Rect helpRect = new Rect(4f, y + 4f, Mathf.Max(1f, m_LayoutRect.width - 8f),
                     helpHeight);
                 EditorGUI.HelpBox(helpRect, message, messageType);
                 y = helpRect.yMax + 4f;
             }
 
-            Rect separatorRect = new Rect(0f, y, position.width, 1f);
+            Rect separatorRect = new Rect(0f, y, m_LayoutRect.width, 1f);
             float evidenceHeight = DrawEvidencePanel(y + 4f);
             y += evidenceHeight + 8f;
 
-            separatorRect = new Rect(0f, y, position.width, 1f);
+            separatorRect = new Rect(0f, y, m_LayoutRect.width, 1f);
             EditorGUI.DrawRect(separatorRect, CapabilityDebugStyles.SeparatorColor);
             return y + 3f;
         }
@@ -224,7 +227,7 @@ namespace Core.Capability.Editor
         private float DrawEvidencePanel(float y)
         {
             float height = m_EvidenceFoldout ? 218f : 26f;
-            Rect rect = new Rect(4f, y, Mathf.Max(1f, position.width - 8f), height);
+            Rect rect = new Rect(4f, y, Mathf.Max(1f, m_LayoutRect.width - 8f), height);
             GUILayout.BeginArea(rect, EditorStyles.helpBox);
             EditorGUILayout.BeginHorizontal();
             m_EvidenceFoldout = EditorGUILayout.Foldout(m_EvidenceFoldout, "AI Evidence",
@@ -951,7 +954,7 @@ namespace Core.Capability.Editor
             m_SortedTracks.Sort((x, y) => string.CompareOrdinal(x.Name, y.Name));
             m_TimelineScroll = EditorGUILayout.BeginScrollView(m_TimelineScroll,
                 GUILayout.ExpandHeight(true));
-            float width = Mathf.Max(280f, position.width - 260f);
+            float width = Mathf.Max(280f, m_LayoutRect.width - 260f);
             for (int i = 0; i < m_SortedTracks.Count; i++)
             {
                 DrawTrack(m_SortedTracks[i], width);
@@ -987,7 +990,7 @@ namespace Core.Capability.Editor
             }
 
             Rect labelRect = new Rect(timelineRect.xMax + 8f, rowRect.y,
-                Mathf.Max(40f, position.width - timelineRect.width - 24f), rowRect.height);
+                Mathf.Max(40f, m_LayoutRect.width - timelineRect.width - 24f), rowRect.height);
             EditorGUI.LabelField(labelRect, track.Name);
         }
 

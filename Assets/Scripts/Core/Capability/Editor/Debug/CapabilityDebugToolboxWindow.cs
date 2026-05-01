@@ -80,11 +80,11 @@ namespace Core.Capability.Editor
 
             if (m_SelectedTab == 0)
             {
-                DrawDebugPanel();
+                DrawDebugPanel(contentRect);
             }
             else
             {
-                DrawFlowchartPanel();
+                DrawFlowchartPanel(contentRect);
             }
 
             GUILayout.EndArea();
@@ -120,24 +120,23 @@ namespace Core.Capability.Editor
             GUILayout.EndArea();
         }
 
-        private void DrawDebugPanel()
+        private void DrawDebugPanel(Rect contentRect)
         {
             if (m_DebugWindow != null)
             {
-                m_DebugWindow.OnInternalGUI();
+                m_DebugWindow.OnInternalGUI(contentRect);
             }
         }
 
-        private void DrawFlowchartPanel()
+        private void DrawFlowchartPanel(Rect contentRect)
         {
             if (m_FlowchartWindow == null)
             {
                 return;
             }
 
-            // 同步 Session 数据到流程图窗口。
             SyncSessionToFlowchart();
-            m_FlowchartWindow.OnInternalGUI();
+            m_FlowchartWindow.OnInternalGUI(contentRect);
         }
 
         private void SyncSessionToFlowchart()
