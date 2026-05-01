@@ -84,6 +84,10 @@ namespace Core.Capability.Editor
             var watchedIds = new HashSet<int>(request.EntityIds);
             var pipelines = new HashSet<string>(request.Pipelines);
             ExpandWatchlist(session, request, start, end, watchedIds, pipelines);
+
+            CapabilityDebugFrame firstFrame = session.GetFrame(start);
+            WriteHeader(builder, request, firstFrame, start, end);
+
             CapabilityDebugFrame previousFrame = null;
 
             for (int frameIndex = start; frameIndex <= end; frameIndex++)
@@ -103,6 +107,154 @@ namespace Core.Capability.Editor
             }
 
             return builder.ToString();
+        }
+
+        private static void WriteHeader
+        (
+            StringBuilder builder,
+            CapabilityEvidenceExportRequest request,
+            CapabilityDebugFrame firstFrame,
+            int start,
+            int end
+        )
+        {
+            // — 用户意图 —
+            if (!string.IsNullOrEmpty(request.Description))
+            {
+                AppendHeader(builder, "intent.description", request.Description);
+            }
+
+            if (!string.IsNullOrEmpty(request.ReproSteps))
+            {
+                AppendHeader(builder, "intent.repro_steps", request.ReproSteps);
+            }
+
+            if (!string.IsNullOrEmpty(request.Expected))
+            {
+                AppendHeader(builder, "intent.expected", request.Expected);
+            }
+
+            AppendHeader(builder, "session.frames", $"{start} - {end}");
+            if (request.MarkedFrame >= 0)
+            {
+                AppendHeader(builder, "session.marked_frame", request.MarkedFrame.ToString());
+            }
+
+            AppendHeader(builder, "session.entity_watchlist",
+                request.EntityIds.Count == 0 ? "(all)" : string.Join(",", request.EntityIds));
+            AppendHeader(builder, "session.pipeline_filter",
+                request.Pipelines.Count == 0 ? "(all)" : string.Join(",", request.Pipelines));
+
+            if (firstFrame == null || firstFrame.Worlds.Count == 0)
+            {
+                return;
+            }
+
+            CapabilityDebugWorldSnapshot world = firstFrame.Worlds[0];
+
+            // — Pipeline 列表（按 TickGroupOrder 排序） —
+            List<string> orderedPipelines = BuildOrderedPipelineList(world);
+            AppendHeader(builder, "pipeline.order", string.Join(" → ", orderedPipelines));
+
+            // — Entity 映射 —
+            for (int i = 0; i < world.Entities.Count; i++)
+            {
+                CapabilityDebugEntitySnapshot entity = world.Entities[i];
+                AppendHeader(builder, $"entity.{entity.EntityId}",
+                    $"{entity.DisplayName} ({entity.Components.Count} comps)");
+            }
+
+            // — Capability 映射（按 Pipeline 分组，带职责描述） —
+            for (int i = 0; i < orderedPipelines.Count; i++)
+            {
+                string pipeline = orderedPipelines[i];
+                List<string> typeNames = new List<string>();
+                for (int j = 0; j < world.GlobalCapabilities.Count; j++)
+                {
+                    CapabilityDebugCapabilitySnapshot cap = world.GlobalCapabilities[j];
+                    if (PipelineContains(cap.Pipeline, pipeline))
+                    {
+                        typeNames.Add($"{cap.TypeName}({cap.TickGroupOrder})");
+                    }
+                }
+
+                if (typeNames.Count > 0)
+                {
+                    AppendHeader(builder, $"pipeline.{pipeline}",
+                        string.Join(", ", typeNames));
+                }
+            }
+        }
+
+        private static List<string> BuildOrderedPipelineList(CapabilityDebugWorldSnapshot world)
+        {
+            List<string> pipelines = new List<string>(16);
+            Dictionary<string, int> order = new Dictionary<string, int>(16);
+            for (int i = 0; i < world.GlobalCapabilities.Count; i++)
+            {
+                string pipeline = world.GlobalCapabilities[i].Pipeline;
+                if (string.IsNullOrEmpty(pipeline))
+                {
+                    pipeline = CapabilityPipeline.Other;
+                }
+
+                string[] parts = pipeline.Split(',');
+                for (int j = 0; j < parts.Length; j++)
+                {
+                    string part = parts[j].Trim();
+                    if (string.IsNullOrEmpty(part))
+                    {
+                        continue;
+                    }
+
+                    if (!pipelines.Contains(part))
+                    {
+                        pipelines.Add(part);
+                    }
+
+                    if (!order.ContainsKey(part))
+                    {
+                        order[part] = world.GlobalCapabilities[i].TickGroupOrder;
+                    }
+                }
+            }
+
+            pipelines.Sort((a, b) =>
+            {
+                int orderA = order.ContainsKey(a) ? order[a] : int.MaxValue;
+                int orderB = order.ContainsKey(b) ? order[b] : int.MaxValue;
+                int cmp = orderA.CompareTo(orderB);
+                return cmp != 0 ? cmp : string.CompareOrdinal(a, b);
+            });
+            return pipelines;
+        }
+
+        private static void AppendHeader(StringBuilder builder, string key, string value)
+        {
+            builder.Append("{\"event\":\"__header__\",\"key\":\"");
+            builder.Append(Escape(key));
+            builder.Append("\",\"value\":\"");
+            builder.Append(Escape(value ?? string.Empty));
+            builder.AppendLine("\"}");
+        }
+
+        private static bool PipelineContains(string pipeline, string target)
+        {
+            if (string.IsNullOrEmpty(pipeline))
+            {
+                return target == CapabilityPipeline.Other;
+            }
+
+            string[] parts = pipeline.Split(',');
+            for (int i = 0; i < parts.Length; i++)
+            {
+                if (string.Equals(parts[i].Trim(), target, StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static void ExpandWatchlist
