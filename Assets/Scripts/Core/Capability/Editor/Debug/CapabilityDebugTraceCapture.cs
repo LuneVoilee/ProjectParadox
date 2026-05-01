@@ -13,7 +13,7 @@ namespace Core.Capability.Editor
     internal sealed class CapabilityDebugTraceCapture : ICapabilityTraceSink
     {
         private const int MaxDepth = 2;
-        private const int MaxItems = 32;
+        private const int MaxItems = 5;
 
         private readonly List<CapabilityDebugTraceSnapshot> m_Pending =
             new List<CapabilityDebugTraceSnapshot>(128);
@@ -194,6 +194,7 @@ namespace Core.Capability.Editor
                 CapabilityId = context.Capability?.Id ?? -1,
                 CapabilityType = context.Capability?.GetType().FullName,
                 EntityId = entityId,
+                Pipeline = context.Capability?.Pipeline,
                 Path = path,
                 Value = value,
                 Prev = previous

@@ -1,8 +1,14 @@
+#region
+
+using System;
 using System.Collections.Generic;
+
+#endregion
 
 namespace Core.Capability
 {
-    public abstract partial class CapabilityWorldBase : IEntity, IWorldSystem, IInitializeSystem<int>, IUpdateSystem, IFixedUpdateSystem
+    public abstract partial class CapabilityWorldBase : IEntity, IWorldSystem,
+        IInitializeSystem<int>, IUpdateSystem, IFixedUpdateSystem
     {
         public IEntity Parent { get; private set; }
 
@@ -80,7 +86,7 @@ namespace Core.Capability
                 newCapacity *= 2;
             }
 
-            System.Array.Resize(ref m_GroupsByComponent, newCapacity);
+            Array.Resize(ref m_GroupsByComponent, newCapacity);
             MaxComponentCount = newCapacity;
         }
 
@@ -102,6 +108,8 @@ namespace Core.Capability
             }
 
             EntityGroup group = EntityGroup.Create(ChildrenCount, matcher);
+
+            //遍历所有Entity，凡是符合要求的都会加入。
             foreach (CEntity entity in Children)
             {
                 group.HandleEntitySilently(entity);

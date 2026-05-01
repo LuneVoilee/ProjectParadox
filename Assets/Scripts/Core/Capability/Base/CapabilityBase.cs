@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using Tool;
+using UnityEngine;
 
 #endregion
 
@@ -77,17 +78,17 @@ namespace Core.Capability
 
     public static class CapabilityPipeline
     {
-        public const string MapBootstrap  = "MapBootstrap";
+        public const string MapBootstrap = "MapBootstrap";
         public const string ScenarioSetup = "ScenarioSetup";
-        public const string MoveCommand   = "MoveCommand";
-        public const string Combat        = "Combat";
-        public const string Territory     = "Territory";
-        public const string Camera        = "Camera";
-        public const string MapRender     = "MapRender";
-        public const string SelectionUI   = "SelectionUI";
-        public const string PathUI        = "PathUI";
-        public const string Cleanup       = "Cleanup";
-        public const string Other         = "Other";
+        public const string MoveCommand = "MoveCommand";
+        public const string Combat = "Combat";
+        public const string Territory = "Territory";
+        public const string Camera = "Camera";
+        public const string MapRender = "MapRender";
+        public const string SelectionUI = "SelectionUI";
+        public const string PathUI = "PathUI";
+        public const string Cleanup = "Cleanup";
+        public const string Other = "Other";
 
         public static string List(params string[] pipelines)
         {
@@ -97,15 +98,11 @@ namespace Core.Capability
 
     public sealed class CapabilityContext
     {
-        private CapabilityWorld m_World;
-        private CapabilityBase m_Capability;
-        private CapabilityCommandBuffer m_Commands;
+        public CapabilityWorld World { get; private set; }
 
-        public CapabilityWorld World => m_World;
+        public CapabilityBase Capability { get; private set; }
 
-        public CapabilityBase Capability => m_Capability;
-
-        public CapabilityCommandBuffer Commands => m_Commands;
+        public CapabilityCommandBuffer Commands { get; private set; }
 
         internal void Reset
         (
@@ -113,18 +110,18 @@ namespace Core.Capability
             CapabilityCommandBuffer commands
         )
         {
-            m_World = world;
-            m_Capability = capability;
-            m_Commands = commands;
-            if (m_Capability == null)
+            World = world;
+            Capability = capability;
+            Commands = commands;
+            if (Capability == null)
             {
                 return;
             }
 
-            m_Capability.LastMatchedEntityCount = 0;
-            m_Capability.LastMatchedEntityIds.Clear();
-            m_Capability.LastErrorMessage = null;
-            m_Capability.LastRunState = CapabilityRunState.NoMatch;
+            Capability.LastMatchedEntityCount = 0;
+            Capability.LastMatchedEntityIds.Clear();
+            Capability.LastErrorMessage = null;
+            Capability.LastRunState = CapabilityRunState.NoMatch;
         }
 
         public EntityGroup Query<T1>() where T1 : CComponent
@@ -145,8 +142,10 @@ namespace Core.Capability
         }
 
         public EntityGroup Query<T1, T2, T3, T4>()
-            where T1 : CComponent where T2 : CComponent
-            where T3 : CComponent where T4 : CComponent
+            where T1 : CComponent
+            where T2 : CComponent
+            where T3 : CComponent
+            where T4 : CComponent
         {
             return QueryByIds(Component<T1>.TId, Component<T2>.TId,
                 Component<T3>.TId, Component<T4>.TId);
@@ -154,12 +153,12 @@ namespace Core.Capability
 
         public EntityGroup QueryByIds(params int[] componentIds)
         {
-            if (m_World == null)
+            if (World == null)
             {
                 return null;
             }
 
-            EntityGroup group = m_World.GetGroup(EntityMatcher.SetAll(componentIds));
+            EntityGroup group = World.GetGroup(EntityMatcher.SetAll(componentIds));
             RecordMatchedEntities(group?.EntitiesMap);
             return group;
         }
@@ -184,8 +183,10 @@ namespace Core.Capability
         }
 
         public void QuerySnapshot<T1, T2, T3, T4>(List<CEntity> buffer)
-            where T1 : CComponent where T2 : CComponent
-            where T3 : CComponent where T4 : CComponent
+            where T1 : CComponent
+            where T2 : CComponent
+            where T3 : CComponent
+            where T4 : CComponent
         {
             QuerySnapshotByIds(buffer, Component<T1>.TId, Component<T2>.TId,
                 Component<T3>.TId, Component<T4>.TId);
@@ -227,12 +228,12 @@ namespace Core.Capability
         public bool TryGetEntity(int entityId, out CEntity entity)
         {
             entity = null;
-            if (m_World == null || entityId < 0)
+            if (World == null || entityId < 0)
             {
                 return false;
             }
 
-            entity = m_World.GetChild(entityId);
+            entity = World.GetChild(entityId);
             return entity != null && entity.IsActive;
         }
 
@@ -274,58 +275,61 @@ namespace Core.Capability
 
         public void MarkWorked()
         {
-            if (m_Capability == null)
+            if (Capability == null)
             {
                 return;
             }
 
-            m_Capability.LastRunState = CapabilityRunState.Worked;
+            Capability.LastRunState = CapabilityRunState.Worked;
         }
 
         public void Log(string message)
         {
             MarkWorked();
 #if UNITY_EDITOR
-            CapabilityDebugLogStream.Add(m_Capability, message);
+            CapabilityDebugLogStream.Add(Capability, message);
 #endif
-            CapabilityTraceStream.Log(m_Capability, message);
-            UnityEngine.Debug.Log(message);
+            CapabilityTraceStream.Log(Capability, message);
+            Debug.Log(message);
         }
 
         public void TracePhase(string phase, CEntity entity = null)
         {
-            CapabilityTraceStream.Phase(m_Capability, phase, entity);
+            CapabilityTraceStream.Phase(Capability, phase, entity);
         }
 
         public void TracePhase
-            (string phase, CEntity entity, string key, object value)
+        (
+            string phase, CEntity entity, string key,
+            object value
+        )
         {
-            CapabilityTraceStream.Phase(m_Capability, phase, entity, key, value);
+            CapabilityTraceStream.Phase(Capability, phase, entity, key, value);
         }
 
         internal void MarkError(Exception exception)
         {
-            if (m_Capability == null)
+            if (Capability == null)
             {
                 return;
             }
 
-            m_Capability.LastRunState = CapabilityRunState.Error;
-            m_Capability.LastErrorMessage = exception?.ToString();
+            Capability.LastRunState = CapabilityRunState.Error;
+            Capability.LastErrorMessage = exception?.ToString();
 #if UNITY_EDITOR
-            CapabilityDebugLogStream.Add(m_Capability, m_Capability.LastErrorMessage);
+            CapabilityDebugLogStream.Add(Capability, Capability.LastErrorMessage);
 #endif
-            CapabilityTraceStream.Log(m_Capability, m_Capability.LastErrorMessage);
+            CapabilityTraceStream.Log(Capability, Capability.LastErrorMessage);
         }
 
         private void RecordMatchedEntities(IndexedSet<CEntity> entities)
         {
-            if (m_Capability == null || entities == null)
+            if (Capability == null || entities == null)
             {
                 return;
             }
 
-            m_Capability.LastMatchedEntityIds.Clear();
+            Capability.LastMatchedEntityIds.Clear();
             foreach (CEntity entity in entities)
             {
                 if (entity == null)
@@ -333,14 +337,14 @@ namespace Core.Capability
                     continue;
                 }
 
-                m_Capability.LastMatchedEntityIds.Add(entity.Id);
+                Capability.LastMatchedEntityIds.Add(entity.Id);
             }
 
-            m_Capability.LastMatchedEntityCount = m_Capability.LastMatchedEntityIds.Count;
-            if (m_Capability.LastRunState != CapabilityRunState.Worked &&
-                m_Capability.LastRunState != CapabilityRunState.Error)
+            Capability.LastMatchedEntityCount = Capability.LastMatchedEntityIds.Count;
+            if (Capability.LastRunState != CapabilityRunState.Worked &&
+                Capability.LastRunState != CapabilityRunState.Error)
             {
-                m_Capability.LastRunState = m_Capability.LastMatchedEntityCount > 0
+                Capability.LastRunState = Capability.LastMatchedEntityCount > 0
                     ? CapabilityRunState.Matched
                     : CapabilityRunState.NoMatch;
             }
@@ -348,28 +352,28 @@ namespace Core.Capability
 
         private void RecordSnapshot(List<CEntity> entities)
         {
-            if (m_Capability == null)
+            if (Capability == null)
             {
                 return;
             }
 
-            m_Capability.LastMatchedEntityIds.Clear();
+            Capability.LastMatchedEntityIds.Clear();
             if (entities != null)
             {
                 for (int i = 0; i < entities.Count; i++)
                 {
                     if (entities[i] != null)
                     {
-                        m_Capability.LastMatchedEntityIds.Add(entities[i].Id);
+                        Capability.LastMatchedEntityIds.Add(entities[i].Id);
                     }
                 }
             }
 
-            m_Capability.LastMatchedEntityCount = m_Capability.LastMatchedEntityIds.Count;
-            if (m_Capability.LastRunState != CapabilityRunState.Worked &&
-                m_Capability.LastRunState != CapabilityRunState.Error)
+            Capability.LastMatchedEntityCount = Capability.LastMatchedEntityIds.Count;
+            if (Capability.LastRunState != CapabilityRunState.Worked &&
+                Capability.LastRunState != CapabilityRunState.Error)
             {
-                m_Capability.LastRunState = m_Capability.LastMatchedEntityCount > 0
+                Capability.LastRunState = Capability.LastMatchedEntityCount > 0
                     ? CapabilityRunState.Matched
                     : CapabilityRunState.NoMatch;
             }
@@ -402,7 +406,7 @@ namespace Core.Capability
 
             entries.Add(new Entry
             {
-                Time = UnityEngine.Time.realtimeSinceStartup,
+                Time = Time.realtimeSinceStartup,
                 Message = message ?? string.Empty
             });
         }
@@ -587,6 +591,13 @@ namespace Core.Capability
 
         public void RemoveEventEntities<TComponent>() where TComponent : CComponent
         {
+            EntityGroup group = m_World?.GetGroup(
+                EntityMatcher.SetAll(Component<TComponent>.TId));
+            if (group?.EntitiesMap is not { Count: > 0 })
+            {
+                return; // 没有实体就不入队
+            }
+
             m_Context?.MarkWorked();
             CapabilityBase capability = m_Context?.Capability;
             Enqueue(new CommandEntry

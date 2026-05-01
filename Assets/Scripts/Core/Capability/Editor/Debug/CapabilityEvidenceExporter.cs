@@ -334,6 +334,9 @@ namespace Core.Capability.Editor
             Dictionary<string, string> lastValues
         )
         {
+            // 预先收集 capability.delta 覆盖的 (entity, path) 对，用来跳过去重。
+            HashSet<string> cpDeltaCovered = BuildCpDeltaCoveredSet(frame);
+
             for (int worldIndex = 0; worldIndex < frame.Worlds.Count; worldIndex++)
             {
                 CapabilityDebugWorldSnapshot world = frame.Worlds[worldIndex];
@@ -341,12 +344,27 @@ namespace Core.Capability.Editor
                     previousFrame?.FindWorld(world.Key);
 
                 ExportEntities(builder, frame, world, previousWorld, dt, request,
-                    watchedIds, lastValues);
+                    watchedIds, lastValues, cpDeltaCovered);
                 ExportCapabilities(builder, frame, world, dt, watchedIds, pipelines,
                     lastValues);
             }
 
             ExportTraces(builder, frame, dt, request, watchedIds, pipelines);
+        }
+
+        private static HashSet<string> BuildCpDeltaCoveredSet(CapabilityDebugFrame frame)
+        {
+            HashSet<string> covered = new HashSet<string>();
+            for (int i = 0; i < frame.Traces.Count; i++)
+            {
+                CapabilityDebugTraceSnapshot trace = frame.Traces[i];
+                if (trace.Event == "capability.delta" && trace.EntityId >= 0)
+                {
+                    covered.Add($"{trace.EntityId}/{trace.Path}");
+                }
+            }
+
+            return covered;
         }
 
         private static void ExportEntities
@@ -358,7 +376,8 @@ namespace Core.Capability.Editor
             double dt,
             CapabilityEvidenceExportRequest request,
             HashSet<int> watchedIds,
-            Dictionary<string, string> lastValues
+            Dictionary<string, string> lastValues,
+            HashSet<string> cpDeltaCovered
         )
         {
             for (int entityIndex = 0; entityIndex < world.Entities.Count; entityIndex++)
@@ -372,10 +391,12 @@ namespace Core.Capability.Editor
                 CapabilityDebugEntitySnapshot previousEntity =
                     previousWorld?.FindEntity(entity.Key);
                 ExportEntityLifecycle(builder, frame, world, entity, previousEntity, dt);
-                ExportComponentFields(builder, frame, world, entity, dt, lastValues);
+                ExportComponentFields(builder, frame, world, entity, dt, lastValues,
+                    cpDeltaCovered);
                 if (request.IncludeTransforms)
                 {
-                    ExportTransformFields(builder, frame, world, entity, dt, lastValues);
+                    ExportTransformFields(builder, frame, world, entity, dt, lastValues,
+                        cpDeltaCovered);
                 }
             }
 
@@ -450,7 +471,8 @@ namespace Core.Capability.Editor
             CapabilityDebugWorldSnapshot world,
             CapabilityDebugEntitySnapshot entity,
             double dt,
-            Dictionary<string, string> lastValues
+            Dictionary<string, string> lastValues,
+            HashSet<string> cpDeltaCovered
         )
         {
             for (int i = 0; i < entity.Components.Count; i++)
@@ -458,7 +480,8 @@ namespace Core.Capability.Editor
                 CapabilityDebugComponentSnapshot component = entity.Components[i];
                 ExportValues(builder, frame, dt, world.DisplayName, entity.EntityId,
                     null, $"comp.{component.TypeFullName}", component.Fields,
-                    lastValues, $"w:{world.Key}/e:{entity.EntityId}/c:{component.Key}");
+                    lastValues, $"w:{world.Key}/e:{entity.EntityId}/c:{component.Key}",
+                    cpDeltaCovered);
             }
         }
 
@@ -469,7 +492,8 @@ namespace Core.Capability.Editor
             CapabilityDebugWorldSnapshot world,
             CapabilityDebugEntitySnapshot entity,
             double dt,
-            Dictionary<string, string> lastValues
+            Dictionary<string, string> lastValues,
+            HashSet<string> cpDeltaCovered
         )
         {
             for (int i = 0; i < entity.Transforms.Count; i++)
@@ -478,23 +502,28 @@ namespace Core.Capability.Editor
                 ExportValue(builder, frame, dt, world.DisplayName, entity.EntityId, null,
                     $"tf.{transform.InstanceId}.activeSelf",
                     transform.ActiveSelf.ToString(), lastValues,
-                    $"w:{world.Key}/e:{entity.EntityId}/tf:{transform.InstanceId}/active");
+                    $"w:{world.Key}/e:{entity.EntityId}/tf:{transform.InstanceId}/active",
+                    cpDeltaCovered);
                 ExportValue(builder, frame, dt, world.DisplayName, entity.EntityId, null,
                     $"tf.{transform.InstanceId}.position",
                     transform.Position.ToString("F3"), lastValues,
-                    $"w:{world.Key}/e:{entity.EntityId}/tf:{transform.InstanceId}/pos");
+                    $"w:{world.Key}/e:{entity.EntityId}/tf:{transform.InstanceId}/pos",
+                    cpDeltaCovered);
                 ExportValue(builder, frame, dt, world.DisplayName, entity.EntityId, null,
                     $"tf.{transform.InstanceId}.localPosition",
                     transform.LocalPosition.ToString("F3"), lastValues,
-                    $"w:{world.Key}/e:{entity.EntityId}/tf:{transform.InstanceId}/lpos");
+                    $"w:{world.Key}/e:{entity.EntityId}/tf:{transform.InstanceId}/lpos",
+                    cpDeltaCovered);
                 ExportValue(builder, frame, dt, world.DisplayName, entity.EntityId, null,
                     $"tf.{transform.InstanceId}.rotation",
                     transform.Rotation.eulerAngles.ToString("F3"), lastValues,
-                    $"w:{world.Key}/e:{entity.EntityId}/tf:{transform.InstanceId}/rot");
+                    $"w:{world.Key}/e:{entity.EntityId}/tf:{transform.InstanceId}/rot",
+                    cpDeltaCovered);
                 ExportValue(builder, frame, dt, world.DisplayName, entity.EntityId, null,
                     $"tf.{transform.InstanceId}.localScale",
                     transform.LocalScale.ToString("F3"), lastValues,
-                    $"w:{world.Key}/e:{entity.EntityId}/tf:{transform.InstanceId}/scale");
+                    $"w:{world.Key}/e:{entity.EntityId}/tf:{transform.InstanceId}/scale",
+                    cpDeltaCovered);
             }
         }
 
@@ -519,23 +548,14 @@ namespace Core.Capability.Editor
 
                 string baseKey = $"w:{world.Key}/cap:{capability.Key}";
                 ExportValue(builder, frame, dt, world.DisplayName, null, capability.TypeFullName,
-                    "cap.state", capability.State.ToString(), lastValues, $"{baseKey}/state");
-                ExportValue(builder, frame, dt, world.DisplayName, null, capability.TypeFullName,
-                    "cap.matchedEntityIds", string.Join(",", capability.MatchedEntityIds),
-                    lastValues, $"{baseKey}/matched");
-                ExportValue(builder, frame, dt, world.DisplayName, null, capability.TypeFullName,
-                    "cap.lastTickMs", capability.LastTickMilliseconds.ToString("F4",
-                        CultureInfo.InvariantCulture), lastValues, $"{baseKey}/tick");
+                    "cap.state", capability.State.ToString(), lastValues, $"{baseKey}/state",
+                    null);
                 if (!string.IsNullOrEmpty(capability.LastErrorMessage))
                 {
                     AppendLine(builder, frame, dt, world.DisplayName, null,
                         capability.TypeFullName, "error", "cap.error",
                         capability.LastErrorMessage, null);
                 }
-
-                ExportValues(builder, frame, dt, world.DisplayName, null,
-                    capability.TypeFullName, "cap.field", capability.Fields, lastValues,
-                    $"{baseKey}/field");
 
                 for (int logIndex = 0; logIndex < capability.Logs.Count; logIndex++)
                 {
@@ -567,7 +587,7 @@ namespace Core.Capability.Editor
                 AppendLine(builder, frame, dt, trace.WorldName, trace.EntityId >= 0
                         ? trace.EntityId
                         : null, trace.CapabilityType, trace.Event, trace.Path,
-                    trace.Value, trace.Prev);
+                    trace.Value, trace.Prev, trace.Pipeline);
             }
         }
 
@@ -582,13 +602,14 @@ namespace Core.Capability.Editor
             string prefix,
             List<CapabilityDebugValueSnapshot> values,
             Dictionary<string, string> lastValues,
-            string keyPrefix
+            string keyPrefix,
+            HashSet<string> cpDeltaCovered
         )
         {
             for (int i = 0; i < values.Count; i++)
             {
                 ExportValueNode(builder, frame, dt, world, entityId, capability,
-                    prefix, values[i], lastValues, keyPrefix);
+                    prefix, values[i], lastValues, keyPrefix, cpDeltaCovered);
             }
         }
 
@@ -603,18 +624,19 @@ namespace Core.Capability.Editor
             string prefix,
             CapabilityDebugValueSnapshot value,
             Dictionary<string, string> lastValues,
-            string keyPrefix
+            string keyPrefix,
+            HashSet<string> cpDeltaCovered
         )
         {
             string path = $"{prefix}.{value.Name}";
             string key = $"{keyPrefix}/{value.Name}";
             ExportValue(builder, frame, dt, world, entityId, capability, path,
-                value.DisplayValue, lastValues, key);
+                value.DisplayValue, lastValues, key, cpDeltaCovered);
 
             for (int i = 0; i < value.Children.Count; i++)
             {
                 ExportValueNode(builder, frame, dt, world, entityId, capability,
-                    path, value.Children[i], lastValues, key);
+                    path, value.Children[i], lastValues, key, cpDeltaCovered);
             }
         }
 
@@ -629,12 +651,22 @@ namespace Core.Capability.Editor
             string path,
             string value,
             Dictionary<string, string> lastValues,
-            string key
+            string key,
+            HashSet<string> cpDeltaCovered
         )
         {
+            bool isCoveredByCp = entityId.HasValue &&
+                cpDeltaCovered != null &&
+                cpDeltaCovered.Contains($"{entityId.Value}/{path}");
+
             if (!lastValues.TryGetValue(key, out string previous))
             {
                 lastValues[key] = value;
+                if (isCoveredByCp)
+                {
+                    return;
+                }
+
                 AppendLine(builder, frame, dt, world, entityId, capability,
                     "baseline", path, value, null);
                 return;
@@ -646,6 +678,11 @@ namespace Core.Capability.Editor
             }
 
             lastValues[key] = value;
+            if (isCoveredByCp)
+            {
+                return;
+            }
+
             AppendLine(builder, frame, dt, world, entityId, capability,
                 "delta", path, value, previous);
         }
@@ -715,7 +752,8 @@ namespace Core.Capability.Editor
             string eventName,
             string path,
             string value,
-            string previous
+            string previous,
+            string pipeline = null
         )
         {
             builder.Append('{');
@@ -727,6 +765,10 @@ namespace Core.Capability.Editor
             AppendJson(builder, "entity", entityId.HasValue ? entityId.Value.ToString() : null);
             AppendJson(builder, "capability", capability);
             AppendJson(builder, "event", eventName);
+            if (!string.IsNullOrEmpty(pipeline))
+            {
+                AppendJson(builder, "pipeline", pipeline);
+            }
             AppendJson(builder, "path", path);
             AppendJson(builder, "value", value);
             AppendJson(builder, "prev", previous);

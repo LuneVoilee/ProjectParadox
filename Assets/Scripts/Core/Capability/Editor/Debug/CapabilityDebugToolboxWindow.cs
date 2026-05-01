@@ -40,13 +40,13 @@ namespace Core.Capability.Editor
         {
             if (m_DebugWindow != null)
             {
-                m_DebugWindow.Close();
+                DestroyImmediate(m_DebugWindow);
                 m_DebugWindow = null;
             }
 
             if (m_FlowchartWindow != null)
             {
-                m_FlowchartWindow.Close();
+                DestroyImmediate(m_FlowchartWindow);
                 m_FlowchartWindow = null;
             }
 

@@ -12,7 +12,7 @@ namespace Core.Capability.Editor
     /// </summary>
     internal sealed class CapabilityDebugReflection
     {
-        private const int MaxChildren = 24;
+        private const int MaxChildren = 5;
         private const int MaxDepth = 2;
         private const int MaxStringLength = 180;
         private const string BackingFieldSuffix = ">k__BackingField";

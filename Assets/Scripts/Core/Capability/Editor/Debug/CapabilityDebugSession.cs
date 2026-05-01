@@ -944,6 +944,7 @@ namespace Core.Capability.Editor
         public int CapabilityId = -1;
         public string CapabilityType;
         public int EntityId = -1;
+        public string Pipeline;
         public string Path;
         public string Value;
         public string Prev;

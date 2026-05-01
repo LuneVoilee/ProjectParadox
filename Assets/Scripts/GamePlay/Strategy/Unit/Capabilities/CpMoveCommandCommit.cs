@@ -1,5 +1,6 @@
 #region
 
+using System.Collections.Generic;
 using Common.Event;
 using Core.Capability;
 using GamePlay.Util;
@@ -13,8 +14,8 @@ namespace GamePlay.Strategy
     public class CpMoveCommandCommit : CapabilityBase
     {
         private int m_RequestVersion;
-        private readonly System.Collections.Generic.List<CEntity> m_Entities =
-            new System.Collections.Generic.List<CEntity>(16);
+
+        private readonly List<CEntity> m_Entities = new(16);
 
         public override int TickGroupOrder { get; protected set; } =
             CapabilityOrder.OrderMoveCommandCommit;
