@@ -28,7 +28,7 @@ namespace Core.Capability
 #if UNITY_EDITOR
             CanUnblock(index, instigator);
 #endif
-            m_Tags[index] = Mathf.Max(0, --m_Tags[index]);
+            m_Tags[index] = Mathf.Max(0, m_Tags[index] - 1);
         }
 
         public bool IsBlocked(List<int> indices)

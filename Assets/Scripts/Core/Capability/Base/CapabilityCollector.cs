@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace Core.Capability
 {
@@ -8,9 +9,19 @@ namespace Core.Capability
 
         private GroupChanged m_GroupChanged;
 
+        private HashSet<CEntity> m_Collected;
+
         public ChangeEventState.EventMask State = ChangeEventState.EventMask.AddRemoveUpdate;
 
-        public static CapabilityCollector CreateCollector(CapabilityWorldBase world, CapabilityBase capability, params int[] componentIds)
+        public CapabilityBase Capability { get; private set; }
+
+        public int Count => m_Collected?.Count ?? 0;
+
+        public static CapabilityCollector CreateCollector(
+            CapabilityWorldBase world,
+            CapabilityBase capability,
+            ChangeEventState.EventMask state,
+            params int[] componentIds)
         {
             EntityGroup[] groups = new EntityGroup[componentIds.Length];
             for (int i = 0; i < componentIds.Length; i++)
@@ -20,8 +31,20 @@ namespace Core.Capability
             }
 
             CapabilityCollector collector = new CapabilityCollector();
+            collector.State = state;
+            collector.Capability = capability;
             collector.InitCollector(groups);
             return collector;
+        }
+
+        public static CapabilityCollector CreateCollector(
+            CapabilityWorldBase world,
+            CapabilityBase capability,
+            params int[] componentIds)
+        {
+            return CreateCollector(
+                world, capability,
+                ChangeEventState.EventMask.AddRemoveUpdate, componentIds);
         }
 
         public static void Release(CapabilityCollector capabilityCollector)
@@ -32,6 +55,7 @@ namespace Core.Capability
         private void InitCollector(EntityGroup[] groups)
         {
             m_Groups = groups;
+            m_Collected = new HashSet<CEntity>();
             m_GroupChanged = OnGroupChanged;
             foreach (var group in m_Groups)
             {
@@ -64,6 +88,32 @@ namespace Core.Capability
 
         private void OnGroupChanged(EntityGroup group, CEntity entity)
         {
+            if (entity != null)
+            {
+                m_Collected.Add(entity);
+            }
+        }
+
+        /// <summary>
+        ///     将收集到的活跃实体转移到外部 buffer 并清空内部集合。
+        /// </summary>
+        public void Drain(List<CEntity> buffer)
+        {
+            if (buffer == null || m_Collected == null)
+            {
+                return;
+            }
+
+            buffer.Clear();
+            foreach (var entity in m_Collected)
+            {
+                if (entity != null && entity.IsActive)
+                {
+                    buffer.Add(entity);
+                }
+            }
+
+            m_Collected.Clear();
         }
 
         public void Dispose()
@@ -86,6 +136,9 @@ namespace Core.Capability
 
             m_Groups = null;
             m_GroupChanged = null;
+            m_Collected?.Clear();
+            m_Collected = null;
+            Capability = null;
         }
     }
 }

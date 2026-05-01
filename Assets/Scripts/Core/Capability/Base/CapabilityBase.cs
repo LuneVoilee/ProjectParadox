@@ -310,7 +310,9 @@ namespace Core.Capability
         public void Log(string message)
         {
             MarkWorked();
+#if UNITY_EDITOR
             CapabilityDebugLogStream.Add(m_Capability, message);
+#endif
             CapabilityTraceStream.Log(m_Capability, message);
             UnityEngine.Debug.Log(message);
         }
@@ -335,7 +337,9 @@ namespace Core.Capability
 
             m_Capability.LastRunState = CapabilityRunState.Error;
             m_Capability.LastErrorMessage = exception?.ToString();
+#if UNITY_EDITOR
             CapabilityDebugLogStream.Add(m_Capability, m_Capability.LastErrorMessage);
+#endif
             CapabilityTraceStream.Log(m_Capability, m_Capability.LastErrorMessage);
         }
 
@@ -453,6 +457,7 @@ namespace Core.Capability
     public sealed class CapabilityCommandBuffer
     {
         private readonly List<CommandEntry> m_Commands = new List<CommandEntry>(64);
+        private readonly List<CEntity> m_EntityBuffer = new List<CEntity>(32);
         private CapabilityWorld m_World;
         private CapabilityContext m_Context;
 
@@ -628,20 +633,22 @@ namespace Core.Capability
                         return;
                     }
 
-                    List<CEntity> buffer = new List<CEntity>(group.EntitiesMap.Count);
+                    m_EntityBuffer.Clear();
                     foreach (CEntity entity in group.EntitiesMap)
                     {
                         if (entity != null)
                         {
-                            buffer.Add(entity);
+                            m_EntityBuffer.Add(entity);
                         }
                     }
 
-                    string value = FormatEntityIds(buffer);
-                    for (int i = 0; i < buffer.Count; i++)
+                    string value = FormatEntityIds(m_EntityBuffer);
+                    for (int i = 0; i < m_EntityBuffer.Count; i++)
                     {
-                        m_World.RemoveChild(buffer[i]);
+                        m_World.RemoveChild(m_EntityBuffer[i]);
                     }
+
+                    m_EntityBuffer.Clear();
 
                     CapabilityTraceStream.CommandFlushed(
                         capability,

@@ -206,8 +206,14 @@ namespace GamePlay.Strategy
 
             if (occupantEntity.HasCombatState()) return false;
 
-            entity.AddComponent<CombatState>().OpponentEntityId = occupantEntityId;
-            occupantEntity.AddComponent<CombatState>().OpponentEntityId = entity.Id;
+            context.Commands.AddComponent<CombatState>(entity, combatState =>
+            {
+                combatState.OpponentEntityId = occupantEntityId;
+            });
+            context.Commands.AddComponent<CombatState>(occupantEntity, combatState =>
+            {
+                combatState.OpponentEntityId = entity.Id;
+            });
 
             DestroyPathIndicator(target);
             context.Commands.RemoveComponent(entity, m_TargetId);

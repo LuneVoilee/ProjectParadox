@@ -49,13 +49,7 @@ namespace GamePlay.Map
             }
 
 
-            var grid = entity.AddComponent<Grid>();
-
-            grid.Cells = new Cell[width * height];
-            grid.Width = width;
-            grid.Height = height;
-            grid.EnableSeamlessX = map.EnableSeamlessX;
-            grid.EnableSeamlessY = map.EnableSeamlessY;
+            var cells = new Cell[width * height];
 
             var random = new Random(noise.Seed);
 
@@ -69,7 +63,7 @@ namespace GamePlay.Map
                 for (var col = 0; col < width; col++)
                 {
                     //获取该数组元素内存地址的直接引用
-                    ref var cell = ref grid.Cells[index];
+                    ref var cell = ref cells[index];
 
                     cell.Coordinates = HexCoordinates.FromOffset(col, row);
 
@@ -81,6 +75,17 @@ namespace GamePlay.Map
                     index++;
                 }
             }
+
+            bool enableSeamlessX = map.EnableSeamlessX;
+            bool enableSeamlessY = map.EnableSeamlessY;
+            context.Commands.AddComponent<Grid>(entity, grid =>
+            {
+                grid.Cells = cells;
+                grid.Width = width;
+                grid.Height = height;
+                grid.EnableSeamlessX = enableSeamlessX;
+                grid.EnableSeamlessY = enableSeamlessY;
+            });
 
             if (entity.TryGetDrawMap(out var drawMap))
             {

@@ -147,7 +147,8 @@ namespace GamePlay.Strategy
                 return false;
             }
 
-            // Nation 组件保存运行时 id 与 JSON 静态字段的快照；Tag 继续作为后续查配置的 key。
+            // 国家实体是 bootstrap 阶段创建的持久实体；当前命令缓冲没有普通 AddChild 语义，
+            // 因此 Nation 组件跟随实体即时安装，避免实体创建和核心组件分属两个生效阶段。
             Nation nation = nationEntity.AddComponent<Nation>();
             nation.Id = nationId;
             nation.Tag = new NationTag(tag);

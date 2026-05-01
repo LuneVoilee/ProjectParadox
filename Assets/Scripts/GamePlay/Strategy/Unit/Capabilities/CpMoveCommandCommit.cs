@@ -54,14 +54,17 @@ namespace GamePlay.Strategy
                 EventBus.GP_OnDestroyPathIndicator?.Invoke(oldTarget.PathIndicatorId);
             }
 
-            UnitMoveTarget target = selectedUnit.AddComponent<UnitMoveTarget>();
-            target.DestinationHex = command.DestinationHex;
-            target.Path = command.Path;
-            target.NextPathIndex = 1;
-            target.RequestVersion = ++m_RequestVersion;
-            target.PathIndicatorId = -1;
-            target.StepTimer = 0f;
-            target.VisualLerpProgress = 1f;
+            int requestVersion = ++m_RequestVersion;
+            context.Commands.AddComponent<UnitMoveTarget>(selectedUnit, target =>
+            {
+                target.DestinationHex = command.DestinationHex;
+                target.Path = command.Path;
+                target.NextPathIndex = 1;
+                target.RequestVersion = requestVersion;
+                target.PathIndicatorId = -1;
+                target.StepTimer = 0f;
+                target.VisualLerpProgress = 1f;
+            });
         }
     }
 }

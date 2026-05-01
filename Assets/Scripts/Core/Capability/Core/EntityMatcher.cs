@@ -100,11 +100,9 @@ namespace Core.Capability
             unchecked
             {
                 int hash = 17;
-                foreach (var t in Indices)
-                {
-                    hash = hash * 31 + t;
-                }
-
+                hash = HashArray(hash, 31, AllOfComponentIds);
+                hash = HashArray(hash, 37, AnyOfComponentIds);
+                hash = HashArray(hash, 41, NoneOfComponentIds);
                 m_HashCode = hash;
             }
         }
@@ -121,20 +119,9 @@ namespace Core.Capability
                 return false;
             }
 
-            if (Indices == null || other.Indices == null || Indices.Length != other.Indices.Length)
-            {
-                return false;
-            }
-
-            for (int i = 0; i < Indices.Length; i++)
-            {
-                if (Indices[i] != other.Indices[i])
-                {
-                    return false;
-                }
-            }
-
-            return true;
+            return ArrayEquals(AllOfComponentIds, other.AllOfComponentIds)
+                && ArrayEquals(AnyOfComponentIds, other.AnyOfComponentIds)
+                && ArrayEquals(NoneOfComponentIds, other.NoneOfComponentIds);
         }
 
         public override bool Equals(object obj)
@@ -145,6 +132,44 @@ namespace Core.Capability
         public override int GetHashCode()
         {
             return m_HashCode;
+        }
+
+        private static int HashArray(int seed, int factor, int[] array)
+        {
+            if (array == null || array.Length == 0)
+            {
+                return seed;
+            }
+
+            unchecked
+            {
+                for (int i = 0; i < array.Length; i++)
+                {
+                    seed = seed * factor + array[i];
+                }
+            }
+
+            return seed;
+        }
+
+        private static bool ArrayEquals(int[] a, int[] b)
+        {
+            int la = a?.Length ?? 0;
+            int lb = b?.Length ?? 0;
+            if (la != lb)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < la; i++)
+            {
+                if (a[i] != b[i])
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
     }
 }
