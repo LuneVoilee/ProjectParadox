@@ -11,24 +11,14 @@ namespace Core.Capability.Editor
 {
     public class CapabilityDebugWindow : EditorWindow
     {
-        private const string MenuPath = "框架工具/调试/Capability 工具箱";
-
-        private readonly CapabilityDebugSession m_Session = new CapabilityDebugSession();
-        private readonly CapabilityDebugSampler m_Sampler = new CapabilityDebugSampler();
-        private readonly CapabilityDebugTraceCapture m_TraceCapture =
-            new CapabilityDebugTraceCapture();
-        private readonly List<CapabilityDebugLogSnapshot> m_LogBuffer =
-            new List<CapabilityDebugLogSnapshot>(64);
-        private readonly Dictionary<string, CapabilityTimelineTrack> m_TimelineTracks =
-            new Dictionary<string, CapabilityTimelineTrack>(128);
-        private readonly List<CapabilityTimelineTrack> m_SortedTracks =
-            new List<CapabilityTimelineTrack>(128);
+        private CapabilityDebugToolboxWindow m_Toolbox;
+        private CapabilityDebugSession m_Session;
+        private CapabilityDebugTraceCapture m_TraceCapture;
 
         private Vector2 m_NavigationScroll;
         private Vector2 m_DetailScroll;
         private Vector2 m_InspectorScroll;
         private Vector2 m_LogScroll;
-        private Vector2 m_TimelineScroll;
 
         private string m_SelectedWorldKey;
         private string m_SelectedEntityKey;
@@ -36,23 +26,20 @@ namespace Core.Capability.Editor
         private string m_SelectedPipeline;
         private CapabilityDebugItemKind m_SelectedItemKind;
 
-        private bool m_IsToolPlaying = true;
         private bool m_ComponentsFoldout = true;
         private int m_NavigationMode;
-        private bool m_WasEditorPausedByDebugger;
-        private string m_FrameInput = "0";
-        private int m_LastAppliedFrameIndex = -1;
-        private int m_LastSampledUnityFrameCount = -1;
         private float m_InspectorPanelWidth = CapabilityDebugStyles.InspectorMinWidth;
 
         private readonly HashSet<string> m_ExpandedFoldouts = new HashSet<string>();
         private readonly HashSet<int> m_EvidenceEntityIds = new HashSet<int>();
         private readonly HashSet<string> m_EvidencePipelines = new HashSet<string>();
 
-        // 增量日志索引：key = $"{worldKey}:cap:{capabilityKey}", value = 全帧日志列表。
-        // 每帧采样时追加，避免 CollectGlobalCapabilityLogs 遍历全部历史帧做 Deep Clone。
-        private readonly Dictionary<string, List<CapabilityDebugLogSnapshot>> m_LogIndex =
-            new Dictionary<string, List<CapabilityDebugLogSnapshot>>(64);
+        private bool m_PendingRestoreSelection;
+        private int m_PendingRestoreNavMode;
+        private string m_PendingRestorePipeline;
+        private string m_PendingRestoreCapType;      // Capability.TypeFullName
+        private int m_PendingRestoreEntityId = -1;    // CEntity.Id
+        private string m_PendingRestoreCompType;      // Component.TypeFullName
 
         private bool m_EvidenceFoldout = true;
         private bool m_EvidenceRecording;
@@ -66,107 +53,178 @@ namespace Core.Capability.Editor
         private int m_EvidenceStartFrame = -1;
         private int m_EvidenceMarkedFrame = -1;
 
-        internal CapabilityDebugSession GetSession()
+        private void OnEnable()
         {
-            return m_Session;
+            // Toolbox 在 CreateSubWindows 之后才注入，OnEnable 时不做任何事。
+        }
+
+        internal void SetToolbox(CapabilityDebugToolboxWindow toolbox)
+        {
+            m_Toolbox = toolbox;
+            m_Session = toolbox.Session;
+            m_TraceCapture = toolbox.TraceCapture;
+        }
+
+        // 采样帧后由 ToolboxWindow 回调，用于维护选中状态。
+        internal void EnsureSelectionForFrame(CapabilityDebugFrame frame)
+        {
+            if (frame == null || frame.Worlds.Count == 0)
+            {
+                m_SelectedWorldKey = null;
+                m_SelectedEntityKey = null;
+                m_SelectedItemKey = null;
+                m_SelectedItemKind = CapabilityDebugItemKind.None;
+                return;
+            }
+
+            CapabilityDebugWorldSnapshot world = frame.Worlds[0];
+
+            if (m_PendingRestoreSelection)
+            {
+                m_NavigationMode = m_PendingRestoreNavMode;
+
+                if (m_NavigationMode == 0 && !string.IsNullOrEmpty(m_PendingRestorePipeline))
+                {
+                    // 恢复 Pipeline 选择。
+                    SelectPipeline(world.Key, m_PendingRestorePipeline);
+
+                    // 进一步恢复 Capability 选择（通过稳定字段 TypeFullName 匹配）。
+                    if (!string.IsNullOrEmpty(m_PendingRestoreCapType))
+                    {
+                        for (int i = 0; i < world.GlobalCapabilities.Count; i++)
+                        {
+                            if (world.GlobalCapabilities[i].TypeFullName ==
+                                m_PendingRestoreCapType)
+                            {
+                                SelectItem(world.GlobalCapabilities[i].Key,
+                                    CapabilityDebugItemKind.Capability);
+                                break;
+                            }
+                        }
+                    }
+                }
+                else if (m_NavigationMode == 1 && m_PendingRestoreEntityId > 0)
+                {
+                    // Entity 模式：通过稳定字段 EntityId 查找 Entity。
+                    CapabilityDebugEntitySnapshot entity = null;
+                    for (int i = 0; i < world.Entities.Count; i++)
+                    {
+                        if (world.Entities[i].EntityId == m_PendingRestoreEntityId)
+                        {
+                            entity = world.Entities[i];
+                            break;
+                        }
+                    }
+
+                    if (entity != null)
+                    {
+                        SelectEntity(world.Key, entity.Key);
+
+                        // 进一步恢复 Component 选择（通过 TypeFullName 匹配）。
+                        if (!string.IsNullOrEmpty(m_PendingRestoreCompType))
+                        {
+                            for (int i = 0; i < entity.Components.Count; i++)
+                            {
+                                if (entity.Components[i].TypeFullName ==
+                                    m_PendingRestoreCompType)
+                                {
+                                    SelectItem(entity.Components[i].Key,
+                                        CapabilityDebugItemKind.Component);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                m_PendingRestoreSelection = false;
+            }
+
+            if (m_NavigationMode == 0)
+            {
+                m_SelectedWorldKey = world.Key;
+                if (string.IsNullOrEmpty(m_SelectedPipeline))
+                {
+                    List<string> pipelines = BuildPipelines(world);
+                    if (pipelines.Count > 0)
+                    {
+                        SelectPipeline(world.Key, pipelines[0]);
+                    }
+                }
+
+                return;
+            }
+
+            CapabilityDebugEntitySnapshot selectedEntity = frame.FindEntity(m_SelectedEntityKey);
+            if (selectedEntity == null)
+            {
+                selectedEntity = world.Entities.Count > 0 ? world.Entities[0] : null;
+                m_SelectedWorldKey = world.Key;
+                m_SelectedEntityKey = selectedEntity?.Key;
+            }
+
+            if (selectedEntity == null) return;
+            if (!HasSelectedItem(selectedEntity))
+            {
+                SelectFirstItem(selectedEntity);
+            }
+        }
+
+        // 会话清空时由 ToolboxWindow 回调，清除选中状态并标记恢复。
+        internal void OnSessionCleared()
+        {
+            m_PendingRestoreNavMode = m_NavigationMode;
+            m_PendingRestorePipeline = null;
+            m_PendingRestoreCapType = null;
+            m_PendingRestoreEntityId = -1;
+            m_PendingRestoreCompType = null;
+
+            if (m_NavigationMode == 0)
+            {
+                // Pipeline 模式：保存 pipeline 名 + 选中的 Capability TypeFullName。
+                m_PendingRestorePipeline = m_SelectedPipeline;
+                if (m_SelectedItemKind == CapabilityDebugItemKind.Capability)
+                {
+                    CapabilityDebugCapabilitySnapshot cap = GetSelectedGlobalCapability();
+                    m_PendingRestoreCapType = cap?.TypeFullName;
+                }
+            }
+            else
+            {
+                // Entity 模式：保存 EntityId + 选中的 Component TypeFullName。
+                CapabilityDebugEntitySnapshot entity = GetSelectedEntity();
+                if (entity != null)
+                {
+                    m_PendingRestoreEntityId = entity.EntityId;
+                    if (m_SelectedItemKind == CapabilityDebugItemKind.Component)
+                    {
+                        CapabilityDebugComponentSnapshot comp =
+                            entity.FindComponent(m_SelectedItemKey);
+                        m_PendingRestoreCompType = comp?.TypeFullName;
+                    }
+                }
+            }
+
+            m_PendingRestoreSelection = true;
+
+            m_SelectedWorldKey = null;
+            m_SelectedEntityKey = null;
+            m_SelectedItemKey = null;
+            m_SelectedItemKind = CapabilityDebugItemKind.None;
+            m_EvidenceRecording = false;
+            ConfigureEvidenceTraceCapture();
+            m_ExpandedFoldouts.Clear();
+        }
+
+        internal void OnFrameSampled()
+        {
         }
 
         private void OnGUI()
         {
+            // Toolbox 通过 SetToolbox 注入，CreateInstance 时可能尚未设置。
+            if (m_Toolbox == null) return;
             OnInternalGUI(position);
-        }
-
-        private void OnEnable()
-        {
-            m_Sampler.SetTraceCapture(m_TraceCapture);
-            EditorApplication.update += OnEditorUpdate;
-        }
-
-        private void OnDisable()
-        {
-            EditorApplication.update -= OnEditorUpdate;
-            m_TraceCapture.Unregister();
-        }
-
-        private void OnEditorUpdate()
-        {
-            if (!EditorApplication.isPlaying)
-            {
-                if (m_Session.HasFrames)
-                {
-                    ClearSession();
-                }
-
-                Repaint();
-                return;
-            }
-
-            EnforceHistoricalPause();
-
-            if (ShouldSample())
-            {
-                SampleFrame();
-            }
-
-            Repaint();
-        }
-
-        private void EnforceHistoricalPause()
-        {
-            if (!m_Session.HasFrames)
-            {
-                return;
-            }
-
-            if (m_Session.IsAtLatestFrame)
-            {
-                return;
-            }
-
-            if (EditorApplication.isPaused)
-            {
-                return;
-            }
-
-            // 历史帧必须冻结 Unity，否则刚还原的场景状态会被下一帧运行逻辑覆盖。
-            EditorApplication.isPaused = true;
-            m_WasEditorPausedByDebugger = true;
-        }
-
-        private bool ShouldSample()
-        {
-            if (!m_IsToolPlaying)
-            {
-                return false;
-            }
-
-            if (EditorApplication.isPaused)
-            {
-                return false;
-            }
-
-            if (!m_Session.IsAtLatestFrame)
-            {
-                return false;
-            }
-
-            if (Time.frameCount == m_LastSampledUnityFrameCount)
-            {
-                return false;
-            }
-
-            return true;
-        }
-
-        private void SampleFrame()
-        {
-            int nextFrameIndex = m_Session.FrameCount;
-            CapabilityDebugFrame frame = m_Sampler.Sample(nextFrameIndex);
-            m_Session.AddFrame(frame);
-            m_LastSampledUnityFrameCount = frame.UnityFrameCount;
-            AppendTimelineFrame(frame);
-            EnsureSelection(frame);
-            SyncFrameInput();
         }
 
         private Rect m_LayoutRect;
@@ -174,59 +232,10 @@ namespace Core.Capability.Editor
         public void OnInternalGUI(Rect layoutRect)
         {
             m_LayoutRect = layoutRect;
-            float contentTop = DrawTopToolbar();
+            float contentTop = DrawEvidencePanel(0f);
             Rect contentRect = new Rect(0f, contentTop, m_LayoutRect.width,
                 Mathf.Max(0f, m_LayoutRect.height - contentTop));
-            float timelineHeight = Mathf.Max(CapabilityDebugStyles.TimelineMinHeight,
-                contentRect.height * 0.33f);
-            Rect upperRect = new Rect(contentRect.x, contentRect.y, contentRect.width,
-                Mathf.Max(100f, contentRect.height - timelineHeight));
-            Rect timelineRect = new Rect(contentRect.x, upperRect.yMax, contentRect.width,
-                timelineHeight);
-
-            DrawUpperPanels(upperRect);
-            DrawTimelinePanel(timelineRect);
-        }
-
-        private float DrawTopToolbar()
-        {
-            const float toolbarHeight = 21f;
-            float y = 0f;
-            Rect toolbarRect = new Rect(0f, y, m_LayoutRect.width, toolbarHeight);
-            GUILayout.BeginArea(toolbarRect, EditorStyles.toolbar);
-            EditorGUILayout.BeginHorizontal();
-            GUILayout.Label("Capability Temporal Debugger", EditorStyles.boldLabel,
-                GUILayout.ExpandWidth(true));
-
-            GUI.enabled = m_Session.HasFrames;
-            if (GUILayout.Button("清空当前会话", EditorStyles.toolbarButton, GUILayout.Width(96f)))
-            {
-                ClearSession();
-            }
-
-            GUI.enabled = true;
-            EditorGUILayout.EndHorizontal();
-            GUILayout.EndArea();
-            y += toolbarHeight;
-
-            string message = GetToolbarMessage(out MessageType messageType);
-            if (!string.IsNullOrEmpty(message))
-            {
-                float helpHeight = Mathf.Max(38f, EditorStyles.helpBox.CalcHeight(
-                    new GUIContent(message), Mathf.Max(1f, m_LayoutRect.width - 8f)));
-                Rect helpRect = new Rect(4f, y + 4f, Mathf.Max(1f, m_LayoutRect.width - 8f),
-                    helpHeight);
-                EditorGUI.HelpBox(helpRect, message, messageType);
-                y = helpRect.yMax + 4f;
-            }
-
-            Rect separatorRect = new Rect(0f, y, m_LayoutRect.width, 1f);
-            float evidenceHeight = DrawEvidencePanel(y + 4f);
-            y += evidenceHeight + 8f;
-
-            separatorRect = new Rect(0f, y, m_LayoutRect.width, 1f);
-            EditorGUI.DrawRect(separatorRect, CapabilityDebugStyles.SeparatorColor);
-            return y + 3f;
+            DrawUpperPanels(contentRect);
         }
 
         private float DrawEvidencePanel(float y)
@@ -330,22 +339,6 @@ namespace Core.Capability.Editor
             return height;
         }
 
-        private string GetToolbarMessage(out MessageType messageType)
-        {
-            messageType = MessageType.Info;
-            if (!EditorApplication.isPlaying)
-            {
-                return "进入 Play Mode 后开始记录 Temporal Debug 会话。";
-            }
-
-            if (EditorApplication.isPaused && !m_Session.IsAtLatestFrame)
-            {
-                return "当前停在历史帧。回到最新帧后才允许 Unity 继续运行。";
-            }
-
-            return null;
-        }
-
         private void DrawUpperPanels(Rect rect)
         {
             float spacing = CapabilityDebugStyles.PanelSpacing;
@@ -433,8 +426,7 @@ namespace Core.Capability.Editor
             {
                 string pipeline = pipelines[i];
                 int count = CountCapabilitiesInPipeline(world, pipeline);
-                bool selected = m_SelectedItemKind == CapabilityDebugItemKind.Pipeline &&
-                                m_SelectedPipeline == pipeline &&
+                bool selected = m_SelectedPipeline == pipeline &&
                                 m_SelectedWorldKey == world.Key;
                 if (DrawSelectableRow($"{pipeline} ({count})", selected,
                         CapabilityDebugStyles.MatchedStateColor))
@@ -463,7 +455,9 @@ namespace Core.Capability.Editor
             EditorGUILayout.LabelField(
                 m_NavigationMode == 0 ? "Capability 列表" : "Entity 详情",
                 EditorStyles.boldLabel);
-            if (m_SelectedItemKind == CapabilityDebugItemKind.Pipeline)
+
+            // Pipeline 模式下始终显示能力列表，不随单个 Capability 选中而切换。
+            if (!string.IsNullOrEmpty(m_SelectedPipeline))
             {
                 DrawSelectedPipelineCapabilities();
                 return;
@@ -472,12 +466,6 @@ namespace Core.Capability.Editor
             CapabilityDebugEntitySnapshot entity = GetSelectedEntity();
             if (entity == null)
             {
-                if (m_SelectedItemKind == CapabilityDebugItemKind.Capability)
-                {
-                    DrawSelectedGlobalCapabilityDetail();
-                    return;
-                }
-
                 EditorGUILayout.Space(8f);
                 EditorGUILayout.HelpBox("请选择一个 Pipeline 或 Entity。", MessageType.Info);
                 return;
@@ -668,19 +656,19 @@ namespace Core.Capability.Editor
             EditorGUILayout.LabelField("Log", EditorStyles.boldLabel);
 
             // 从增量索引 O(1) 获取日志，不再需要遍历历史帧做 Deep Clone。
-            CollectGlobalCapabilityLogs(capability, m_LogBuffer);
+            CollectGlobalCapabilityLogs(capability, m_Toolbox.LogBuffer);
 
             EditorGUILayout.BeginVertical(EditorStyles.helpBox, GUILayout.Height(140f));
             m_LogScroll = EditorGUILayout.BeginScrollView(m_LogScroll);
-            if (m_LogBuffer.Count == 0)
+            if (m_Toolbox.LogBuffer.Count == 0)
             {
                 EditorGUILayout.LabelField("暂无日志。", EditorStyles.miniLabel);
             }
             else
             {
-                for (int i = 0; i < m_LogBuffer.Count; i++)
+                for (int i = 0; i < m_Toolbox.LogBuffer.Count; i++)
                 {
-                    CapabilityDebugLogSnapshot log = m_LogBuffer[i];
+                    CapabilityDebugLogSnapshot log = m_Toolbox.LogBuffer[i];
                     EditorGUILayout.SelectableLabel(
                         $"[第 {log.FrameIndex} 帧] {log.Message}",
                         CapabilityDebugStyles.LogStyle,
@@ -875,133 +863,6 @@ namespace Core.Capability.Editor
             public float ContentWidth;
         }
 
-        private void DrawTimelinePanel(Rect rect)
-        {
-            GUILayout.BeginArea(rect, EditorStyles.helpBox);
-            DrawTimelineControls();
-            EditorGUILayout.Space(4f);
-            DrawTimelineTracks();
-            GUILayout.EndArea();
-        }
-
-        private void DrawTimelineControls()
-        {
-            EditorGUILayout.BeginHorizontal();
-            if (GUILayout.Button("播放", GUILayout.Width(54f)))
-            {
-                PlayTool();
-            }
-
-            GUI.enabled = m_Session.HasFrames;
-            if (GUILayout.Button("暂停", GUILayout.Width(54f)))
-            {
-                PauseToolAndUnity();
-            }
-
-            int totalFrames = m_Session.FrameCount;
-            int current = Mathf.Max(0, m_Session.CurrentFrameIndex);
-            EditorGUILayout.LabelField($"共 {totalFrames} 帧", GUILayout.Width(84f));
-
-            if (GUILayout.Button("<", GUILayout.Width(28f)))
-            {
-                JumpToFrame(current - 1);
-            }
-
-            GUI.SetNextControlName("CapabilityFrameInput");
-            string newInput = EditorGUILayout.TextField(m_FrameInput, GUILayout.Width(68f));
-            if (newInput != m_FrameInput)
-            {
-                m_FrameInput = newInput;
-            }
-
-            if (Event.current.type == EventType.KeyDown &&
-                Event.current.keyCode == KeyCode.Return &&
-                GUI.GetNameOfFocusedControl() == "CapabilityFrameInput")
-            {
-                if (int.TryParse(m_FrameInput, out int targetFrame))
-                {
-                    JumpToFrame(targetFrame);
-                }
-
-                Event.current.Use();
-            }
-
-            if (GUILayout.Button(">", GUILayout.Width(28f)))
-            {
-                JumpToFrame(current + 1);
-            }
-
-            int sliderValue = current;
-            int maxFrame = Mathf.Max(0, totalFrames - 1);
-            EditorGUI.BeginChangeCheck();
-            sliderValue = EditorGUILayout.IntSlider(sliderValue, 0, maxFrame);
-            if (EditorGUI.EndChangeCheck())
-            {
-                JumpToFrame(sliderValue);
-            }
-
-            GUI.enabled = true;
-            EditorGUILayout.EndHorizontal();
-        }
-
-        private void DrawTimelineTracks()
-        {
-            if (!m_Session.HasFrames || m_TimelineTracks.Count == 0)
-            {
-                EditorGUILayout.Space(8f);
-                EditorGUILayout.HelpBox("暂无 Timeline 数据。", MessageType.Info);
-                return;
-            }
-
-            m_SortedTracks.Clear();
-            foreach (KeyValuePair<string, CapabilityTimelineTrack> pair in m_TimelineTracks)
-            {
-                m_SortedTracks.Add(pair.Value);
-            }
-
-            m_SortedTracks.Sort((x, y) => string.CompareOrdinal(x.Name, y.Name));
-            m_TimelineScroll = EditorGUILayout.BeginScrollView(m_TimelineScroll,
-                GUILayout.ExpandHeight(true));
-            float width = Mathf.Max(280f, m_LayoutRect.width - 260f);
-            for (int i = 0; i < m_SortedTracks.Count; i++)
-            {
-                DrawTrack(m_SortedTracks[i], width);
-            }
-
-            EditorGUILayout.EndScrollView();
-        }
-
-        private void DrawTrack(CapabilityTimelineTrack track, float timelineWidth)
-        {
-            Rect rowRect = EditorGUILayout.GetControlRect(false, 17f);
-            Rect timelineRect = new Rect(rowRect.x, rowRect.y + 2f, timelineWidth, 12f);
-            EditorGUI.DrawRect(timelineRect, CapabilityDebugStyles.PanelBackgroundColor);
-
-            List<CapabilityTimelineSegment> segments = track.BuildSegments();
-            float cursorX = timelineRect.x;
-            int frameCount = Mathf.Max(1, track.Count);
-            for (int i = 0; i < segments.Count; i++)
-            {
-                CapabilityTimelineSegment segment = segments[i];
-                float width = timelineRect.width * segment.Count / frameCount;
-                Rect segmentRect = new Rect(cursorX, timelineRect.y, width, timelineRect.height);
-                EditorGUI.DrawRect(segmentRect, CapabilityDebugStyles.ToStateColor(segment.State));
-                cursorX += width;
-            }
-
-            if (m_Session.CurrentFrameIndex >= 0 && frameCount > 1)
-            {
-                float normalized = m_Session.CurrentFrameIndex / (float)(frameCount - 1);
-                float markerX = Mathf.Lerp(timelineRect.x, timelineRect.xMax, normalized);
-                EditorGUI.DrawRect(new Rect(markerX, timelineRect.y - 1f, 2f,
-                    timelineRect.height + 2f), Color.red);
-            }
-
-            Rect labelRect = new Rect(timelineRect.xMax + 8f, rowRect.y,
-                Mathf.Max(40f, m_LayoutRect.width - timelineRect.width - 24f), rowRect.height);
-            EditorGUI.LabelField(labelRect, track.Name);
-        }
-
         private bool DrawSelectableRow(string label, bool selected, Color markerColor)
         {
             Rect rect = EditorGUILayout.GetControlRect(false, 22f);
@@ -1030,99 +891,6 @@ namespace Core.Capability.Editor
             return false;
         }
 
-        private void AppendTimelineFrame(CapabilityDebugFrame frame)
-        {
-            HashSet<string> touched = new HashSet<string>();
-            for (int worldIndex = 0; worldIndex < frame.Worlds.Count; worldIndex++)
-            {
-                CapabilityDebugWorldSnapshot world = frame.Worlds[worldIndex];
-                for (int capIndex = 0; capIndex < world.GlobalCapabilities.Count; capIndex++)
-                {
-                    CapabilityDebugCapabilitySnapshot capability =
-                        world.GlobalCapabilities[capIndex];
-                    string key = $"{world.Key}:global:{capability.Key}";
-                    string logKey = $"{world.Key}:cap:{capability.Key}";
-
-                    if (!m_LogIndex.TryGetValue(logKey, out List<CapabilityDebugLogSnapshot> logList))
-                    {
-                        logList = new List<CapabilityDebugLogSnapshot>(capability.Logs.Count);
-                        m_LogIndex.Add(logKey, logList);
-                    }
-
-                    logList.AddRange(capability.Logs);
-
-                    if (!m_TimelineTracks.TryGetValue(key, out CapabilityTimelineTrack track))
-                    {
-                        track = new CapabilityTimelineTrack(
-                            $"{world.DisplayName}/{capability.TypeName}");
-                        BackfillTrack(track, m_Session.FrameCount - 1);
-                        m_TimelineTracks.Add(key, track);
-                    }
-
-                    track.Push(capability.State);
-                    touched.Add(key);
-                }
-            }
-
-            foreach (KeyValuePair<string, CapabilityTimelineTrack> pair in m_TimelineTracks)
-            {
-                if (!touched.Contains(pair.Key) && pair.Value.Count < m_Session.FrameCount)
-                {
-                    pair.Value.Push(CapabilityRuntimeState.None);
-                }
-            }
-        }
-
-        private static void BackfillTrack(CapabilityTimelineTrack track, int count)
-        {
-            for (int i = 0; i < count; i++)
-            {
-                track.Push(CapabilityRuntimeState.None);
-            }
-        }
-
-        private void EnsureSelection(CapabilityDebugFrame frame)
-        {
-            if (frame == null || frame.Worlds.Count == 0)
-            {
-                m_SelectedWorldKey = null;
-                m_SelectedEntityKey = null;
-                m_SelectedItemKey = null;
-                m_SelectedItemKind = CapabilityDebugItemKind.None;
-                return;
-            }
-
-            if (m_NavigationMode == 0)
-            {
-                CapabilityDebugWorldSnapshot world = frame.Worlds[0];
-                m_SelectedWorldKey = world.Key;
-                if (string.IsNullOrEmpty(m_SelectedPipeline))
-                {
-                    List<string> pipelines = BuildPipelines(world);
-                    if (pipelines.Count > 0)
-                    {
-                        SelectPipeline(world.Key, pipelines[0]);
-                    }
-                }
-
-                return;
-            }
-
-            CapabilityDebugEntitySnapshot selectedEntity = frame.FindEntity(m_SelectedEntityKey);
-            if (selectedEntity == null)
-            {
-                CapabilityDebugWorldSnapshot world = frame.Worlds[0];
-                selectedEntity = world.Entities.Count > 0 ? world.Entities[0] : null;
-                m_SelectedWorldKey = world.Key;
-                m_SelectedEntityKey = selectedEntity?.Key;
-            }
-
-            if (selectedEntity == null) return;
-            if (!HasSelectedItem(selectedEntity))
-            {
-                SelectFirstItem(selectedEntity);
-            }
-        }
 
         private bool HasSelectedItem(CapabilityDebugEntitySnapshot entity)
         {
@@ -1551,140 +1319,13 @@ namespace Core.Capability.Editor
                 return;
             }
 
-            // 从增量索引直接取，O(1) 查找，无需遍历历史帧 + Deep Clone。
+            // 从 Session 的增量索引 O(1) 查询。
             string logKey = $"{m_SelectedWorldKey}:cap:{capability.Key}";
-            if (m_LogIndex.TryGetValue(logKey,
+            if (m_Session.LogIndex.TryGetValue(logKey,
                     out List<CapabilityDebugLogSnapshot> logList))
             {
                 destination.AddRange(logList);
             }
-        }
-
-        private void JumpToFrame(int frameIndex)
-        {
-            if (!m_Session.HasFrames)
-            {
-                return;
-            }
-
-            m_Session.SetCurrentFrameIndex(frameIndex);
-            SyncFrameInput();
-            PauseToolAndUnity();
-            ApplyCurrentFrameToScene();
-
-            if (m_Session.CurrentFrame != null)
-            {
-                EnsureSelection(m_Session.CurrentFrame);
-            }
-        }
-
-        private void ApplyCurrentFrameToScene()
-        {
-            if (m_Session.CurrentFrameIndex == m_LastAppliedFrameIndex)
-            {
-                return;
-            }
-
-            CapabilityDebugSceneState.Restore(m_Session.CurrentFrame);
-            m_LastAppliedFrameIndex = m_Session.CurrentFrameIndex;
-        }
-
-        private void PlayTool()
-        {
-            m_IsToolPlaying = true;
-
-            if (!m_Session.HasFrames)
-            {
-                // 无帧数据时只解除 Unity 暂停，让 OnEditorUpdate 自然开始采样。
-                if (m_WasEditorPausedByDebugger)
-                {
-                    EditorApplication.isPaused = false;
-                    m_WasEditorPausedByDebugger = false;
-                }
-
-                return;
-            }
-
-            if (!m_Session.IsAtLatestFrame)
-            {
-                m_Session.SetCurrentFrameIndex(m_Session.FrameCount - 1);
-                SyncFrameInput();
-                ApplyCurrentFrameToScene();
-                if (m_Session.CurrentFrame != null)
-                {
-                    EnsureSelection(m_Session.CurrentFrame);
-                }
-            }
-
-            // 只有回到最新帧时才解除由 Debugger 触发的 Unity 暂停。
-            if (m_WasEditorPausedByDebugger)
-            {
-                EditorApplication.isPaused = false;
-                m_WasEditorPausedByDebugger = false;
-            }
-        }
-
-        private void PauseToolAndUnity()
-        {
-            m_IsToolPlaying = false;
-            if (EditorApplication.isPlaying && !EditorApplication.isPaused)
-            {
-                EditorApplication.isPaused = true;
-                m_WasEditorPausedByDebugger = true;
-            }
-        }
-
-        private void SyncFrameInput()
-        {
-            m_FrameInput = Mathf.Max(0, m_Session.CurrentFrameIndex).ToString();
-        }
-
-        private void ClearSession()
-        {
-            // 如果正在查看历史帧，先把场景恢复到最新帧状态再清除数据。
-            if (m_Session.HasFrames && !m_Session.IsAtLatestFrame)
-            {
-                m_Session.SetCurrentFrameIndex(m_Session.FrameCount - 1);
-                SyncFrameInput();
-                ApplyCurrentFrameToScene();
-            }
-
-            bool wasPaused = !m_IsToolPlaying;
-
-            m_Session.Clear();
-            m_EvidenceRecording = false;
-            ConfigureEvidenceTraceCapture();
-            m_TraceCapture.Unregister();
-            m_TraceCapture.Clear();
-            m_TimelineTracks.Clear();
-            m_LogIndex.Clear();
-            m_SelectedWorldKey = null;
-            m_SelectedEntityKey = null;
-            m_SelectedItemKey = null;
-            m_SelectedItemKind = CapabilityDebugItemKind.None;
-            m_LastAppliedFrameIndex = -1;
-            m_LastSampledUnityFrameCount = -1;
-            m_FrameInput = "0";
-            m_ExpandedFoldouts.Clear();
-
-            if (wasPaused)
-            {
-                // 清除前是暂停状态 → 保持暂停，不解锁 Unity，不自动开始采样。
-                m_IsToolPlaying = false;
-            }
-            else
-            {
-                m_IsToolPlaying = true;
-                if (m_WasEditorPausedByDebugger && EditorApplication.isPaused)
-                {
-                    EditorApplication.isPaused = false;
-                }
-
-                m_WasEditorPausedByDebugger = false;
-            }
-#if UNITY_EDITOR
-            CapabilityDebugLogBridge.Clear();
-#endif
         }
     }
 }

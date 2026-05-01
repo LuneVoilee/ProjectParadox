@@ -24,6 +24,10 @@ namespace Core.Capability.Editor
         private readonly List<CapabilityDebugSparseFrame> m_Frames =
             new List<CapabilityDebugSparseFrame>(1024);
 
+        // 增量日志索引：采样时追加，Inspector 直接 O(1) 查询。
+        public readonly Dictionary<string, List<CapabilityDebugLogSnapshot>> LogIndex =
+            new Dictionary<string, List<CapabilityDebugLogSnapshot>>(64);
+
         private CapabilityDebugFrame m_LatestFrame;
         private CapabilityDebugFrame m_CachedFrame;
         private int m_CachedFrameIndex = -1;
@@ -97,6 +101,7 @@ namespace Core.Capability.Editor
         public void Clear()
         {
             m_Frames.Clear();
+            LogIndex.Clear();
             CurrentFrameIndex = -1;
             m_LatestFrame = null;
             m_CachedFrame = null;
