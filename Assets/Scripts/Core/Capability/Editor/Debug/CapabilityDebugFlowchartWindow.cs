@@ -21,6 +21,10 @@ namespace Core.Capability.Editor
         private string m_SelectedWorldKey;
         private float m_LastSampleTime;
 
+        internal string SelectedPipeline => m_SelectedPipeline;
+
+        internal string SelectedCapabilityKey => m_SelectedCapabilityKey;
+
         internal void SetSession(CapabilityDebugSession session)
         {
             m_Session = session;

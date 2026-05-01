@@ -216,6 +216,13 @@ namespace Core.Capability.Editor
             m_ExpandedFoldouts.Clear();
         }
 
+        internal string SelectedPipelineForTimeline => m_SelectedPipeline;
+
+        internal string SelectedCapabilityKeyForTimeline =>
+            m_SelectedItemKind == CapabilityDebugItemKind.Capability
+                ? m_SelectedItemKey
+                : null;
+
         internal void OnFrameSampled()
         {
         }

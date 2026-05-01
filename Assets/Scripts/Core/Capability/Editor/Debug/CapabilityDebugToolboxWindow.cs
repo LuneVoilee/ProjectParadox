@@ -296,7 +296,8 @@ namespace Core.Capability.Editor
                             out CapabilityTimelineTrack track))
                     {
                         track = new CapabilityTimelineTrack(
-                            $"{world.DisplayName}/{capability.TypeName}");
+                            $"{world.DisplayName}/{capability.TypeName}",
+                            capability.Pipeline ?? string.Empty);
                         BackfillTrack(track, m_Session.FrameCount - 1);
                         m_TimelineTracks.Add(trackKey, track);
                     }
@@ -582,10 +583,50 @@ namespace Core.Capability.Editor
                 return;
             }
 
+            // 根据当前活动页签的选中项筛选时间轴轨道。
+            string filterPipeline = null;
+            string filterCapKey = null;
+            if (m_SelectedTab == 0 && m_DebugWindow != null)
+            {
+                filterCapKey = m_DebugWindow.SelectedCapabilityKeyForTimeline;
+                if (filterCapKey == null)
+                {
+                    filterPipeline = m_DebugWindow.SelectedPipelineForTimeline;
+                }
+            }
+            else if (m_SelectedTab == 1 && m_FlowchartWindow != null)
+            {
+                filterCapKey = m_FlowchartWindow.SelectedCapabilityKey;
+                if (filterCapKey == null)
+                {
+                    filterPipeline = m_FlowchartWindow.SelectedPipeline;
+                }
+            }
+
             m_SortedTracks.Clear();
             foreach (KeyValuePair<string, CapabilityTimelineTrack> pair in m_TimelineTracks)
             {
-                m_SortedTracks.Add(pair.Value);
+                CapabilityTimelineTrack track = pair.Value;
+
+                // 选中具体 Cap → 只显示该 Cap 的轨道。
+                if (filterCapKey != null)
+                {
+                    if (!pair.Key.EndsWith(":global:" + filterCapKey,
+                            StringComparison.Ordinal))
+                    {
+                        continue;
+                    }
+                }
+                // 选中 Pipeline → 只显示属于该 Pipeline 的轨道。
+                else if (filterPipeline != null)
+                {
+                    if (!TrackPipelineContains(track.Pipeline, filterPipeline))
+                    {
+                        continue;
+                    }
+                }
+
+                m_SortedTracks.Add(track);
             }
 
             m_SortedTracks.Sort((x, y) => string.CompareOrdinal(x.Name, y.Name));
@@ -598,6 +639,25 @@ namespace Core.Capability.Editor
             }
 
             EditorGUILayout.EndScrollView();
+        }
+
+        private static bool TrackPipelineContains(string pipeline, string target)
+        {
+            if (string.IsNullOrEmpty(pipeline))
+            {
+                return target == CapabilityPipeline.Other;
+            }
+
+            string[] parts = pipeline.Split(',');
+            for (int i = 0; i < parts.Length; i++)
+            {
+                if (string.Equals(parts[i].Trim(), target, StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private void DrawTrack(CapabilityTimelineTrack track, float timelineWidth)

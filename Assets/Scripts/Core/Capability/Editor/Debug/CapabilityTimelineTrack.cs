@@ -26,11 +26,14 @@ namespace Core.Capability.Editor
 
         public string Name { get; }
 
+        public string Pipeline { get; }
+
         public int Count => m_States.Count;
 
-        public CapabilityTimelineTrack(string name)
+        public CapabilityTimelineTrack(string name, string pipeline)
         {
             Name = name;
+            Pipeline = pipeline ?? string.Empty;
         }
 
         public void Push(CapabilityRuntimeState state)
