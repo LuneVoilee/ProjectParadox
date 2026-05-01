@@ -18,7 +18,7 @@ namespace Core.Capability.Editor
         public bool FollowTouchedEntities = true;
         public bool IncludeTransforms = true;
         public readonly List<int> EntityIds = new List<int>(16);
-        public readonly List<string> Categories = new List<string>(8);
+        public readonly List<string> Pipelines = new List<string>(8);
     }
 
     internal static class CapabilityEvidenceExporter
@@ -82,8 +82,8 @@ namespace Core.Capability.Editor
             var builder = new StringBuilder(1024 * 32);
             var lastValues = new Dictionary<string, string>(4096);
             var watchedIds = new HashSet<int>(request.EntityIds);
-            var categories = new HashSet<string>(request.Categories);
-            ExpandWatchlist(session, request, start, end, watchedIds, categories);
+            var pipelines = new HashSet<string>(request.Pipelines);
+            ExpandWatchlist(session, request, start, end, watchedIds, pipelines);
             CapabilityDebugFrame previousFrame = null;
 
             for (int frameIndex = start; frameIndex <= end; frameIndex++)
@@ -98,7 +98,7 @@ namespace Core.Capability.Editor
                     ? 0d
                     : frame.RealtimeSinceStartup - previousFrame.RealtimeSinceStartup;
                 ExportFrame(builder, frame, previousFrame, dt, request, watchedIds,
-                    categories, lastValues);
+                    pipelines, lastValues);
                 previousFrame = frame;
             }
 
@@ -112,7 +112,7 @@ namespace Core.Capability.Editor
             int start,
             int end,
             HashSet<int> watchedIds,
-            HashSet<string> categories
+            HashSet<string> pipelines
         )
         {
             if (!request.FollowTouchedEntities)
@@ -120,7 +120,7 @@ namespace Core.Capability.Editor
                 return;
             }
 
-            if (watchedIds.Count == 0 && categories.Count == 0)
+            if (watchedIds.Count == 0 && pipelines.Count == 0)
             {
                 return;
             }
@@ -136,7 +136,7 @@ namespace Core.Capability.Editor
                         continue;
                     }
 
-                    changed |= ExpandFromFrame(frame, watchedIds, categories);
+                    changed |= ExpandFromFrame(frame, watchedIds, pipelines);
                 }
 
                 if (!changed)
@@ -150,7 +150,7 @@ namespace Core.Capability.Editor
         (
             CapabilityDebugFrame frame,
             HashSet<int> watchedIds,
-            HashSet<string> categories
+            HashSet<string> pipelines
         )
         {
             bool changed = false;
@@ -164,7 +164,7 @@ namespace Core.Capability.Editor
                     CapabilityDebugCapabilitySnapshot capability =
                         world.GlobalCapabilities[capabilityIndex];
                     bool includeCapability =
-                        categories.Contains(capability.DebugCategory) ||
+                        pipelines.Contains(capability.Pipeline) ||
                         HasAnyMatchedId(capability, watchedIds);
                     if (!includeCapability)
                     {
@@ -330,7 +330,7 @@ namespace Core.Capability.Editor
             double dt,
             CapabilityEvidenceExportRequest request,
             HashSet<int> watchedIds,
-            HashSet<string> categories,
+            HashSet<string> pipelines,
             Dictionary<string, string> lastValues
         )
         {
@@ -342,11 +342,11 @@ namespace Core.Capability.Editor
 
                 ExportEntities(builder, frame, world, previousWorld, dt, request,
                     watchedIds, lastValues);
-                ExportCapabilities(builder, frame, world, dt, watchedIds, categories,
+                ExportCapabilities(builder, frame, world, dt, watchedIds, pipelines,
                     lastValues);
             }
 
-            ExportTraces(builder, frame, dt, request, watchedIds, categories);
+            ExportTraces(builder, frame, dt, request, watchedIds, pipelines);
         }
 
         private static void ExportEntities
@@ -505,14 +505,14 @@ namespace Core.Capability.Editor
             CapabilityDebugWorldSnapshot world,
             double dt,
             HashSet<int> watchedIds,
-            HashSet<string> categories,
+            HashSet<string> pipelines,
             Dictionary<string, string> lastValues
         )
         {
             for (int i = 0; i < world.GlobalCapabilities.Count; i++)
             {
                 CapabilityDebugCapabilitySnapshot capability = world.GlobalCapabilities[i];
-                if (!ShouldIncludeCapability(capability, watchedIds, categories))
+                if (!ShouldIncludeCapability(capability, watchedIds, pipelines))
                 {
                     continue;
                 }
@@ -553,13 +553,13 @@ namespace Core.Capability.Editor
             double dt,
             CapabilityEvidenceExportRequest request,
             HashSet<int> watchedIds,
-            HashSet<string> categories
+            HashSet<string> pipelines
         )
         {
             for (int i = 0; i < frame.Traces.Count; i++)
             {
                 CapabilityDebugTraceSnapshot trace = frame.Traces[i];
-                if (!ShouldIncludeTrace(trace, request, watchedIds, categories))
+                if (!ShouldIncludeTrace(trace, request, watchedIds, pipelines))
                 {
                     continue;
                 }
@@ -659,17 +659,17 @@ namespace Core.Capability.Editor
         (
             CapabilityDebugCapabilitySnapshot capability,
             HashSet<int> watchedIds,
-            HashSet<string> categories
+            HashSet<string> pipelines
         )
         {
-            if (categories.Count > 0 && categories.Contains(capability.DebugCategory))
+            if (pipelines.Count > 0 && pipelines.Contains(capability.Pipeline))
             {
                 return true;
             }
 
             if (watchedIds.Count == 0)
             {
-                return categories.Count == 0;
+                return pipelines.Count == 0;
             }
 
             for (int i = 0; i < capability.MatchedEntityIds.Count; i++)
@@ -688,10 +688,10 @@ namespace Core.Capability.Editor
             CapabilityDebugTraceSnapshot trace,
             CapabilityEvidenceExportRequest request,
             HashSet<int> watchedIds,
-            HashSet<string> categories
+            HashSet<string> pipelines
         )
         {
-            if (watchedIds.Count == 0 && categories.Count == 0)
+            if (watchedIds.Count == 0 && pipelines.Count == 0)
             {
                 return true;
             }
@@ -792,7 +792,7 @@ namespace Core.Capability.Editor
             builder.AppendLine($"- Frames: {start} - {end}");
             builder.AppendLine($"- Marked anomaly frame: {request.MarkedFrame}");
             builder.AppendLine($"- Entity watchlist: {string.Join(", ", request.EntityIds)}");
-            builder.AppendLine($"- Capability categories: {string.Join(", ", request.Categories)}");
+            builder.AppendLine($"- Capability pipelines: {string.Join(", ", request.Pipelines)}");
             builder.AppendLine($"- Follow touched entities: {request.FollowTouchedEntities}");
             builder.AppendLine();
             builder.AppendLine("## Description");

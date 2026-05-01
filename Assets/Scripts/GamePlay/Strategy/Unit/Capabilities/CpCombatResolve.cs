@@ -24,7 +24,7 @@ namespace GamePlay.Strategy
         public override int TickGroupOrder { get; protected set; } =
             CapabilityOrder.ResolveCombatResolve;
 
-        public override string DebugCategory => CapabilityDebugCategory.Combat;
+        public override string Pipeline => CapabilityPipeline.Combat;
 
         public override void Tick
             (CapabilityContext context, float deltaTime, float realElapsedSeconds)

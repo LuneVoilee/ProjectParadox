@@ -13,6 +13,8 @@ namespace GamePlay.Strategy
     // 选择表现同步：根据 SelectionState 创建、更新或销毁选择指示器。
     public class CpSelectionPresentation : CapabilityBase
     {
+        public override string Pipeline => CapabilityPipeline.SelectionUI;
+
         public override int TickGroupOrder { get; protected set; } =
             CapabilityOrder.PresentationSelection;
 

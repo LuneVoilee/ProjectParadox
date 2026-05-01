@@ -11,7 +11,7 @@ namespace Core.Capability.Editor
 {
     public class CapabilityDebugWindow : EditorWindow
     {
-        private const string MenuPath = "框架工具/调试/Capability 可视化";
+        private const string MenuPath = "框架工具/调试/Capability 工具箱";
 
         private readonly CapabilityDebugSession m_Session = new CapabilityDebugSession();
         private readonly CapabilityDebugSampler m_Sampler = new CapabilityDebugSampler();
@@ -33,7 +33,7 @@ namespace Core.Capability.Editor
         private string m_SelectedWorldKey;
         private string m_SelectedEntityKey;
         private string m_SelectedItemKey;
-        private string m_SelectedCategory;
+        private string m_SelectedPipeline;
         private CapabilityDebugItemKind m_SelectedItemKind;
 
         private bool m_IsToolPlaying = true;
@@ -47,7 +47,7 @@ namespace Core.Capability.Editor
 
         private readonly HashSet<string> m_ExpandedFoldouts = new HashSet<string>();
         private readonly HashSet<int> m_EvidenceEntityIds = new HashSet<int>();
-        private readonly HashSet<string> m_EvidenceCategories = new HashSet<string>();
+        private readonly HashSet<string> m_EvidencePipelines = new HashSet<string>();
 
         private bool m_EvidenceFoldout = true;
         private bool m_EvidenceRecording;
@@ -61,13 +61,14 @@ namespace Core.Capability.Editor
         private int m_EvidenceStartFrame = -1;
         private int m_EvidenceMarkedFrame = -1;
 
-        [MenuItem(MenuPath)]
-        private static void OpenWindow()
+        internal CapabilityDebugSession GetSession()
         {
-            CapabilityDebugWindow window = GetWindow<CapabilityDebugWindow>();
-            window.titleContent = new GUIContent("Capability Temporal Debugger");
-            window.minSize = new Vector2(980f, 560f);
-            window.Show();
+            return m_Session;
+        }
+
+        private void OnGUI()
+        {
+            OnInternalGUI();
         }
 
         private void OnEnable()
@@ -163,7 +164,7 @@ namespace Core.Capability.Editor
             SyncFrameInput();
         }
 
-        private void OnGUI()
+        public void OnInternalGUI()
         {
             float contentTop = DrawTopToolbar();
             Rect contentRect = new Rect(0f, contentTop, position.width,
@@ -299,11 +300,11 @@ namespace Core.Capability.Editor
             EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField($"Category: {FormatEvidenceCategories()}");
+            EditorGUILayout.LabelField($"Pipeline: {FormatEvidencePipelines()}");
             if (GUILayout.Button("清空目标", GUILayout.Width(76f)))
             {
                 m_EvidenceEntityIds.Clear();
-                m_EvidenceCategories.Clear();
+                m_EvidencePipelines.Clear();
                 ConfigureEvidenceTraceCapture();
             }
 
@@ -404,7 +405,7 @@ namespace Core.Capability.Editor
 
                 if (m_NavigationMode == 0)
                 {
-                    DrawCapabilityCategoryNavigation(world);
+                    DrawCapabilityPipelineNavigation(world);
                 }
                 else
                 {
@@ -417,20 +418,20 @@ namespace Core.Capability.Editor
             EditorGUILayout.EndScrollView();
         }
 
-        private void DrawCapabilityCategoryNavigation(CapabilityDebugWorldSnapshot world)
+        private void DrawCapabilityPipelineNavigation(CapabilityDebugWorldSnapshot world)
         {
-            List<string> categories = BuildCategories(world);
-            for (int i = 0; i < categories.Count; i++)
+            List<string> pipelines = BuildPipelines(world);
+            for (int i = 0; i < pipelines.Count; i++)
             {
-                string category = categories[i];
-                int count = CountCapabilitiesInCategory(world, category);
-                bool selected = m_SelectedItemKind == CapabilityDebugItemKind.Category &&
-                                m_SelectedCategory == category &&
+                string pipeline = pipelines[i];
+                int count = CountCapabilitiesInPipeline(world, pipeline);
+                bool selected = m_SelectedItemKind == CapabilityDebugItemKind.Pipeline &&
+                                m_SelectedPipeline == pipeline &&
                                 m_SelectedWorldKey == world.Key;
-                if (DrawSelectableRow($"{category} ({count})", selected,
+                if (DrawSelectableRow($"{pipeline} ({count})", selected,
                         CapabilityDebugStyles.MatchedStateColor))
                 {
-                    SelectCategory(world.Key, category);
+                    SelectPipeline(world.Key, pipeline);
                 }
             }
         }
@@ -454,9 +455,9 @@ namespace Core.Capability.Editor
             EditorGUILayout.LabelField(
                 m_NavigationMode == 0 ? "Capability 列表" : "Entity 详情",
                 EditorStyles.boldLabel);
-            if (m_SelectedItemKind == CapabilityDebugItemKind.Category)
+            if (m_SelectedItemKind == CapabilityDebugItemKind.Pipeline)
             {
-                DrawSelectedCategoryCapabilities();
+                DrawSelectedPipelineCapabilities();
                 return;
             }
 
@@ -470,7 +471,7 @@ namespace Core.Capability.Editor
                 }
 
                 EditorGUILayout.Space(8f);
-                EditorGUILayout.HelpBox("请选择一个 Category 或 Entity。", MessageType.Info);
+                EditorGUILayout.HelpBox("请选择一个 Pipeline 或 Entity。", MessageType.Info);
                 return;
             }
 
@@ -503,35 +504,25 @@ namespace Core.Capability.Editor
             }
         }
 
-        private void DrawSelectedCategoryCapabilities()
+        private void DrawSelectedPipelineCapabilities()
         {
             CapabilityDebugFrame frame = m_Session.CurrentFrame;
             CapabilityDebugWorldSnapshot world = frame?.FindWorld(m_SelectedWorldKey);
-            if (world == null || string.IsNullOrEmpty(m_SelectedCategory))
+            if (world == null || string.IsNullOrEmpty(m_SelectedPipeline))
             {
                 EditorGUILayout.Space(8f);
-                EditorGUILayout.HelpBox("请选择一个 Capability 分类。", MessageType.Info);
+                EditorGUILayout.HelpBox("请选择一个 Pipeline。", MessageType.Info);
                 return;
             }
 
-            EditorGUILayout.LabelField(m_SelectedCategory, EditorStyles.miniBoldLabel);
+            EditorGUILayout.LabelField(m_SelectedPipeline, EditorStyles.miniBoldLabel);
             m_DetailScroll = EditorGUILayout.BeginScrollView(m_DetailScroll);
-            string previousStage = null;
             for (int i = 0; i < world.GlobalCapabilities.Count; i++)
             {
                 CapabilityDebugCapabilitySnapshot capability = world.GlobalCapabilities[i];
-                if (capability.DebugCategory != m_SelectedCategory)
+                if (!PipelineContains(capability.Pipeline, m_SelectedPipeline))
                 {
                     continue;
-                }
-
-                if (previousStage != capability.StageName)
-                {
-                    previousStage = capability.StageName;
-                    Rect headerRect = EditorGUILayout.GetControlRect(false, 26f);
-                    EditorGUI.LabelField(headerRect,
-                        $"{capability.StageName} ({capability.TickGroupOrder})",
-                        CapabilityDebugStyles.StageHeaderStyle);
                 }
 
                 bool selected = m_SelectedItemKind == CapabilityDebugItemKind.Capability &&
@@ -635,8 +626,8 @@ namespace Core.Capability.Editor
             DrawInspectorMetaRow("Stage", string.Empty,
                 $"{capability.StageName} ({capability.TickGroupOrder})", layout);
             DrawInspectorMetaRow("State", string.Empty, capability.State.ToString(), layout);
-            DrawInspectorMetaRow("Category", string.Empty,
-                capability.DebugCategory ?? string.Empty, layout);
+            DrawInspectorMetaRow("Pipeline", string.Empty,
+                capability.Pipeline ?? string.Empty, layout);
             DrawInspectorMetaRow("Tag", string.Empty,
                 capability.DebugTag ?? string.Empty, layout);
             DrawInspectorMetaRow("LastTickMs", string.Empty,
@@ -1084,12 +1075,12 @@ namespace Core.Capability.Editor
             {
                 CapabilityDebugWorldSnapshot world = frame.Worlds[0];
                 m_SelectedWorldKey = world.Key;
-                if (string.IsNullOrEmpty(m_SelectedCategory))
+                if (string.IsNullOrEmpty(m_SelectedPipeline))
                 {
-                    List<string> categories = BuildCategories(world);
-                    if (categories.Count > 0)
+                    List<string> pipelines = BuildPipelines(world);
+                    if (pipelines.Count > 0)
                     {
-                        SelectCategory(world.Key, categories[0]);
+                        SelectPipeline(world.Key, pipelines[0]);
                     }
                 }
 
@@ -1119,9 +1110,9 @@ namespace Core.Capability.Editor
                 return GetSelectedGlobalCapability() != null;
             }
 
-            if (m_SelectedItemKind == CapabilityDebugItemKind.Category)
+            if (m_SelectedItemKind == CapabilityDebugItemKind.Pipeline)
             {
-                return !string.IsNullOrEmpty(m_SelectedCategory);
+                return !string.IsNullOrEmpty(m_SelectedPipeline);
             }
 
             if (m_SelectedItemKind == CapabilityDebugItemKind.Component)
@@ -1149,7 +1140,7 @@ namespace Core.Capability.Editor
             m_SelectedWorldKey = worldKey;
             m_SelectedEntityKey = entityKey;
             m_SelectedItemKey = null;
-            m_SelectedCategory = null;
+            m_SelectedPipeline = null;
             m_SelectedItemKind = CapabilityDebugItemKind.None;
             CapabilityDebugEntitySnapshot entity = GetSelectedEntity();
             if (entity != null)
@@ -1166,13 +1157,13 @@ namespace Core.Capability.Editor
             m_ExpandedFoldouts.Clear();
         }
 
-        private void SelectCategory(string worldKey, string category)
+        private void SelectPipeline(string worldKey, string pipeline)
         {
             m_SelectedWorldKey = worldKey;
             m_SelectedEntityKey = null;
             m_SelectedItemKey = null;
-            m_SelectedCategory = category;
-            m_SelectedItemKind = CapabilityDebugItemKind.Category;
+            m_SelectedPipeline = pipeline;
+            m_SelectedItemKind = CapabilityDebugItemKind.Pipeline;
             m_LogScroll = Vector2.zero;
             m_ExpandedFoldouts.Clear();
         }
@@ -1221,34 +1212,57 @@ namespace Core.Capability.Editor
             return string.Join(", ", capability.MatchedEntityIds);
         }
 
-        private static List<string> BuildCategories(CapabilityDebugWorldSnapshot world)
+        private static List<string> BuildPipelines(CapabilityDebugWorldSnapshot world)
         {
-            List<string> categories = new List<string>(16);
+            List<string> pipelines = new List<string>(16);
             if (world == null)
             {
-                return categories;
+                return pipelines;
             }
 
+            // 收集所有 Pipeline 名并记录首个 Cp 的 TickGroupOrder 用于排序。
+            Dictionary<string, int> pipelineOrder = new Dictionary<string, int>(16);
             for (int i = 0; i < world.GlobalCapabilities.Count; i++)
             {
-                string category = world.GlobalCapabilities[i].DebugCategory;
-                if (string.IsNullOrEmpty(category))
+                string pipeline = world.GlobalCapabilities[i].Pipeline;
+                if (string.IsNullOrEmpty(pipeline))
                 {
-                    category = CapabilityDebugCategory.Other;
+                    pipeline = CapabilityPipeline.Other;
                 }
 
-                if (!categories.Contains(category))
+                string[] parts = pipeline.Split(',');
+                for (int j = 0; j < parts.Length; j++)
                 {
-                    categories.Add(category);
+                    string part = parts[j].Trim();
+                    if (string.IsNullOrEmpty(part))
+                    {
+                        continue;
+                    }
+
+                    if (!pipelines.Contains(part))
+                    {
+                        pipelines.Add(part);
+                    }
+
+                    if (!pipelineOrder.ContainsKey(part))
+                    {
+                        pipelineOrder[part] = world.GlobalCapabilities[i].TickGroupOrder;
+                    }
                 }
             }
 
-            categories.Sort(string.CompareOrdinal);
-            return categories;
+            pipelines.Sort((a, b) =>
+            {
+                int orderA = pipelineOrder.ContainsKey(a) ? pipelineOrder[a] : int.MaxValue;
+                int orderB = pipelineOrder.ContainsKey(b) ? pipelineOrder[b] : int.MaxValue;
+                int cmp = orderA.CompareTo(orderB);
+                return cmp != 0 ? cmp : string.CompareOrdinal(a, b);
+            });
+            return pipelines;
         }
 
-        private static int CountCapabilitiesInCategory
-            (CapabilityDebugWorldSnapshot world, string category)
+        private static int CountCapabilitiesInPipeline
+            (CapabilityDebugWorldSnapshot world, string pipeline)
         {
             int count = 0;
             if (world == null)
@@ -1258,13 +1272,32 @@ namespace Core.Capability.Editor
 
             for (int i = 0; i < world.GlobalCapabilities.Count; i++)
             {
-                if (world.GlobalCapabilities[i].DebugCategory == category)
+                if (PipelineContains(world.GlobalCapabilities[i].Pipeline, pipeline))
                 {
                     count++;
                 }
             }
 
             return count;
+        }
+
+        private static bool PipelineContains(string pipeline, string target)
+        {
+            if (string.IsNullOrEmpty(pipeline))
+            {
+                return target == CapabilityPipeline.Other;
+            }
+
+            string[] parts = pipeline.Split(',');
+            for (int i = 0; i < parts.Length; i++)
+            {
+                if (string.Equals(parts[i].Trim(), target, StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private void StartEvidenceRecording()
@@ -1274,7 +1307,7 @@ namespace Core.Capability.Editor
                 return;
             }
 
-            if (m_EvidenceEntityIds.Count == 0 && m_EvidenceCategories.Count == 0)
+            if (m_EvidenceEntityIds.Count == 0 && m_EvidencePipelines.Count == 0)
             {
                 AddSelectedEvidenceTarget();
             }
@@ -1318,7 +1351,7 @@ namespace Core.Capability.Editor
                 IncludeTransforms = m_EvidenceIncludeTransforms
             };
             request.EntityIds.AddRange(m_EvidenceEntityIds);
-            request.Categories.AddRange(m_EvidenceCategories);
+            request.Pipelines.AddRange(m_EvidencePipelines);
 
             m_EvidenceRecording = false;
             ConfigureEvidenceTraceCapture();
@@ -1347,15 +1380,15 @@ namespace Core.Capability.Editor
             }
 
             CapabilityDebugCapabilitySnapshot capability = GetSelectedGlobalCapability();
-            if (capability != null && !string.IsNullOrEmpty(capability.DebugCategory))
+            if (capability != null && !string.IsNullOrEmpty(capability.Pipeline))
             {
-                m_EvidenceCategories.Add(capability.DebugCategory);
+                m_EvidencePipelines.Add(capability.Pipeline);
             }
 
-            if (m_SelectedItemKind == CapabilityDebugItemKind.Category &&
-                !string.IsNullOrEmpty(m_SelectedCategory))
+            if (m_SelectedItemKind == CapabilityDebugItemKind.Pipeline &&
+                !string.IsNullOrEmpty(m_SelectedPipeline))
             {
-                m_EvidenceCategories.Add(m_SelectedCategory);
+                m_EvidencePipelines.Add(m_SelectedPipeline);
             }
 
             ConfigureEvidenceTraceCapture();
@@ -1447,11 +1480,11 @@ namespace Core.Capability.Editor
                 {
                     CapabilityDebugCapabilitySnapshot capability =
                         world.GlobalCapabilities[capabilityIndex];
-                    if (Contains(capability.DebugCategory, query) ||
+                    if (Contains(capability.Pipeline, query) ||
                         Contains(capability.TypeName, query) ||
                         Contains(capability.TypeFullName, query))
                     {
-                        m_EvidenceCategories.Add(capability.DebugCategory);
+                        m_EvidencePipelines.Add(capability.Pipeline);
                     }
                 }
             }
@@ -1472,11 +1505,11 @@ namespace Core.Capability.Editor
                 : string.Join(", ", m_EvidenceEntityIds);
         }
 
-        private string FormatEvidenceCategories()
+        private string FormatEvidencePipelines()
         {
-            return m_EvidenceCategories.Count == 0
+            return m_EvidencePipelines.Count == 0
                 ? "(auto)"
-                : string.Join(", ", m_EvidenceCategories);
+                : string.Join(", ", m_EvidencePipelines);
         }
 
         private static bool Contains(string value, string query)

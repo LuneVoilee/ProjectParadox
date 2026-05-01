@@ -28,9 +28,9 @@ namespace Core.Capability
 
         public virtual int TickGroupOrder { get; protected set; }
 
-        public virtual string DebugCategory => CapabilityDebugCategory.Infer(TickGroupOrder);
+        public virtual string Pipeline => CapabilityPipeline.Other;
 
-        public virtual string DebugTag => DebugCategory;
+        public virtual string DebugTag => Pipeline;
 
         public double LastTickMilliseconds { get; internal set; }
 
@@ -75,48 +75,23 @@ namespace Core.Capability
         }
     }
 
-    public static class CapabilityDebugCategory
+    public static class CapabilityPipeline
     {
-        public const string Bootstrap = "Bootstrap";
-        public const string Input = "Input";
-        public const string Command = "Command";
-        public const string Movement = "Movement";
-        public const string Combat = "Combat";
-        public const string Territory = "Territory";
-        public const string Presentation = "Presentation";
-        public const string Camera = "Camera";
-        public const string Map = "Map";
-        public const string Cleanup = "Cleanup";
-        public const string Other = "Other";
+        public const string MapBootstrap  = "MapBootstrap";
+        public const string ScenarioSetup = "ScenarioSetup";
+        public const string MoveCommand   = "MoveCommand";
+        public const string Combat        = "Combat";
+        public const string Territory     = "Territory";
+        public const string Camera        = "Camera";
+        public const string MapRender     = "MapRender";
+        public const string SelectionUI   = "SelectionUI";
+        public const string PathUI        = "PathUI";
+        public const string Cleanup       = "Cleanup";
+        public const string Other         = "Other";
 
-        public static string Infer(int tickGroupOrder)
+        public static string List(params string[] pipelines)
         {
-            if (tickGroupOrder == int.MaxValue)
-            {
-                return Cleanup;
-            }
-
-            if (tickGroupOrder < 100)
-            {
-                return Bootstrap;
-            }
-
-            if (tickGroupOrder < 300)
-            {
-                return Input;
-            }
-
-            if (tickGroupOrder < 400)
-            {
-                return Command;
-            }
-
-            if (tickGroupOrder < 600)
-            {
-                return Movement;
-            }
-
-            return Presentation;
+            return string.Join(",", pipelines);
         }
     }
 

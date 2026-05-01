@@ -11,7 +11,7 @@ namespace Core.Capability.Editor
         None = 0,
         Component = 1,
         Capability = 2,
-        Category = 3
+        Pipeline = 3
     }
 
     /// <summary>
@@ -224,7 +224,7 @@ namespace Core.Capability.Editor
                 TickGroupOrder = source.TickGroupOrder,
                 StageName = source.StageName,
                 State = source.State,
-                DebugCategory = source.DebugCategory,
+                Pipeline = source.Pipeline,
                 DebugTag = source.DebugTag,
                 LastErrorMessage = source.LastErrorMessage,
                 LastTickMilliseconds = source.LastTickMilliseconds,
@@ -659,7 +659,7 @@ namespace Core.Capability.Editor
                 capability.LastTickMilliseconds.ToString("F4"),
                 capability.MatchedEntityCount.ToString(),
                 string.Join(",", capability.MatchedEntityIds),
-                capability.DebugCategory ?? string.Empty,
+                capability.Pipeline ?? string.Empty,
                 capability.DebugTag ?? string.Empty
             };
             AddValueSignatures(capability.Fields, parts);
@@ -900,7 +900,7 @@ namespace Core.Capability.Editor
         public int TickGroupOrder;
         public string StageName;
         public CapabilityRuntimeState State;
-        public string DebugCategory;
+        public string Pipeline;
         public string DebugTag;
         public string LastErrorMessage;
         public double LastTickMilliseconds;

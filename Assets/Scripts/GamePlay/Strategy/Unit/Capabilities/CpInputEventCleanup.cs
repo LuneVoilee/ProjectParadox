@@ -10,6 +10,8 @@ namespace GamePlay.Strategy
     // 一帧输入/命令事件清理：所有命令阶段消费结束后统一移除事件实体。
     public class CpInputEventCleanup : CapabilityBase
     {
+        public override string Pipeline => CapabilityPipeline.MoveCommand;
+
         public override int TickGroupOrder { get; protected set; } =
             CapabilityOrder.OrderMoveCommandCommit + 1;
 

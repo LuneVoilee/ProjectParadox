@@ -18,7 +18,7 @@ namespace GamePlay.Strategy
         public override int TickGroupOrder { get; protected set; } =
             CapabilityOrder.OrderMoveCommandDraft;
 
-        public override string DebugCategory => CapabilityDebugCategory.Command;
+        public override string Pipeline => CapabilityPipeline.MoveCommand;
 
         public override void Tick
             (CapabilityContext context, float deltaTime, float realElapsedSeconds)

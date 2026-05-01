@@ -23,7 +23,7 @@ namespace GamePlay.Map
         public override int TickGroupOrder { get; protected set; } =
             CapabilityOrder.ScenarioMapGenerate;
 
-        public override string DebugCategory => CapabilityDebugCategory.Map;
+        public override string Pipeline => CapabilityPipeline.MapBootstrap;
 
         public override void Tick
             (CapabilityContext context, float deltaTime, float realElapsedSeconds)

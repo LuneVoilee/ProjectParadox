@@ -18,7 +18,7 @@ namespace GamePlay.Camera
         public override int TickGroupOrder { get; protected set; } =
             CapabilityOrder.PresentationCameraMove;
 
-        public override string DebugCategory => CapabilityDebugCategory.Camera;
+        public override string Pipeline => CapabilityPipeline.Camera;
 
         public override void Tick
             (CapabilityContext context, float deltaTime, float realElapsedSeconds)

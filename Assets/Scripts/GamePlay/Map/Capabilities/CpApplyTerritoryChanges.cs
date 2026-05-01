@@ -27,7 +27,7 @@ namespace GamePlay.Map
         public override int TickGroupOrder { get; protected set; } =
             CapabilityOrder.StageResolve + 20;
 
-        public override string DebugCategory => CapabilityDebugCategory.Territory;
+        public override string Pipeline => CapabilityPipeline.Territory;
 
         public override void Tick
             (CapabilityContext context, float deltaTime, float realElapsedSeconds)

@@ -13,6 +13,8 @@ namespace GamePlay.Strategy
     // 玩家输入入口：把 InputManager 的本帧点击转换成一帧事件实体。
     public class CpPlayerInput : CapabilityBase
     {
+        public override string Pipeline => CapabilityPipeline.MoveCommand;
+
         public override int TickGroupOrder { get; protected set; } =
             CapabilityOrder.OrderPlayerInput;
 

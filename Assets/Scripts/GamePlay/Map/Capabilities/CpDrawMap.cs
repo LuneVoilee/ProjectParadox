@@ -42,7 +42,7 @@ namespace GamePlay.Map
         private float m_LastCameraOrthographicSize = -1f;
         private float m_LastCameraAspect = -1f;
 
-        public override string DebugCategory => CapabilityDebugCategory.Map;
+        public override string Pipeline => CapabilityPipeline.MapRender;
 
         public override void Tick
             (CapabilityContext context, float deltaTime, float realElapsedSeconds)

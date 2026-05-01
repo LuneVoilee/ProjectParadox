@@ -7,7 +7,7 @@ namespace Core.Capability
 
         public override int TickGroupOrder { get; protected set; } = int.MaxValue;
 
-        public override string DebugCategory => CapabilityDebugCategory.Cleanup;
+        public override string Pipeline => CapabilityPipeline.Cleanup;
 
         public override void Tick
             (CapabilityContext context, float deltaTime, float realElapsedSeconds)

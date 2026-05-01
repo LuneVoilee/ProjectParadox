@@ -14,6 +14,8 @@ namespace GamePlay.Strategy
     // 世界级时间能力：读取地图实体上的 Time 组件并推进游戏日期。
     public class CpTime : CapabilityBase
     {
+        public override string Pipeline => CapabilityPipeline.MapBootstrap;
+
         private Func<DateTime?> m_ReadCurrentTime;
         private bool m_TimeInitialized;
 

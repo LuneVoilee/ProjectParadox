@@ -23,7 +23,7 @@ namespace GamePlay.Strategy
         public override int TickGroupOrder { get; protected set; } =
             CapabilityOrder.PresentationPath;
 
-        public override string DebugCategory => CapabilityDebugCategory.Presentation;
+        public override string Pipeline => CapabilityPipeline.PathUI;
 
         public override void Tick
             (CapabilityContext context, float deltaTime, float realElapsedSeconds)

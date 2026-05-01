@@ -21,7 +21,7 @@ namespace GamePlay.Strategy
         public override int TickGroupOrder { get; protected set; } =
             CapabilityOrder.StageScenarioBootstrap + 30;
 
-        public override string DebugCategory => CapabilityDebugCategory.Bootstrap;
+        public override string Pipeline => CapabilityPipeline.ScenarioSetup;
 
         public override void Tick
             (CapabilityContext context, float deltaTime, float realElapsedSeconds)

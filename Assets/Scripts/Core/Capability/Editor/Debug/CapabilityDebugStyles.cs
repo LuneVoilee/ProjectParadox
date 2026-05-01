@@ -31,6 +31,12 @@ namespace Core.Capability.Editor
         public const float InspectorNameMaxWidth = 420f;
         public const float InspectorValueMinWidth = 160f;
         public const float InspectorValueMaxWidth = 680f;
+        public const float FlowchartNodeWidth = 140f;
+        public const float FlowchartNodeHeight = 58f;
+        public const float FlowchartNodeSpacing = 24f;
+        public const float FlowchartArrowWidth = 36f;
+        public static readonly Color FlowchartArrowColor = new Color(0.5f, 0.5f, 0.5f, 0.8f);
+        public const float ToolboxTabWidth = 72f;
 
         private static GUIStyle m_StageHeaderStyle;
         private static GUIStyle m_RowButtonStyle;

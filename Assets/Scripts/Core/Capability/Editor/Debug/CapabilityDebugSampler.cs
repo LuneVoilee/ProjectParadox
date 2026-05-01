@@ -139,7 +139,7 @@ namespace Core.Capability.Editor
                         TickGroupOrder = capability.TickGroupOrder,
                         StageName = m_StageResolver.Resolve(capability.TickGroupOrder),
                         State = ToRuntimeState(capability.LastRunState),
-                        DebugCategory = capability.DebugCategory,
+                        Pipeline = capability.Pipeline,
                         DebugTag = capability.DebugTag,
                         LastErrorMessage = capability.LastErrorMessage,
                         LastTickMilliseconds = capability.LastTickMilliseconds,
