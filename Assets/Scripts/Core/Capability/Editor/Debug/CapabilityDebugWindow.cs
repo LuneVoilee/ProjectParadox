@@ -49,6 +49,11 @@ namespace Core.Capability.Editor
         private readonly HashSet<int> m_EvidenceEntityIds = new HashSet<int>();
         private readonly HashSet<string> m_EvidencePipelines = new HashSet<string>();
 
+        // 增量日志索引：key = $"{worldKey}:cap:{capabilityKey}", value = 全帧日志列表。
+        // 每帧采样时追加，避免 CollectGlobalCapabilityLogs 遍历全部历史帧做 Deep Clone。
+        private readonly Dictionary<string, List<CapabilityDebugLogSnapshot>> m_LogIndex =
+            new Dictionary<string, List<CapabilityDebugLogSnapshot>>(64);
+
         private bool m_EvidenceFoldout = true;
         private bool m_EvidenceRecording;
         private bool m_EvidenceFollowTouchedEntities = true;
@@ -661,7 +666,10 @@ namespace Core.Capability.Editor
         private void DrawCapabilityLogs(CapabilityDebugCapabilitySnapshot capability)
         {
             EditorGUILayout.LabelField("Log", EditorStyles.boldLabel);
+
+            // 从增量索引 O(1) 获取日志，不再需要遍历历史帧做 Deep Clone。
             CollectGlobalCapabilityLogs(capability, m_LogBuffer);
+
             EditorGUILayout.BeginVertical(EditorStyles.helpBox, GUILayout.Height(140f));
             m_LogScroll = EditorGUILayout.BeginScrollView(m_LogScroll);
             if (m_LogBuffer.Count == 0)
@@ -1033,6 +1041,16 @@ namespace Core.Capability.Editor
                     CapabilityDebugCapabilitySnapshot capability =
                         world.GlobalCapabilities[capIndex];
                     string key = $"{world.Key}:global:{capability.Key}";
+                    string logKey = $"{world.Key}:cap:{capability.Key}";
+
+                    if (!m_LogIndex.TryGetValue(logKey, out List<CapabilityDebugLogSnapshot> logList))
+                    {
+                        logList = new List<CapabilityDebugLogSnapshot>(capability.Logs.Count);
+                        m_LogIndex.Add(logKey, logList);
+                    }
+
+                    logList.AddRange(capability.Logs);
+
                     if (!m_TimelineTracks.TryGetValue(key, out CapabilityTimelineTrack track))
                     {
                         track = new CapabilityTimelineTrack(
@@ -1533,20 +1551,12 @@ namespace Core.Capability.Editor
                 return;
             }
 
-            int endIndex = Mathf.Clamp(m_Session.CurrentFrameIndex, 0,
-                m_Session.FrameCount - 1);
-            for (int i = 0; i <= endIndex; i++)
+            // 从增量索引直接取，O(1) 查找，无需遍历历史帧 + Deep Clone。
+            string logKey = $"{m_SelectedWorldKey}:cap:{capability.Key}";
+            if (m_LogIndex.TryGetValue(logKey,
+                    out List<CapabilityDebugLogSnapshot> logList))
             {
-                CapabilityDebugWorldSnapshot world =
-                    m_Session.GetFrame(i)?.FindWorld(m_SelectedWorldKey);
-                CapabilityDebugCapabilitySnapshot current =
-                    world?.FindGlobalCapability(capability.Key);
-                if (current == null)
-                {
-                    continue;
-                }
-
-                destination.AddRange(current.Logs);
+                destination.AddRange(logList);
             }
         }
 
@@ -1647,6 +1657,7 @@ namespace Core.Capability.Editor
             m_TraceCapture.Unregister();
             m_TraceCapture.Clear();
             m_TimelineTracks.Clear();
+            m_LogIndex.Clear();
             m_SelectedWorldKey = null;
             m_SelectedEntityKey = null;
             m_SelectedItemKey = null;
