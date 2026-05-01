@@ -21,13 +21,12 @@ namespace Core.Capability.Editor
         private bool m_WindowsCreated;
 
         // ── Session & Sampling ──────────────────────────────────────────
-        private readonly CapabilityDebugSession m_Session = new CapabilityDebugSession();
         private readonly CapabilityDebugSampler m_Sampler = new CapabilityDebugSampler();
-        private readonly CapabilityDebugTraceCapture m_TraceCapture =
-            new CapabilityDebugTraceCapture();
 
-        internal CapabilityDebugSession Session => m_Session;
-        internal CapabilityDebugTraceCapture TraceCapture => m_TraceCapture;
+        internal CapabilityDebugSession Session { get; } = new CapabilityDebugSession();
+
+        internal CapabilityDebugTraceCapture TraceCapture { get; } =
+            new CapabilityDebugTraceCapture();
 
         // ── Timeline State ──────────────────────────────────────────────
         private bool m_IsToolPlaying = true;
@@ -39,8 +38,10 @@ namespace Core.Capability.Editor
         // ── Timeline Tracks ─────────────────────────────────────────────
         private readonly Dictionary<string, CapabilityTimelineTrack> m_TimelineTracks =
             new Dictionary<string, CapabilityTimelineTrack>(128);
+
         private readonly List<CapabilityTimelineTrack> m_SortedTracks =
             new List<CapabilityTimelineTrack>(128);
+
         private Vector2 m_TimelineScroll;
 
         // ── Log Buffer (调试面板 Inspector 用) ──────────────────────────
@@ -68,14 +69,20 @@ namespace Core.Capability.Editor
                 CreateSubWindows();
             }
 
-            m_Sampler.SetTraceCapture(m_TraceCapture);
+            m_Sampler.SetTraceCapture(TraceCapture);
             EditorApplication.update += OnEditorUpdate;
         }
 
         private void OnDisable()
         {
+            // 如果窗口被手动关闭但 Play Mode 仍在运行，解除暂停。
+            if (m_WasEditorPausedByDebugger && EditorApplication.isPaused)
+            {
+                EditorApplication.isPaused = false;
+            }
+
             EditorApplication.update -= OnEditorUpdate;
-            m_TraceCapture.Unregister();
+            TraceCapture.Unregister();
 
             if (m_DebugWindow != null)
             {
@@ -97,7 +104,7 @@ namespace Core.Capability.Editor
             m_DebugWindow = CreateInstance<CapabilityDebugWindow>();
             m_FlowchartWindow = CreateInstance<CapabilityDebugFlowchartWindow>();
             m_DebugWindow.SetToolbox(this);
-            m_FlowchartWindow.SetSession(m_Session);
+            m_FlowchartWindow.SetSession(Session);
             m_WindowsCreated = true;
         }
 
@@ -109,8 +116,10 @@ namespace Core.Capability.Editor
         {
             if (!EditorApplication.isPlaying)
             {
-                if (m_Session.HasFrames)
+                if (Session.HasFrames)
                 {
+                    // 退出 Play Mode 时先把场景恢复到初始帧，再清空会话。
+                    RestoreToFrameZero();
                     ClearSession();
                 }
 
@@ -130,8 +139,8 @@ namespace Core.Capability.Editor
 
         private void EnforceHistoricalPause()
         {
-            if (!m_Session.HasFrames) return;
-            if (m_Session.IsAtLatestFrame) return;
+            if (!Session.HasFrames) return;
+            if (Session.IsAtLatestFrame) return;
             if (EditorApplication.isPaused) return;
 
             EditorApplication.isPaused = true;
@@ -142,16 +151,16 @@ namespace Core.Capability.Editor
         {
             if (!m_IsToolPlaying) return false;
             if (EditorApplication.isPaused) return false;
-            if (!m_Session.IsAtLatestFrame) return false;
+            if (!Session.IsAtLatestFrame) return false;
             if (Time.frameCount == m_LastSampledUnityFrameCount) return false;
             return true;
         }
 
         private void SampleFrame()
         {
-            int nextFrameIndex = m_Session.FrameCount;
+            int nextFrameIndex = Session.FrameCount;
             CapabilityDebugFrame frame = m_Sampler.Sample(nextFrameIndex);
-            m_Session.AddFrame(frame);
+            Session.AddFrame(frame);
             m_LastSampledUnityFrameCount = frame.UnityFrameCount;
             AppendTimelineFrame(frame);
             EnsureSelection(frame);
@@ -165,16 +174,16 @@ namespace Core.Capability.Editor
 
         private void JumpToFrame(int frameIndex)
         {
-            if (!m_Session.HasFrames) return;
+            if (!Session.HasFrames) return;
 
-            m_Session.SetCurrentFrameIndex(frameIndex);
+            Session.SetCurrentFrameIndex(frameIndex);
             SyncFrameInput();
             PauseToolAndUnity();
             ApplyCurrentFrameToScene();
 
-            if (m_Session.CurrentFrame != null)
+            if (Session.CurrentFrame != null)
             {
-                EnsureSelection(m_Session.CurrentFrame);
+                EnsureSelection(Session.CurrentFrame);
             }
         }
 
@@ -182,7 +191,7 @@ namespace Core.Capability.Editor
         {
             m_IsToolPlaying = true;
 
-            if (!m_Session.HasFrames)
+            if (!Session.HasFrames)
             {
                 if (m_WasEditorPausedByDebugger)
                 {
@@ -193,14 +202,14 @@ namespace Core.Capability.Editor
                 return;
             }
 
-            if (!m_Session.IsAtLatestFrame)
+            if (!Session.IsAtLatestFrame)
             {
-                m_Session.SetCurrentFrameIndex(m_Session.FrameCount - 1);
+                Session.SetCurrentFrameIndex(Session.FrameCount - 1);
                 SyncFrameInput();
                 ApplyCurrentFrameToScene();
-                if (m_Session.CurrentFrame != null)
+                if (Session.CurrentFrame != null)
                 {
-                    EnsureSelection(m_Session.CurrentFrame);
+                    EnsureSelection(Session.CurrentFrame);
                 }
             }
 
@@ -223,31 +232,39 @@ namespace Core.Capability.Editor
 
         private void SyncFrameInput()
         {
-            m_FrameInput = Mathf.Max(0, m_Session.CurrentFrameIndex).ToString();
+            m_FrameInput = Mathf.Max(0, Session.CurrentFrameIndex).ToString();
         }
 
         private void ApplyCurrentFrameToScene()
         {
-            if (m_Session.CurrentFrameIndex == m_LastAppliedFrameIndex) return;
-            CapabilityDebugSceneState.Restore(m_Session.CurrentFrame);
-            m_LastAppliedFrameIndex = m_Session.CurrentFrameIndex;
+            if (Session.CurrentFrameIndex == m_LastAppliedFrameIndex) return;
+            CapabilityDebugSceneState.Restore(Session.CurrentFrame);
+            m_LastAppliedFrameIndex = Session.CurrentFrameIndex;
+        }
+
+        private void RestoreToFrameZero()
+        {
+            if (!Session.HasFrames) return;
+            if (Session.CurrentFrameIndex == 0) return;
+
+            Session.SetCurrentFrameIndex(0);
+            CapabilityDebugSceneState.Restore(Session.CurrentFrame);
+            m_LastAppliedFrameIndex = 0;
+
+            if (m_WasEditorPausedByDebugger && EditorApplication.isPaused)
+            {
+                EditorApplication.isPaused = false;
+            }
         }
 
         private void ClearSession()
         {
-            if (m_Session.HasFrames && !m_Session.IsAtLatestFrame)
-            {
-                m_Session.SetCurrentFrameIndex(m_Session.FrameCount - 1);
-                SyncFrameInput();
-                ApplyCurrentFrameToScene();
-            }
-
             // 先保存选中状态（需要读 CurrentFrame），再清空 Session。
             m_DebugWindow?.OnSessionCleared();
 
-            m_Session.Clear();
-            m_TraceCapture.Unregister();
-            m_TraceCapture.Clear();
+            Session.Clear();
+            TraceCapture.Unregister();
+            TraceCapture.Clear();
             m_TimelineTracks.Clear();
             m_LastAppliedFrameIndex = -1;
             m_LastSampledUnityFrameCount = -1;
@@ -283,11 +300,11 @@ namespace Core.Capability.Editor
                     string trackKey = $"{world.Key}:global:{capability.Key}";
                     string logKey = $"{world.Key}:cap:{capability.Key}";
 
-                    if (!m_Session.LogIndex.TryGetValue(logKey,
+                    if (!Session.LogIndex.TryGetValue(logKey,
                             out List<CapabilityDebugLogSnapshot> logList))
                     {
                         logList = new List<CapabilityDebugLogSnapshot>(capability.Logs.Count);
-                        m_Session.LogIndex.Add(logKey, logList);
+                        Session.LogIndex.Add(logKey, logList);
                     }
 
                     logList.AddRange(capability.Logs);
@@ -298,7 +315,7 @@ namespace Core.Capability.Editor
                         track = new CapabilityTimelineTrack(
                             $"{world.DisplayName}/{capability.TypeName}",
                             capability.Pipeline ?? string.Empty);
-                        BackfillTrack(track, m_Session.FrameCount - 1);
+                        BackfillTrack(track, Session.FrameCount - 1);
                         m_TimelineTracks.Add(trackKey, track);
                     }
 
@@ -309,7 +326,7 @@ namespace Core.Capability.Editor
 
             foreach (KeyValuePair<string, CapabilityTimelineTrack> pair in m_TimelineTracks)
             {
-                if (!touched.Contains(pair.Key) && pair.Value.Count < m_Session.FrameCount)
+                if (!touched.Contains(pair.Key) && pair.Value.Count < Session.FrameCount)
                 {
                     pair.Value.Push(CapabilityRuntimeState.None);
                 }
@@ -347,7 +364,7 @@ namespace Core.Capability.Editor
                 return "进入 Play Mode 后开始记录 Temporal Debug 会话。";
             }
 
-            if (EditorApplication.isPaused && !m_Session.IsAtLatestFrame)
+            if (EditorApplication.isPaused && !Session.IsAtLatestFrame)
             {
                 return "当前停在历史帧。回到最新帧后才允许 Unity 继续运行。";
             }
@@ -420,7 +437,7 @@ namespace Core.Capability.Editor
             GUILayout.Label("Capability Temporal Debugger", EditorStyles.boldLabel,
                 GUILayout.ExpandWidth(true));
 
-            GUI.enabled = m_Session.HasFrames;
+            GUI.enabled = Session.HasFrames;
             if (GUILayout.Button("清空当前会话", EditorStyles.toolbarButton, GUILayout.Width(96f)))
             {
                 ClearSession();
@@ -522,14 +539,14 @@ namespace Core.Capability.Editor
                 PlayTool();
             }
 
-            GUI.enabled = m_Session.HasFrames;
+            GUI.enabled = Session.HasFrames;
             if (GUILayout.Button("暂停", GUILayout.Width(54f)))
             {
                 PauseToolAndUnity();
             }
 
-            int totalFrames = m_Session.FrameCount;
-            int current = Mathf.Max(0, m_Session.CurrentFrameIndex);
+            int totalFrames = Session.FrameCount;
+            int current = Mathf.Max(0, Session.CurrentFrameIndex);
             EditorGUILayout.LabelField($"共 {totalFrames} 帧", GUILayout.Width(84f));
 
             if (GUILayout.Button("<", GUILayout.Width(28f)))
@@ -576,7 +593,7 @@ namespace Core.Capability.Editor
 
         private void DrawTimelineTracks()
         {
-            if (!m_Session.HasFrames || m_TimelineTracks.Count == 0)
+            if (!Session.HasFrames || m_TimelineTracks.Count == 0)
             {
                 EditorGUILayout.Space(8f);
                 EditorGUILayout.HelpBox("暂无 Timeline 数据。", MessageType.Info);
@@ -678,9 +695,9 @@ namespace Core.Capability.Editor
                 cursorX += width;
             }
 
-            if (m_Session.CurrentFrameIndex >= 0 && frameCount > 1)
+            if (Session.CurrentFrameIndex >= 0 && frameCount > 1)
             {
-                float normalized = m_Session.CurrentFrameIndex / (float)(frameCount - 1);
+                float normalized = Session.CurrentFrameIndex / (float)(frameCount - 1);
                 float markerX = Mathf.Lerp(timelineRect.x, timelineRect.xMax, normalized);
                 EditorGUI.DrawRect(new Rect(markerX, timelineRect.y - 1f, 2f,
                     timelineRect.height + 2f), Color.red);
