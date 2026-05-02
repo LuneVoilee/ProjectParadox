@@ -93,9 +93,10 @@ namespace GamePlay.Strategy
         private void OnDestroy()
         {
             // 销毁 GameObject 时清理 Capability 世界中的单位实体和占位记录。
+            // 若 Entity 已被 World.RemoveChild 提前 Dispose，Components 为 null，此时无需再次清理。
             if (m_World == null) return;
             if (m_World.Children == null) return;
-            if (Entity == null) return;
+            if (Entity == null || !Entity.IsActive) return;
 
             if (m_World.TryGetPrimaryMapEntity(out CEntity mapEntity))
             {
