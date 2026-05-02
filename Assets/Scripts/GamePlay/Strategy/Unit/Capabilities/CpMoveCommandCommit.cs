@@ -13,6 +13,7 @@ namespace GamePlay.Strategy
     // 移动命令提交：把 ValidMoveCommand 写入目标单位的 UnitMoveTarget。
     public class CpMoveCommandCommit : CapabilityBase
     {
+        private static readonly int m_CombatStateId = Component<CombatState>.TId;
         private int m_RequestVersion;
 
         private readonly List<CEntity> m_Entities = new(16);
@@ -47,6 +48,17 @@ namespace GamePlay.Strategy
             if (!context.TryGetEntity(command.UnitEntityId, out CEntity selectedUnit))
             {
                 return;
+            }
+
+            // 如果单位正在战斗中，先退出战斗再执行移动。
+            if (selectedUnit.TryGetCombatState(out CombatState combatState))
+            {
+                if (context.TryGetEntity(combatState.OpponentEntityId, out CEntity opponentUnit))
+                {
+                    context.Commands.RemoveComponent(opponentUnit, m_CombatStateId);
+                }
+
+                context.Commands.RemoveComponent(selectedUnit, m_CombatStateId);
             }
 
             if (selectedUnit.TryGetUnitMoveTarget(out UnitMoveTarget oldTarget) &&
